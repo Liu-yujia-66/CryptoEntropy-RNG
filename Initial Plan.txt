@@ -1,0 +1,30 @@
+﻿Initial Plan: Main Experiments
+
+Thesis Title: Random Number Generator from Aggregated Cryptocurrency Prices with an Application to Secure Password Generation.
+
+Experiment 1: Baseline Randomness of Raw High-Frequency Price Sequences
+* Objective: Establish a baseline by testing whether raw high-frequency price sequences exhibit deterministic structures.
+* Plan: Collect 1-second interval price data for major assets (BTC, ETH). Raw price changes will be encoded into binary sequences (up=1, down=0) and evaluated using Shannon entropy and basic NIST tests.
+* Purpose: To prove that raw high-frequency data contains short-term patterns that must be removed through aggregation.
+
+Experiment 2: Effect of Temporal Aggregation on Randomness "Emergence"
+* Objective: Identify the "critical point" where aggregated data passes statistical randomness tests.
+* Plan: Generate sequences across multiple aggregation levels (k = 1, 10, 50, 100). Plot -log(p-value) against k to find the threshold for passing the NIST suite.
+* Purpose: To validate the hypothesis that aggregation "whitens" financial data into usable entropy.
+
+Experiment 3: Extraction Efficiency and Sequence Length for Passwords
+* Objective: Evaluate the "Entropy Production Rate" to ensure sequences are long enough for both statistical testing and password security.
+* Plan: Compare encoding methods while measuring the bits of entropy produced per day. I will analyze the time required to harvest enough bits (e.g., 128 or 256 bits) to generate a cryptographically strong password.
+* Purpose: To bridge the gap between statistical theory and the practical requirement of generating long, secure strings.
+
+Experiment 4: Multi-Asset Aggregation and Independence Analysis
+* Objective: Use multi-asset fusion to increase entropy volume and verify the independence of parallel sources.
+* Plan: Implement a dual-asset fusion (e.g., BTC + ETH) to accelerate bit-stream generation. Use Kullback-Leibler (KL) Divergence to measure the mutual information and ensure the assets provide independent entropy.
+* Purpose: To demonstrate that multi-asset aggregation yields longer, more robust random sequences in less time.
+
+
+Project Deliverables
+1. Experimental Dataset: Processed binary sequences from single and multi-asset sources.
+2. Statistical Report: A comprehensive evaluation of randomness quality (NIST/TestU01) and asset independence (KL Divergence).
+3. Password Generator Prototype: A Python-based tool that applies these extracted random sequences to generate secure, high-entropy passwords.
+4. Security Analysis: A brief discussion on the economic cost of manipulating financial entropy sources.
