@@ -66,6 +66,12 @@ def parse_args() -> argparse.Namespace:
         help="Optional row cap per file for debugging.",
     )
     parser.add_argument(
+        "--aggregation-k",
+        type=int,
+        default=1,
+        help="Non-overlapping aggregation window size for price changes.",
+    )
+    parser.add_argument(
         "--plot-sample-size",
         type=int,
         default=500,
@@ -176,24 +182,57 @@ def lag_autocorrelation(bits: np.ndarray, lag: int) -> float:
     return float(np.corrcoef(x, y)[0, 1])
 
 
-def build_bitstream(df: pd.DataFrame) -> tuple[pd.DataFrame, dict[str, float]]:
-    ordered = df.sort_values("aggregate_trade_id").copy()
-    ordered["price_delta"] = ordered["price"].diff()
-    zero_delta_count = int((ordered["price_delta"] == 0).sum())
+# 对 price delta 做非重叠窗口聚合，k=1 时保持实验 1 原始基线逻辑
+def aggregate_price_deltas(price_deltas: pd.Series, aggregation_k: int) -> pd.Series:
+    if aggregation_k < 1:
+        raise ValueError("aggregation_k must be >= 1")
 
-    bit_df = ordered.loc[
-        ordered["price_delta"] != 0,
-        [
-            "aggregate_trade_id",
-            "timestamp",
-            "price",
-            "price_delta",
-        ],
-    ].copy()
-    bit_df = bit_df.dropna(subset=["price_delta"])
+    clean = price_deltas.dropna().reset_index(drop=True)
+    if aggregation_k == 1:
+        return clean
+
+    usable_length = (len(clean) // aggregation_k) * aggregation_k
+    trimmed = clean.iloc[:usable_length]
+    if trimmed.empty:
+        return pd.Series(dtype="float64")
+
+    aggregated = trimmed.groupby(np.arange(len(trimmed)) // aggregation_k).sum()
+    return aggregated.astype(float).reset_index(drop=True)
+
+
+def build_bitstream(
+    df: pd.DataFrame, aggregation_k: int
+) -> tuple[pd.DataFrame, dict[str, float]]:
+    ordered = df.sort_values("aggregate_trade_id").copy()
+    ordered["raw_price_delta"] = ordered["price"].diff()
+    zero_delta_count = int((ordered["raw_price_delta"] == 0).sum())
+
+    if aggregation_k == 1:
+        bit_df = ordered.loc[
+            ordered["raw_price_delta"] != 0,
+            [
+                "aggregate_trade_id",
+                "timestamp",
+                "price",
+                "raw_price_delta",
+            ],
+        ].copy()
+        bit_df = bit_df.dropna(subset=["raw_price_delta"])
+        bit_df = bit_df.rename(columns={"raw_price_delta": "price_delta"})
+    else:
+        aggregated_deltas = aggregate_price_deltas(
+            ordered["raw_price_delta"], aggregation_k
+        )
+        bit_df = pd.DataFrame({"price_delta": aggregated_deltas})
+        bit_df = bit_df.loc[bit_df["price_delta"] != 0].copy()
+        bit_df["aggregate_trade_id"] = np.arange(1, len(bit_df) + 1, dtype=int)
+        bit_df["timestamp"] = pd.NA
+        bit_df["price"] = pd.NA
+
     bit_df["bit"] = (bit_df["price_delta"] > 0).astype(int)
 
     stats = {
+        "aggregation_k": int(aggregation_k),
         "input_rows": int(len(df)),
         "retained_rows": int(len(bit_df)),
         "zero_delta_count": zero_delta_count,
@@ -252,6 +291,7 @@ def process_file(
     asset: str,
     output_root: Path,
     max_rows: int | None,
+    aggregation_k: int,
     plot_sample_size: int,
     acf_max_lag: int,
 ) -> dict[str, float | str]:
@@ -261,9 +301,15 @@ def process_file(
     duplicate_preview_timestamps = int(preview["timestamp"].duplicated().sum())
 
     df["event_time"] = convert_timestamps(df["timestamp"], time_unit)
+    start_time = df["event_time"].iloc[0]
+    end_time = df["event_time"].iloc[-1]
+    duration_seconds = float((end_time - start_time).total_seconds())
 
-    bit_df, build_stats = build_bitstream(df)
-    bit_df["event_time"] = convert_timestamps(bit_df["timestamp"], time_unit)
+    bit_df, build_stats = build_bitstream(df, aggregation_k=aggregation_k)
+    if aggregation_k == 1:
+        bit_df["event_time"] = convert_timestamps(bit_df["timestamp"], time_unit)
+    else:
+        bit_df["event_time"] = pd.NaT
 
     bits = bit_df["bit"].to_numpy()
     p1 = float(bits.mean()) if bits.size else float("nan")
@@ -272,15 +318,19 @@ def process_file(
     lag1 = lag_autocorrelation(bits, 1)
     monobit_z, monobit_p = monobit_test(bits)
     runs_z, runs_p = runs_test(bits)
+    bits_per_second = (
+        float(bits.size / duration_seconds) if duration_seconds > 0 else float("nan")
+    )
 
     date_label = path.stem.split("-")[-3:]
     day = "-".join(date_label)
     label = f"{asset}_{day}"
 
     standardized = bit_df[["event_time", "price", "price_delta", "bit"]].copy()
-    standardized["event_time"] = standardized["event_time"].dt.strftime(
-        "%Y-%m-%d %H:%M:%S.%f%z"
-    )
+    if aggregation_k == 1:
+        standardized["event_time"] = standardized["event_time"].dt.strftime(
+            "%Y-%m-%d %H:%M:%S.%f%z"
+        )
 
     bit_output_dir = output_root / "bitstreams" / asset
     bit_output_dir.mkdir(parents=True, exist_ok=True)
@@ -300,9 +350,13 @@ def process_file(
         "date": day,
         "source_file": str(path),
         "timestamp_unit": time_unit,
+        "start_time": start_time.isoformat(),
+        "end_time": end_time.isoformat(),
+        "duration_seconds": duration_seconds,
         "preview_duplicate_timestamps": duplicate_preview_timestamps,
         **build_stats,
         "bit_count": int(bits.size),
+        "bits_per_second": bits_per_second,
         "p0": p0,
         "p1": p1,
         "shannon_entropy": entropy,
@@ -339,6 +393,7 @@ def main() -> None:
                 asset=asset,
                 output_root=args.output_root,
                 max_rows=args.max_rows,
+                aggregation_k=args.aggregation_k,
                 plot_sample_size=args.plot_sample_size,
                 acf_max_lag=args.acf_max_lag,
             )
@@ -351,9 +406,9 @@ def main() -> None:
     summary_df = pd.DataFrame(summary_rows).sort_values(["asset", "date"])
     args.output_root.mkdir(parents=True, exist_ok=True)
     summary_name = (
-        f"summary_exp1_baseline_k1_{args.max_rows}rows.csv"
+        f"summary_exp1_baseline_k{args.aggregation_k}_{args.max_rows}rows.csv"
         if args.max_rows is not None
-        else "summary_exp1_baseline_k1_full.csv"
+        else f"summary_exp1_baseline_k{args.aggregation_k}_full.csv"
     )
     summary_path = args.output_root / summary_name
     summary_df.to_csv(summary_path, index=False)
