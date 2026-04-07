@@ -1,2 +1,9 @@
 .DS_Store
 .venv/
+__pycache__/
+
+data/interim/.mplconfig/
+data/raw/*
+!data/raw/.gitkeep
+data/processed/experiment1/bitstreams/
+data/processed/experiment1/plots/
