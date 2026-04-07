@@ -33,3 +33,12 @@ Recommended workflow:
 - put one-off or entry-point programs in `scripts/`
 - move reusable logic into `src/`
 - keep datasets and exported results in `data/`
+
+Data directories:
+
+```text
+data/
+├── raw/        # original downloaded files from sources such as Binance Vision
+├── interim/    # cleaned or extracted files before final analysis format
+└── processed/  # final time-series files used by experiments
+```
