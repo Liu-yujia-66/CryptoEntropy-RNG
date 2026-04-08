@@ -3,7 +3,7 @@ pandas
 scipy
 matplotlib
 seaborn
-jupyterlab
+statsmodels
 httpx
 PyYAML
 pytest
