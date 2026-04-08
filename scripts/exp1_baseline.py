@@ -12,15 +12,18 @@ import math
 import os
 from pathlib import Path
 from typing import Literal
+from itertools import groupby
 
 os.environ.setdefault("MPLCONFIGDIR", str(Path("data/interim/.mplconfig").resolve()))
 
 import matplotlib
 import numpy as np
 import pandas as pd
+from statsmodels.graphics.tsaplots import plot_acf
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 
 
 AGGTRADE_COLUMNS = [
@@ -142,6 +145,10 @@ def count_runs(bits: np.ndarray) -> int:
     return 1 + int(np.sum(bits[1:] != bits[:-1]))
 
 
+def run_lengths(bits: np.ndarray) -> list[int]:
+    return [sum(1 for _ in group) for _, group in groupby(bits)]
+
+
 def runs_test(bits: np.ndarray) -> tuple[float, float]:
     n = bits.size
     if n < 2:
@@ -251,35 +258,41 @@ def plot_results(
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    fig = plt.figure(figsize=(14, 14))
+    grid = GridSpec(3, 2, figure=fig, height_ratios=[1, 1, 1.1])
+    ax_price = fig.add_subplot(grid[0, 0])
+    ax_delta = fig.add_subplot(grid[0, 1])
+    ax_preview = fig.add_subplot(grid[1, 0])
+    ax_acf = fig.add_subplot(grid[1, 1])
+    ax_runs = fig.add_subplot(grid[2, :])
     fig.suptitle(f"Experiment 1 Baseline Analysis: {label}")
 
-    axes[0, 0].plot(bit_df["event_time"], bit_df["price"], linewidth=0.6)
-    axes[0, 0].set_title("Price Time Series")
-    axes[0, 0].set_xlabel("Time")
-    axes[0, 0].set_ylabel("Price")
+    ax_price.plot(bit_df["event_time"], bit_df["price"], linewidth=0.6)
+    ax_price.set_title("Price Time Series")
+    ax_price.set_xlabel("Time")
+    ax_price.set_ylabel("Price")
 
-    axes[0, 1].hist(bit_df["price_delta"], bins=100)
-    axes[0, 1].set_title("Price Delta Distribution")
-    axes[0, 1].set_xlabel("Delta")
-    axes[0, 1].set_ylabel("Frequency")
+    ax_delta.hist(bit_df["price_delta"], bins=100)
+    ax_delta.set_title("Price Delta Distribution")
+    ax_delta.set_xlabel("Delta")
+    ax_delta.set_ylabel("Frequency")
 
     preview = bit_df["bit"].to_numpy()[:plot_sample_size]
-    axes[1, 0].step(np.arange(preview.size), preview, where="post")
-    axes[1, 0].set_title(f"Bitstream Preview (first {preview.size} bits)")
-    axes[1, 0].set_xlabel("Index")
-    axes[1, 0].set_ylabel("Bit")
-    axes[1, 0].set_ylim(-0.1, 1.1)
+    ax_preview.step(np.arange(preview.size), preview, where="post")
+    ax_preview.set_title(f"Bitstream Preview (first {preview.size} bits)")
+    ax_preview.set_xlabel("Index")
+    ax_preview.set_ylabel("Bit")
+    ax_preview.set_ylim(-0.1, 1.1)
 
     bits = bit_df["bit"].to_numpy()
     max_lag = min(acf_max_lag, max(1, bits.size - 1))
-    lags = np.arange(1, max_lag + 1)
-    acf_values = np.array([lag_autocorrelation(bits, int(lag)) for lag in lags])
-    axes[1, 1].bar(lags, acf_values, width=0.8)
-    axes[1, 1].axhline(0, color="black", linewidth=0.8)
-    axes[1, 1].set_title("Bitstream Autocorrelation")
-    axes[1, 1].set_xlabel("Lag")
-    axes[1, 1].set_ylabel("Correlation")
+    plot_acf(bits, lags=max_lag, ax=ax_acf, title="Bitstream ACF")
+
+    runs = run_lengths(bits)
+    ax_runs.hist(runs, bins=50, log=True)
+    ax_runs.set_title("Run Length Distribution")
+    ax_runs.set_xlabel("Run Length")
+    ax_runs.set_ylabel("Frequency (Log Scale)")
 
     fig.tight_layout()
     fig.savefig(output_dir / f"{label}_plots.png", dpi=150)
