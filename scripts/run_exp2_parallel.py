@@ -15,14 +15,19 @@ from pathlib import Path
 
 
 # 要批量测试的 transaction-time sampling 步长
-K_VALUES = [50, 100, 200, 500, 1000, 2000, 5000]
-# K_VALUES = [1000, 2000]
+# K_VALUES = [1, 10, 20, 50, 100, 200, 500, 1000, 2000, 3000, 5000, 7000, 10000]
+# K_VALUES = [1, 10, 20, 50, 100, 200, 500, 1000]
+# K_VALUES = [50, 100, 200, 500, 1000, 2000, 3000, 5000, 7000, 10000]
+# K_VALUES = [50, 100, 200, 500, 1000]
+K_VALUES = [2000]
 
 # 要处理的月度文件
 MONTHS = ["2026-01", "2026-02", "2026-03"]
 
 # 要处理的资产
-ASSETS = ["BTCUSDT", "ETHUSDT"]
+ASSETS = ["BNBUSDT", "BTCUSDT", "DOGEUSDT", "ETHUSDT", "SOLUSDT"]
+# ASSETS = ["BTCUSDT", "ETHUSDT"]
+# ASSETS = ["BNBUSDT", "DOGEUSDT", "SOLUSDT"]
 
 # 调试时可以限制每个文件读取的行数；正式全量运行时改成 None
 MAX_ROWS: int | None = None

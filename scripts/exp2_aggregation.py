@@ -59,7 +59,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--assets",
         nargs="*",
-        default=["BTCUSDT", "ETHUSDT"],
+        default=["BNBUSDT", "BTCUSDT", "DOGEUSDT", "ETHUSDT", "SOLUSDT"],
         help="Asset directories to process.",
     )
     parser.add_argument(
