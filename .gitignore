@@ -8,6 +8,5 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/experiment1/bitstreams/
 data/processed/experiment1/plots/
-data/processed/experiment2/rows*/
 data/processed/experiment2/*/k_*/bitstreams/
 data/processed/experiment2/*/k_*/plots/
