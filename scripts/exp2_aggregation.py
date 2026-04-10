@@ -53,7 +53,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-root",
         type=Path,
-        default=Path("data/processed/experiment2"),
+        default=Path("data/processed/experiment2/single-offset"),
         help="Root directory for Experiment 2 outputs.",
     )
     parser.add_argument(

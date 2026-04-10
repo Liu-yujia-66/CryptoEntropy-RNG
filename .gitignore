@@ -8,5 +8,6 @@ data/raw/*
 !data/raw/.gitkeep
 data/processed/experiment1/bitstreams/
 data/processed/experiment1/plots/
-data/processed/experiment2/*/k_*/bitstreams/
-data/processed/experiment2/*/k_*/plots/
+data/processed/experiment2/single-offset/*/k_*/bitstreams/
+data/processed/experiment2/single-offset/*/k_*/plots/
+data/processed/experiment2/all-offset/**/bitstreams/
