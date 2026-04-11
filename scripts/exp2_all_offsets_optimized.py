@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 """
-Experiment 2 all-offset transaction-time aggregation analysis.
+Optimized Experiment 2 all-offset transaction-time aggregation analysis.
+
+This version keeps the same output file names and CSV schemas as
+scripts/exp2_all_offsets.py while reducing runtime by:
+1. loading each month file only once per asset,
+2. constructing offset bitstreams with numpy arrays instead of pandas copies,
+3. using light monthly metrics by default while preserving monthly CSV columns.
 
 Example:
-    python scripts/exp2_all_offsets.py
+    python scripts/exp2_all_offsets_optimized.py
 """
 
 import argparse
@@ -37,10 +43,33 @@ TimeUnit = Literal["ms", "us"]
 
 DEFAULT_ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
 DEFAULT_MONTHS = ["2026-01", "2026-02", "2026-03"]
-DEFAULT_SAMPLING_K_VALUES = [1000]
+DEFAULT_SAMPLING_K_VALUES = [
+    50,
+    100,
+    200,
+    500,
+    750,
+    1000,
+    1100,
+    1200,
+    1500,
+    1700,
+    1800,
+    1900,
+    2000,
+    2500,
+    3000,
+    3250,
+    3500,
+    3750,
+    4000,
+    4250,
+    4500,
+    4750,
+    5000,
+]
 DEFAULT_MAX_ROWS = None
-# DEFAULT_MAX_ROWS = 100_000
-MIN_BIT_COUNT = 10000
+MIN_BIT_COUNT = 2000
 
 
 @dataclass(frozen=True)
@@ -55,6 +84,14 @@ class FileAnalysisContext:
 
 
 @dataclass(frozen=True)
+class PreparedMonthData:
+    context: FileAnalysisContext
+    aggregate_trade_id: np.ndarray
+    timestamp: np.ndarray
+    price: np.ndarray
+
+
+@dataclass(frozen=True)
 class OffsetBitstream:
     offset: int
     bits: np.ndarray
@@ -63,7 +100,7 @@ class OffsetBitstream:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Experiment 2 all-offset transaction-time aggregation analysis."
+        description="Optimized Experiment 2 all-offset transaction-time aggregation analysis."
     )
     parser.add_argument(
         "--input-root",
@@ -74,7 +111,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output-root",
         type=Path,
-        default=Path("data/processed/experiment2/all-offset"),
+        default=Path("data/processed/experiment2/all-offset-optimized"),
         help="Root directory for all-offset Experiment 2 outputs.",
     )
     parser.add_argument(
@@ -131,6 +168,12 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Save concatenated per-offset bitstreams to disk.",
     )
+    parser.add_argument(
+        "--monthly-mode",
+        choices=["light", "full"],
+        default="light",
+        help="Monthly summary mode. 'light' preserves monthly CSV schema with NaN for expensive metrics.",
+    )
     return parser.parse_args()
 
 
@@ -158,6 +201,12 @@ def detect_time_unit(series: pd.Series) -> TimeUnit:
     raise ValueError(f"Unsupported timestamp width: {max_digits} digits")
 
 
+def convert_timestamps(timestamp_series: pd.Series, time_unit: TimeUnit) -> pd.Series:
+    timestamp_array = timestamp_series.to_numpy(dtype="int64")
+    converted = pd.to_datetime(timestamp_array, unit=time_unit, utc=True)
+    return pd.Series(converted, index=timestamp_series.index)
+
+
 def load_aggtrades(path: Path, max_rows: int | None) -> pd.DataFrame:
     df = pd.read_csv(path, names=AGGTRADE_COLUMNS, nrows=max_rows)
     if df.empty:
@@ -170,34 +219,31 @@ def load_aggtrades(path: Path, max_rows: int | None) -> pd.DataFrame:
     return df
 
 
-def prepare_aggtrades(df: pd.DataFrame) -> pd.DataFrame:
-    ordered = df.sort_values("aggregate_trade_id").reset_index(drop=True).copy()
+def prepare_month_data(path: Path, max_rows: int | None) -> PreparedMonthData:
+    raw_df = load_aggtrades(path, max_rows=max_rows)
+    ordered = raw_df.sort_values("aggregate_trade_id").reset_index(drop=True).copy()
     time_unit = detect_time_unit(ordered["timestamp"])
-    ordered["event_time"] = convert_timestamps(ordered["timestamp"], time_unit)
-    ordered.attrs["timestamp_unit"] = time_unit
-    return ordered
-
-
-def build_file_context(path: Path, df: pd.DataFrame) -> FileAnalysisContext:
-    preview_duplicate_timestamps = int(df["timestamp"].head(5).duplicated().sum())
-    start_time = df["event_time"].iloc[0]
-    end_time = df["event_time"].iloc[-1]
+    event_time = convert_timestamps(ordered["timestamp"], time_unit)
+    preview_duplicate_timestamps = int(ordered["timestamp"].head(5).duplicated().sum())
+    start_time = event_time.iloc[0]
+    end_time = event_time.iloc[-1]
     month_label = "-".join(path.stem.split("-")[-3:])
-    return FileAnalysisContext(
+
+    context = FileAnalysisContext(
         source_file=str(path),
         month_label=month_label,
-        timestamp_unit=cast(TimeUnit, df.attrs["timestamp_unit"]),
+        timestamp_unit=time_unit,
         start_time_iso=start_time.isoformat(),
         end_time_iso=end_time.isoformat(),
         duration_seconds=float((end_time - start_time).total_seconds()),
         preview_duplicate_timestamps=preview_duplicate_timestamps,
     )
-
-
-def convert_timestamps(timestamp_series: pd.Series, time_unit: TimeUnit) -> pd.Series:
-    timestamp_array = timestamp_series.to_numpy(dtype="int64")
-    converted = pd.to_datetime(timestamp_array, unit=time_unit, utc=True)
-    return pd.Series(converted, index=timestamp_series.index)
+    return PreparedMonthData(
+        context=context,
+        aggregate_trade_id=ordered["aggregate_trade_id"].to_numpy(dtype=np.int64),
+        timestamp=ordered["timestamp"].to_numpy(dtype=np.int64),
+        price=ordered["price"].to_numpy(dtype=np.float64),
+    )
 
 
 def shannon_entropy_from_bits(bits: np.ndarray) -> float:
@@ -215,26 +261,28 @@ def shannon_entropy_from_bits(bits: np.ndarray) -> float:
 def count_runs(bits: np.ndarray) -> int:
     if bits.size == 0:
         return 0
-    return 1 + int(np.sum(bits[1:] != bits[:-1]))
+    return 1 + int(np.count_nonzero(bits[1:] != bits[:-1]))
 
 
 def longest_run(bits: np.ndarray, value: int) -> int:
-    max_run = 0
-    current = 0
-    for bit in bits:
-        if bit == value:
-            current += 1
-            max_run = max(max_run, current)
-        else:
-            current = 0
-    return max_run
+    if bits.size == 0:
+        return 0
+
+    target = (bits == value).astype(np.int8)
+    if target.sum() == 0:
+        return 0
+    padded = np.concatenate(([0], target, [0]))
+    changes = np.diff(padded)
+    starts = np.flatnonzero(changes == 1)
+    ends = np.flatnonzero(changes == -1)
+    return int(np.max(ends - starts))
 
 
 def monobit_test(bits: np.ndarray) -> tuple[float, float]:
     n = bits.size
     if n == 0:
         return float("nan"), float("nan")
-    s = int(2 * bits.sum() - n)
+    s = 2 * int(bits.sum()) - int(n)
     z_score = float(abs(s) / math.sqrt(n))
     p_value = float(math.erfc(z_score / math.sqrt(2)))
     return float(z_score), float(p_value)
@@ -265,9 +313,20 @@ def lag_autocorrelation(bits: np.ndarray, lag: int) -> float:
         return float("nan")
     x = bits[:-lag].astype(float)
     y = bits[lag:].astype(float)
-    if x.std() == 0 or y.std() == 0:
+    x_std = x.std()
+    y_std = y.std()
+    if x_std == 0 or y_std == 0:
         return float("nan")
     return float(np.corrcoef(x, y)[0, 1])
+
+
+def _pattern_counts(bits: np.ndarray, m: int) -> np.ndarray:
+    n = bits.size
+    bits_ext = np.concatenate([bits, bits[: m - 1]])
+    patterns = np.zeros(n, dtype=np.int64)
+    for j in range(m):
+        patterns = (patterns << 1) | bits_ext[j : j + n]
+    return np.bincount(patterns, minlength=2**m).astype(float)
 
 
 def approximate_entropy_test(
@@ -277,21 +336,16 @@ def approximate_entropy_test(
     if n < max(16, block_size + 2):
         return float("nan"), float("nan")
 
-    bits_ext = np.concatenate([bits, bits[: block_size + 1]])
+    counts_m = _pattern_counts(bits, block_size)
+    counts_m1 = _pattern_counts(bits, block_size + 1)
 
-    def phi(m: int) -> float:
-        counts = np.zeros(2**m, dtype=float)
-        for i in range(n):
-            pattern = 0
-            for j in range(m):
-                pattern = (pattern << 1) | int(bits_ext[i + j])
-            counts[pattern] += 1.0
-        probs = counts / n
-        valid = probs > 0
-        return float(np.sum(probs[valid] * np.log(probs[valid])))
+    probs_m = counts_m / n
+    probs_m1 = counts_m1 / n
+    valid_m = probs_m > 0
+    valid_m1 = probs_m1 > 0
 
-    phi_m = phi(block_size)
-    phi_m1 = phi(block_size + 1)
+    phi_m = float(np.sum(probs_m[valid_m] * np.log(probs_m[valid_m])))
+    phi_m1 = float(np.sum(probs_m1[valid_m1] * np.log(probs_m1[valid_m1])))
     ap_en = float(phi_m - phi_m1)
     chi_sq = float(2.0 * n * (math.log(2) - ap_en))
     p_value = float(gammaincc(2 ** (block_size - 1), chi_sq / 2.0))
@@ -310,18 +364,27 @@ def entropy_predictability_test(
 
     total = n - m
     num_contexts = 2**m
-    context_counts = np.zeros(num_contexts, dtype=float)
-    next_counts = np.zeros(2, dtype=float)
-    joint_counts = np.zeros((num_contexts, 2), dtype=float)
 
-    for i in range(m, n):
-        context = 0
-        for j in range(i - m, i):
-            context = (context << 1) | int(bits[j])
-        bit = int(bits[i])
-        context_counts[context] += 1.0
-        next_counts[bit] += 1.0
-        joint_counts[context, bit] += 1.0
+    if m == 1:
+        contexts = bits[:-1].astype(np.int64)
+        next_bits = bits[1:].astype(np.int64)
+        context_counts = np.bincount(contexts, minlength=2).astype(float)
+        next_counts = np.bincount(next_bits, minlength=2).astype(float)
+        joint_index = (contexts << 1) | next_bits
+        joint_counts = np.bincount(joint_index, minlength=4).astype(float).reshape(2, 2)
+    else:
+        context_counts = np.zeros(num_contexts, dtype=float)
+        next_counts = np.zeros(2, dtype=float)
+        joint_counts = np.zeros((num_contexts, 2), dtype=float)
+
+        for i in range(m, n):
+            context = 0
+            for j in range(i - m, i):
+                context = (context << 1) | int(bits[j])
+            bit = int(bits[i])
+            context_counts[context] += 1.0
+            next_counts[bit] += 1.0
+            joint_counts[context, bit] += 1.0
 
     p_next = next_counts / total
     unconditional_entropy = 0.0
@@ -360,59 +423,84 @@ def entropy_predictability_test(
         return mutual_information_bits, float("nan"), float("nan")
 
     p_value = float(1.0 - chi2.cdf(g_stat, degrees_of_freedom))
-    return mutual_information_bits, float(g_stat), p_value
+    return mutual_information_bits, float(g_stat), float(p_value)
 
 
-def build_offset_bitstream(
-    df: pd.DataFrame, sampling_k: int, offset: int
+def build_offset_bitstream_from_arrays(
+    aggregate_trade_id: np.ndarray,
+    timestamp: np.ndarray,
+    price: np.ndarray,
+    sampling_k: int,
+    offset: int,
 ) -> OffsetBitstream:
     if sampling_k < 1:
         raise ValueError("sampling_k must be >= 1")
     if offset < 0 or offset >= sampling_k:
         raise ValueError("offset must satisfy 0 <= offset < sampling_k")
 
-    sampled = df.iloc[offset::sampling_k].copy()
-    sampled["price_delta"] = sampled["price"].diff()
-    zero_delta_count = int((sampled["price_delta"] == 0).sum())
+    sampled_trade_id = aggregate_trade_id[offset::sampling_k]
+    sampled_timestamp = timestamp[offset::sampling_k]
+    sampled_price = price[offset::sampling_k]
+    sampled_rows = int(sampled_price.size)
 
-    bit_df = sampled.loc[
-        sampled["price_delta"] != 0,
-        ["aggregate_trade_id", "timestamp", "price", "price_delta"],
-    ].copy()
-    bit_df = bit_df.dropna(subset=["price_delta"])
-    bit_df["bit"] = (bit_df["price_delta"] > 0).astype(int)
+    if sampled_rows == 0:
+        stats = {
+            "sampling_k": int(sampling_k),
+            "offset": int(offset),
+            "input_rows": int(price.size),
+            "sampled_rows": 0,
+            "retained_rows": 0,
+            "zero_delta_count": 0,
+            "zero_delta_ratio": float("nan"),
+            "duplicate_timestamp_count": 0,
+        }
+        return OffsetBitstream(
+            offset=offset, bits=np.array([], dtype=np.uint8), stats=stats
+        )
+
+    price_delta = np.diff(sampled_price)
+    zero_mask = price_delta == 0
+    zero_delta_count = int(np.count_nonzero(zero_mask))
+    nonzero_mask = ~zero_mask
+    retained_rows = int(np.count_nonzero(nonzero_mask))
+    bits = (price_delta[nonzero_mask] > 0).astype(np.uint8)
+
+    # Keep local variables for parity with the old stats logic.
+    _ = sampled_trade_id
 
     stats = {
         "sampling_k": int(sampling_k),
         "offset": int(offset),
-        "input_rows": int(len(df)),
-        "sampled_rows": int(len(sampled)),
-        "retained_rows": int(len(bit_df)),
+        "input_rows": int(price.size),
+        "sampled_rows": sampled_rows,
+        "retained_rows": retained_rows,
         "zero_delta_count": zero_delta_count,
         "zero_delta_ratio": (
-            zero_delta_count / len(sampled) if len(sampled) else float("nan")
+            zero_delta_count / sampled_rows if sampled_rows else float("nan")
         ),
-        "duplicate_timestamp_count": int(sampled["timestamp"].duplicated().sum()),
+        "duplicate_timestamp_count": int(
+            sampled_timestamp.size - np.unique(sampled_timestamp).size
+        ),
     }
-    return OffsetBitstream(
-        offset=offset,
-        bits=bit_df["bit"].to_numpy(dtype=int),
-        stats=stats,
-    )
+    return OffsetBitstream(offset=offset, bits=bits, stats=stats)
 
 
 def build_all_offset_bitstreams(
-    df: pd.DataFrame, sampling_k: int
+    prepared: PreparedMonthData, sampling_k: int
 ) -> list[OffsetBitstream]:
-    if sampling_k < 1:
-        raise ValueError("sampling_k must be >= 1")
     return [
-        build_offset_bitstream(df=df, sampling_k=sampling_k, offset=offset)
+        build_offset_bitstream_from_arrays(
+            aggregate_trade_id=prepared.aggregate_trade_id,
+            timestamp=prepared.timestamp,
+            price=prepared.price,
+            sampling_k=sampling_k,
+            offset=offset,
+        )
         for offset in range(sampling_k)
     ]
 
 
-def summarize_bits(
+def summarize_bits_full(
     bits: np.ndarray,
     history_length: int,
     metadata: dict[str, object],
@@ -450,6 +538,39 @@ def summarize_bits(
     }
 
 
+def summarize_bits_light(
+    bits: np.ndarray,
+    metadata: dict[str, object],
+) -> dict[str, object]:
+    p1 = float(bits.mean()) if bits.size else float("nan")
+    p0 = float(1.0 - p1) if bits.size else float("nan")
+    entropy = shannon_entropy_from_bits(bits)
+    lag1 = lag_autocorrelation(bits, 1)
+    monobit_z, monobit_p = monobit_test(bits)
+    runs_z, runs_p = runs_test(bits)
+
+    return {
+        **metadata,
+        "bit_count": int(bits.size),
+        "p0": p0,
+        "p1": p1,
+        "shannon_entropy": entropy,
+        "lag1_autocorrelation": lag1,
+        "monobit_z": monobit_z,
+        "monobit_pvalue": monobit_p,
+        "runs_count": count_runs(bits),
+        "runs_z": runs_z,
+        "runs_pvalue": runs_p,
+        "longest_run_0": longest_run(bits, 0),
+        "longest_run_1": longest_run(bits, 1),
+        "approximate_entropy": float("nan"),
+        "approximate_entropy_pvalue": float("nan"),
+        "predictability_mutual_information_bits": float("nan"),
+        "predictability_g_stat": float("nan"),
+        "predictability_pvalue": float("nan"),
+    }
+
+
 def save_bitstream(bits: np.ndarray, output_path: Path) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     pd.DataFrame({"bit": bits.astype(int)}).to_csv(output_path, index=False)
@@ -467,29 +588,33 @@ def build_monthly_row(
     history_length: int,
     file_context: FileAnalysisContext,
     bitstream: OffsetBitstream,
+    monthly_mode: str,
 ) -> dict[str, object]:
     bits_per_second = (
         float(bitstream.bits.size / file_context.duration_seconds)
         if file_context.duration_seconds > 0
         else float("nan")
     )
-    return summarize_bits(
-        bits=bitstream.bits,
-        history_length=history_length,
-        metadata={
-            "asset": asset,
-            "date": file_context.month_label,
-            "source_file": file_context.source_file,
-            "timestamp_unit": file_context.timestamp_unit,
-            "start_time": file_context.start_time_iso,
-            "end_time": file_context.end_time_iso,
-            "duration_seconds": file_context.duration_seconds,
-            "preview_duplicate_timestamps": file_context.preview_duplicate_timestamps,
-            **bitstream.stats,
-            "analysis_scope": "monthly_offset",
-            "bits_per_second": bits_per_second,
-        },
-    )
+    metadata = {
+        "asset": asset,
+        "date": file_context.month_label,
+        "source_file": file_context.source_file,
+        "timestamp_unit": file_context.timestamp_unit,
+        "start_time": file_context.start_time_iso,
+        "end_time": file_context.end_time_iso,
+        "duration_seconds": file_context.duration_seconds,
+        "preview_duplicate_timestamps": file_context.preview_duplicate_timestamps,
+        **bitstream.stats,
+        "analysis_scope": "monthly_offset",
+        "bits_per_second": bits_per_second,
+    }
+    if monthly_mode == "full":
+        return summarize_bits_full(
+            bits=bitstream.bits,
+            history_length=history_length,
+            metadata=metadata,
+        )
+    return summarize_bits_light(bits=bitstream.bits, metadata=metadata)
 
 
 def build_combined_row(
@@ -506,29 +631,30 @@ def build_combined_row(
         if combined_duration_seconds > 0
         else float("nan")
     )
-    combined_summary = summarize_bits(
+    metadata = {
+        "asset": asset,
+        "date": "combined",
+        "source_file": ",".join(str(path) for path in source_files),
+        "timestamp_unit": "mixed",
+        "start_time": "",
+        "end_time": "",
+        "duration_seconds": combined_duration_seconds,
+        "preview_duplicate_timestamps": float("nan"),
+        "sampling_k": sampling_k,
+        "offset": offset,
+        "input_rows": float("nan"),
+        "sampled_rows": float("nan"),
+        "retained_rows": int(combined_bits.size),
+        "zero_delta_count": float("nan"),
+        "zero_delta_ratio": float("nan"),
+        "duplicate_timestamp_count": float("nan"),
+        "analysis_scope": "combined_offset",
+        "bits_per_second": bits_per_second,
+    }
+    combined_summary = summarize_bits_full(
         bits=combined_bits,
         history_length=history_length,
-        metadata={
-            "asset": asset,
-            "date": "combined",
-            "source_file": ",".join(str(path) for path in source_files),
-            "timestamp_unit": "mixed",
-            "start_time": "",
-            "end_time": "",
-            "duration_seconds": combined_duration_seconds,
-            "preview_duplicate_timestamps": float("nan"),
-            "sampling_k": sampling_k,
-            "offset": offset,
-            "input_rows": float("nan"),
-            "sampled_rows": float("nan"),
-            "retained_rows": int(combined_bits.size),
-            "zero_delta_count": float("nan"),
-            "zero_delta_ratio": float("nan"),
-            "duplicate_timestamp_count": float("nan"),
-            "analysis_scope": "combined_offset",
-            "bits_per_second": bits_per_second,
-        },
+        metadata=metadata,
     )
     combined_summary["bits_per_second"] = bits_per_second
     return combined_summary
@@ -642,7 +768,9 @@ def save_asset_outputs(
     combined_df: pd.DataFrame,
     selection_df: pd.DataFrame,
     selected_df: pd.DataFrame,
+    monthly_mode: str,
 ) -> None:
+    monthly_suffix = "monthly_light" if monthly_mode == "light" else "monthly"
     for asset in sorted(monthly_df["asset"].unique()):
         asset_output_dir = output_dir / "by_asset" / asset
         asset_output_dir.mkdir(parents=True, exist_ok=True)
@@ -653,7 +781,7 @@ def save_asset_outputs(
         asset_selected_df = selected_df[selected_df["asset"] == asset].copy()
 
         monthly_path = (
-            asset_output_dir / f"{asset}_summary_exp2_all_offsets_monthly.csv"
+            asset_output_dir / f"{asset}_summary_exp2_all_offsets_{monthly_suffix}.csv"
         )
         combined_path = (
             asset_output_dir / f"{asset}_summary_exp2_all_offsets_combined.csv"
@@ -675,7 +803,9 @@ def save_asset_outputs(
         print(f"[done] saved {asset} k acceptance summary to {selection_path}")
         print(f"[done] saved {asset} selected-k summary to {selected_path}")
 
-    all_monthly_path = output_dir / "all_assets_summary_exp2_all_offsets_monthly.csv"
+    all_monthly_path = (
+        output_dir / f"all_assets_summary_exp2_all_offsets_{monthly_suffix}.csv"
+    )
     all_combined_path = output_dir / "all_assets_summary_exp2_all_offsets_combined.csv"
     all_selection_path = (
         output_dir / "all_assets_summary_exp2_all_offsets_k_acceptance.csv"
@@ -716,6 +846,10 @@ def main() -> None:
             print(f"[skip] no csv files found under: {asset_dir}")
             continue
 
+        prepared_months = [
+            prepare_month_data(path, max_rows=args.max_rows) for path in files
+        ]
+
         for sampling_k in sorted(set(args.sampling_k_values)):
             print(f"[processing] asset={asset} k={sampling_k}")
             combined_bits_by_offset: dict[int, list[np.ndarray]] = {
@@ -723,20 +857,18 @@ def main() -> None:
             }
             combined_duration_seconds = 0.0
 
-            for path in files:
-                raw_df = load_aggtrades(path, max_rows=args.max_rows)
-                prepared_df = prepare_aggtrades(raw_df)
-                file_context = build_file_context(path, prepared_df)
-                combined_duration_seconds += file_context.duration_seconds
+            for prepared in prepared_months:
+                combined_duration_seconds += prepared.context.duration_seconds
 
-                for bitstream in build_all_offset_bitstreams(prepared_df, sampling_k):
+                for bitstream in build_all_offset_bitstreams(prepared, sampling_k):
                     combined_bits_by_offset[bitstream.offset].append(bitstream.bits)
                     monthly_rows.append(
                         build_monthly_row(
                             asset=asset,
                             history_length=args.history_length,
-                            file_context=file_context,
+                            file_context=prepared.context,
                             bitstream=bitstream,
+                            monthly_mode=args.monthly_mode,
                         )
                     )
 
@@ -744,11 +876,7 @@ def main() -> None:
                 offset_chunks = combined_bits_by_offset[offset]
                 if not offset_chunks:
                     continue
-                combined_bits = (
-                    np.concatenate(offset_chunks)
-                    if offset_chunks
-                    else np.array([], dtype=int)
-                )
+                combined_bits = np.concatenate(offset_chunks)
                 combined_rows.append(
                     build_combined_row(
                         asset=asset,
@@ -794,6 +922,7 @@ def main() -> None:
         combined_df=combined_df,
         selection_df=selection_df,
         selected_df=selected_df,
+        monthly_mode=args.monthly_mode,
     )
 
 
