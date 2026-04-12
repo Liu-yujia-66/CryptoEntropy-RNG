@@ -6,17 +6,11 @@ mine.txt
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
 
 data/interim/.mplconfig/
 
 data/raw/*
 !data/raw/.gitkeep
 
-data/processed/experiment1/bitstreams/
-data/processed/experiment1/plots/
-
-data/processed/experiment2/single-offset/*/k_*/bitstreams/
-data/processed/experiment2/single-offset/*/k_*/plots/
-data/processed/experiment2/all-offset/**/bitstreams/
-data/processed/experiment2/all-offset/**/by_asset/
-data/processed/experiment2/all-offset/**/plots/
+data/processed/

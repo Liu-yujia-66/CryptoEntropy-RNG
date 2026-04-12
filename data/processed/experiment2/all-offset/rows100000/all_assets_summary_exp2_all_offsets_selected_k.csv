@@ -1,6 +1,0 @@
-asset,selected_k,selection_status,predictability_pass_rate,monobit_pass_rate,runs_pass_rate,avg_bits_per_second
-BNBUSDT,200,selected_smallest_acceptable_k,0.9,1.0,0.895,0.017377285961770447
-BTCUSDT,1000,selected_smallest_acceptable_k,0.979,1.0,0.979,0.009248553696078349
-DOGEUSDT,100,selected_smallest_acceptable_k,0.94,1.0,0.94,0.01573147823665062
-ETHUSDT,500,selected_smallest_acceptable_k,1.0,1.0,1.0,0.010947761787225443
-SOLUSDT,100,selected_smallest_acceptable_k,0.9,1.0,0.9,0.021737464749441052
