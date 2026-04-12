@@ -19,26 +19,61 @@ pip install -r requirements.txt
 
 ## Project Structure
 
-This repository currently uses a minimal, script-first layout that works well in VS Code:
-
 ```text
 .
-├── data/      # downloaded data and generated outputs
-├── scripts/   # runnable scripts, such as data collection or experiments
-└── src/       # reusable Python code shared by scripts
+├── data/
+│   ├── raw/          # original downloaded aggTrades CSV files
+│   ├── interim/      # intermediate files (e.g. matplotlib config cache)
+│   └── processed/    # experiment outputs (not tracked by git)
+├── scripts/          # experiment runners and plot scripts
+└── src/              # shared library modules
+    ├── data_io.py    # data loading, timestamp detection, PreparedMonthData
+    ├── stats.py      # statistical tests (monobit, runs, approx entropy, predictability)
+    └── bitstream.py  # offset-based bitstream construction
 ```
 
-Recommended workflow:
+## Running Experiments
 
-- put one-off or entry-point programs in `scripts/`
-- move reusable logic into `src/`
-- keep datasets and exported results in `data/`
+### Experiment 1 — Baseline Randomness
 
-Data directories:
+```bash
+python scripts/exp1_baseline.py
+```
+
+### Experiment 2 — Temporal Aggregation
+
+**All-offset analysis** (sweeps all k offsets, selects optimal k per asset):
+
+```bash
+python scripts/runner_exp2_all_offset.py
+```
+
+**Single-offset analysis** (offset=0, generates -log(p-value) vs k curves):
+
+```bash
+python scripts/runner_exp2_single_offset.py
+```
+
+**Plotting** (called automatically by runners, or run standalone):
+
+```bash
+python scripts/plot_exp2_all_offsets_optimized.py --summary-dir <path>
+python scripts/plot_exp2_single_offset.py --summary-dir <path>
+```
+
+Edit the configuration block at the top of each runner to set assets, periods, and k values.
+
+## Data
+
+Raw data is not included in this repository. Download aggTrades data from [https://data.binance.vision](https://data.binance.vision) and place it under:
 
 ```text
-data/
-├── raw/        # original downloaded files from sources such as Binance Vision
-├── interim/    # cleaned or extracted files before final analysis format
-└── processed/  # final time-series files used by experiments
+data/raw/binance/spot/aggTrades/<ASSET>/
 ```
+
+Two granularities are used:
+
+- **Experiment 1** — daily files (e.g. `BTCUSDT-aggTrades-2026-04-01.csv`)
+- **Experiment 2** — monthly files (e.g. `BTCUSDT-aggTrades-2025-01.csv`)
+
+Assets used: `BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`
