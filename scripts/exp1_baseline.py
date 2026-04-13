@@ -8,11 +8,12 @@ Recommended first validation run:
 """
 
 import argparse
-import math
 import os
+import sys
 from pathlib import Path
 from typing import Literal
-from itertools import groupby
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 os.environ.setdefault("MPLCONFIGDIR", str(Path("data/interim/.mplconfig").resolve()))
 
@@ -24,6 +25,16 @@ from statsmodels.graphics.tsaplots import plot_acf
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
+
+from src.stats import (
+    count_runs,
+    lag_autocorrelation,
+    longest_run,
+    monobit_test,
+    run_lengths,
+    runs_test,
+    shannon_entropy_from_bits,
+)
 
 
 AGGTRADE_COLUMNS = [
@@ -113,80 +124,6 @@ def convert_timestamps(timestamp_series: pd.Series, time_unit: TimeUnit) -> pd.S
     timestamp_array = timestamp_series.to_numpy(dtype="int64")
     converted = pd.to_datetime(timestamp_array, unit=time_unit, utc=True)
     return pd.Series(converted, index=timestamp_series.index)
-
-
-def shannon_entropy_from_bits(bits: np.ndarray) -> float:
-    if bits.size == 0:
-        return float("nan")
-    p1 = bits.mean()
-    p0 = 1.0 - p1
-    entropy = 0.0
-    for p in (p0, p1):
-        if p > 0:
-            entropy -= p * math.log2(p)
-    return entropy
-
-
-def longest_run(bits: np.ndarray, value: int) -> int:
-    max_run = 0
-    current = 0
-    for bit in bits:
-        if bit == value:
-            current += 1
-            max_run = max(max_run, current)
-        else:
-            current = 0
-    return max_run
-
-
-def count_runs(bits: np.ndarray) -> int:
-    if bits.size == 0:
-        return 0
-    return 1 + int(np.sum(bits[1:] != bits[:-1]))
-
-
-def run_lengths(bits: np.ndarray) -> list[int]:
-    return [sum(1 for _ in group) for _, group in groupby(bits)]
-
-
-def runs_test(bits: np.ndarray) -> tuple[float, float]:
-    n = bits.size
-    if n < 2:
-        return float("nan"), float("nan")
-    n1 = int(bits.sum())
-    n0 = n - n1
-    if n0 == 0 or n1 == 0:
-        return float("nan"), float("nan")
-
-    runs = count_runs(bits)
-    expected = float(1 + (2 * n1 * n0) / n)
-    variance = float(2 * n1 * n0 * (2 * n1 * n0 - n) / (n**2 * (n - 1)))
-    if variance <= 0:
-        return float("nan"), float("nan")
-
-    z_score = float((runs - expected) / math.sqrt(variance))
-    p_value = float(math.erfc(abs(z_score) / math.sqrt(2)))
-    return float(z_score), float(p_value)
-
-
-def monobit_test(bits: np.ndarray) -> tuple[float, float]:
-    n = bits.size
-    if n == 0:
-        return float("nan"), float("nan")
-    s = int(2 * bits.sum() - n)
-    z_score = float(abs(s) / math.sqrt(n))
-    p_value = float(math.erfc(z_score / math.sqrt(2)))
-    return float(z_score), float(p_value)
-
-
-def lag_autocorrelation(bits: np.ndarray, lag: int) -> float:
-    if lag <= 0 or lag >= bits.size:
-        return float("nan")
-    x = bits[:-lag].astype(float)
-    y = bits[lag:].astype(float)
-    if x.std() == 0 or y.std() == 0:
-        return float("nan")
-    return float(np.corrcoef(x, y)[0, 1])
 
 
 # 对 price delta 做非重叠窗口聚合，k=1 时保持实验 1 原始基线逻辑
