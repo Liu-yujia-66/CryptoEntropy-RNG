@@ -106,9 +106,13 @@ def runs_test(bits: np.ndarray) -> tuple[float, float]:
 
 
 def approximate_entropy_test(
-    bits: np.ndarray, block_size: int = 2
+    bits: np.ndarray, block_size: int = 5
 ) -> tuple[float, float]:
-    """NIST approximate entropy test. Returns (approx_entropy, p_value)."""
+    """NIST approximate entropy test. Returns (approx_entropy, p_value).
+
+    block_size defaults to 5 per Onofri, Shternshis & Marmi (2025) Table 4.
+    Requires n >= 2^(block_size + 2) roughly; safe for n >= MIN_BIT_COUNT=2000.
+    """
     n = bits.size
     if n < max(16, block_size + 2):
         return float("nan"), float("nan")
@@ -131,11 +135,59 @@ def approximate_entropy_test(
 
 def _pattern_counts(bits: np.ndarray, m: int) -> np.ndarray:
     n = bits.size
-    bits_ext = np.concatenate([bits, bits[: m - 1]])
+    bits_ext = np.concatenate([bits, bits[: m - 1]]).astype(np.int64)
     patterns = np.zeros(n, dtype=np.int64)
     for j in range(m):
         patterns = (patterns << 1) | bits_ext[j : j + n]
     return np.bincount(patterns, minlength=2**m).astype(float)
+
+
+# ---------------------------------------------------------------------------
+# Shannon entropy bias test (Paper Lemma 1, non-overlapping blocks)
+# ---------------------------------------------------------------------------
+
+def shannon_bias_test(
+    bits: np.ndarray, block_length: int
+) -> tuple[float, float, float]:
+    """
+    Shannon entropy bias test from Shternshis & Marmi (2025) Lemma 1.
+
+    Partitions the bitstream into floor(n/k) non-overlapping k-blocks, computes
+    the plug-in entropy estimate H_hat, and returns the bias statistic
+        B = 2 * n_b * (k * ln(2) - H_hat)
+    which under H_0 (i.i.d. equiprobable symbols) follows chi^2 with
+    2^k - 1 degrees of freedom.
+
+    Unlike the KL/NP statistic D (which is valid for unequal symbol
+    probabilities), B assumes symbol equiprobability — it will over-reject
+    when p(0) != p(1). Interpret together with a monobit check.
+
+    Returns (B, entropy_hat_nats, p_value).
+    """
+    n = int(bits.size)
+    k = int(block_length)
+    if k < 1:
+        raise ValueError("block_length must be >= 1")
+    n_b = n // k
+    if n_b < 2:
+        return float("nan"), float("nan"), float("nan")
+
+    trimmed = bits[: n_b * k].astype(np.int64).reshape(n_b, k)
+    # Pack each k-bit row into a base-2 integer 0..2^k - 1.
+    weights = (1 << np.arange(k - 1, -1, -1, dtype=np.int64))
+    block_ids = trimmed @ weights
+    counts = np.bincount(block_ids, minlength=2**k).astype(float)
+
+    probs = counts / n_b
+    nonzero = probs > 0
+    entropy_hat = float(-np.sum(probs[nonzero] * np.log(probs[nonzero])))  # nats
+    bias = float(2.0 * n_b * (k * math.log(2) - entropy_hat))
+
+    dof = (2**k) - 1
+    if dof <= 0:
+        return bias, entropy_hat, float("nan")
+    p_value = float(1.0 - chi2.cdf(bias, dof))
+    return bias, entropy_hat, p_value
 
 
 # ---------------------------------------------------------------------------
@@ -146,49 +198,63 @@ def entropy_predictability_test(
     bits: np.ndarray, history_length: int = 1
 ) -> tuple[float, float, float]:
     """
-    Entropy-based predictability test using conditional entropy and G-test.
+    NP / KL-divergence predictability test (Shternshis & Marmi 2025, Eq. 3-4).
+
+    Notation map (Paper ↔ code, binary alphabet s=2):
+        Paper k  (block length)              = history_length + 1
+        Paper k-1 (context length)           = history_length
+        Paper n - k + 1 (overlapping blocks) = n_blocks
+        Paper s^(k-1)  (number of contexts)  = num_contexts = 2 ** history_length
+        Paper (s^(k-1) - 1)(s - 1)  (DOF)    = num_contexts - 1
+
+    The parameter is named `history_length` (rather than k) because that is the
+    quantity directly meaningful to callers: how many past bits form the
+    context. Internally we use the Paper's k = history_length + 1 wherever the
+    Paper's formulae are referenced.
 
     Returns (mutual_information_bits, g_stat, p_value).
     """
     n = bits.size
-    m = history_length
-    if m < 1:
+    history_length = int(history_length)
+    if history_length < 1:
         raise ValueError("history_length must be >= 1")
-    if n <= m + 1:
+    k = history_length + 1  # Paper's block length
+    if n < k + 1:
         return float("nan"), float("nan"), float("nan")
 
-    total = n - m
-    num_contexts = 2**m
+    n_blocks = n - history_length          # Paper: n - k + 1
+    num_contexts = 2 ** history_length     # Paper: s^(k-1) = 2^(k-1)
 
-    if m == 1:
-        contexts = bits[:-1].astype(np.int64)
-        next_bits = bits[1:].astype(np.int64)
-        context_counts = np.bincount(contexts, minlength=2).astype(float)
-        next_counts = np.bincount(next_bits, minlength=2).astype(float)
-        joint_index = (contexts << 1) | next_bits
-        joint_counts = np.bincount(joint_index, minlength=4).astype(float).reshape(2, 2)
-    else:
-        context_counts = np.zeros(num_contexts, dtype=float)
-        next_counts = np.zeros(2, dtype=float)
-        joint_counts = np.zeros((num_contexts, 2), dtype=float)
-        for i in range(m, n):
-            context = 0
-            for j in range(i - m, i):
-                context = (context << 1) | int(bits[j])
-            bit = int(bits[i])
-            context_counts[context] += 1.0
-            next_counts[bit] += 1.0
-            joint_counts[context, bit] += 1.0
+    # Pre-convert once so that loop slices are zero-copy views instead of
+    # allocating a new int64 array on every iteration.
+    bits_int64 = bits.astype(np.int64)
 
-    p_next = next_counts / total
+    # Build the (k-1)-bit context integer for every position via sliding
+    # bit-shift accumulation — O((k-1) * n_blocks) array ops, no Python loops
+    # over individual elements.
+    contexts = np.zeros(n_blocks, dtype=np.int64)
+    for j in range(history_length):
+        contexts = (contexts << 1) | bits_int64[j : j + n_blocks]
+    next_bits = bits_int64[history_length:]
 
-    # unconditional entropy (vectorized)
+    context_counts = np.bincount(contexts, minlength=num_contexts).astype(float)
+    next_counts = np.bincount(next_bits, minlength=2).astype(float)
+    joint_index = (contexts << 1) | next_bits
+    joint_counts = (
+        np.bincount(joint_index, minlength=num_contexts * 2)
+        .astype(float)
+        .reshape(num_contexts, 2)
+    )
+
+    p_next = next_counts / n_blocks
+
+    # Unconditional entropy H(Y)
     with np.errstate(divide="ignore", invalid="ignore"):
         unconditional_entropy = float(
             -np.sum(p_next * np.where(p_next > 0, np.log2(p_next), 0.0))
         )
 
-    # conditional entropy (vectorized)
+    # Conditional entropy H(Y | context)
     active = context_counts > 0
     with np.errstate(divide="ignore", invalid="ignore"):
         probs = np.where(
@@ -198,12 +264,15 @@ def entropy_predictability_test(
         )
         h_contexts = -np.sum(probs * np.where(probs > 0, np.log2(probs), 0.0), axis=1)
     conditional_entropy = float(
-        np.sum((context_counts / total) * np.where(active, h_contexts, 0.0))
+        np.sum((context_counts / n_blocks) * np.where(active, h_contexts, 0.0))
     )
 
     mutual_information_bits = float(unconditional_entropy - conditional_entropy)
 
-    # G-test (vectorized)
+    # NP-statistics / G-test (Paper Eq. 3):
+    #   D = 2 Σ f_{i,j} ln( (n - k + 1) * f_{i,j} / (f_{i·} * f_{·j}) )
+    # With expected_{i,j} = f_{i·} * f_{·j} / (n - k + 1) = context_counts * p_next,
+    # the term inside the log is f_{i,j} / expected_{i,j}.
     expected = context_counts[:, None] * p_next[None, :]
     with np.errstate(divide="ignore", invalid="ignore"):
         g_terms = np.where(
@@ -213,8 +282,9 @@ def entropy_predictability_test(
         )
     g_stat = float(np.sum(g_terms))
 
-    observed_context_count = int(np.sum(context_counts > 0))
-    degrees_of_freedom = (observed_context_count - 1) * (2 - 1)
+    # DOF (Paper Lemma 2 / Billingsley 1961 Thm 4.1):
+    #   (s^(k-1) - 1)(s - 1) = num_contexts - 1   for binary (s=2)
+    degrees_of_freedom = num_contexts - 1
     if degrees_of_freedom <= 0:
         return mutual_information_bits, float("nan"), float("nan")
 
@@ -226,14 +296,37 @@ def entropy_predictability_test(
 # Summary helper
 # ---------------------------------------------------------------------------
 
+def _adaptive_k(n: int) -> int:
+    """
+    Adaptive block length k = floor(0.5 * log2(n)), clamped to >= 2.
+
+    Per Shternshis & Marmi (2025) Section 2.2 and Onofri, Shternshis & Marmi
+    (2025) Section 2.1.1: k = [0.5 * log_s(n)] for alphabet size s (binary: s=2).
+    history_length = k - 1 (k-1 past bits form the context for the NP-statistics).
+    """
+    if n < 2:
+        return 2
+    return max(2, math.floor(0.5 * math.log2(n)))
+
+
 def summarize_bits_full(
     bits: np.ndarray,
-    history_length: int,
     metadata: dict[str, object],
 ) -> dict[str, object]:
-    """Run all statistical tests on a bitstream and return a flat result dict."""
-    p1 = float(bits.mean()) if bits.size else float("nan")
-    p0 = float(1.0 - p1) if bits.size else float("nan")
+    """Run all statistical tests on a bitstream and return a flat result dict.
+
+    The predictability test uses adaptive block length k = floor(0.5 * log2(n))
+    per Shternshis & Marmi (2025), with history_length = k - 1.
+    In Experiment 2 this means changing aggregation level ell also changes the
+    effective sample size n, so the internal predictability order can drift even
+    when the plotted x-axis shows only ell.
+    """
+    n = int(bits.size)
+    k = _adaptive_k(n)
+    history_length = k - 1  # = k - 1 past bits used as context
+
+    p1 = float(bits.mean()) if n else float("nan")
+    p0 = float(1.0 - p1) if n else float("nan")
     entropy = shannon_entropy_from_bits(bits)
     lag1 = lag_autocorrelation(bits, 1)
     monobit_z, monobit_p = monobit_test(bits)
@@ -242,10 +335,13 @@ def summarize_bits_full(
     predictability_mi, predictability_g, predictability_p = entropy_predictability_test(
         bits, history_length=history_length
     )
+    shannon_bias_b, shannon_bias_h, shannon_bias_p = shannon_bias_test(
+        bits, block_length=k
+    )
 
     return {
         **metadata,
-        "bit_count": int(bits.size),
+        "bit_count": n,
         "p0": p0,
         "p1": p1,
         "shannon_entropy": entropy,
@@ -259,7 +355,11 @@ def summarize_bits_full(
         "longest_run_1": longest_run(bits, 1),
         "approximate_entropy": approx_entropy,
         "approximate_entropy_pvalue": approx_entropy_p,
+        "predictability_k": k,
         "predictability_mutual_information_bits": predictability_mi,
         "predictability_g_stat": predictability_g,
         "predictability_pvalue": predictability_p,
+        "shannon_bias_b": shannon_bias_b,
+        "shannon_bias_entropy_nats": shannon_bias_h,
+        "shannon_bias_pvalue": shannon_bias_p,
     }

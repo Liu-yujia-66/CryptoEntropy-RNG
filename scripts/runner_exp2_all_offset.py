@@ -16,7 +16,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-import subprocess
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import cast
@@ -27,7 +26,7 @@ import pandas as pd
 from src.bitstream import build_all_offset_bitstreams, save_bitstream
 from src.data_io import filter_month_files, prepare_month_data
 from src.stats import summarize_bits_full
-from src.utils import fmt_elapsed
+from src.utils import fmt_elapsed, period_dir_name, run_plot_subprocess
 
 
 # Configuration
@@ -45,8 +44,8 @@ PERIODS: list[list[str]] = [
     ["2025-10", "2025-11", "2025-12"],
     ["2026-01", "2026-02", "2026-03"],
     # Half-year
-    ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06"],
-    ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"],
+    # ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06"],
+    # ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"],
     # Full year
     [
         "2025-01",
@@ -64,45 +63,28 @@ PERIODS: list[list[str]] = [
     ],
 ]
 
-K_START = 250
-K_STOP = 5000
-K_STEP = 250
-SAMPLING_K_VALUES: list[int] = [50, 100] + list(range(K_START, K_STOP + 1, K_STEP))
+AGG_START = 50
+AGG_STOP = 2000
+AGG_STEP = 25
+AGG_LEVELS: list[int] = list(range(AGG_START, AGG_STOP + 1, AGG_STEP))
 
 MAX_ROWS: int | None = None
 MIN_BIT_COUNT = 2000
 ALPHA = 0.01
 PASS_RATE_THRESHOLD = 0.80
-HISTORY_LENGTH = 1
+VALID_OFFSET_RATIO_THRESHOLD = (
+    0.80  # min fraction of offsets that must have >= MIN_BIT_COUNT bits
+)
+
 SAVE_BITSTREAMS = False
+SAVE_OFFSET_STATS = (
+    False  # per-(asset, ell, offset) raw stats CSV (~200MB); off by default
+)
+
 MAX_WORKERS = 3
 
 INPUT_ROOT = Path("data/raw/binance/spot/aggTrades")
-OUTPUT_ROOT = Path("data/processed/experiment2/all-offset-optimized")
-
-
-# Directory naming
-
-
-def _period_dir_name(months: list[str]) -> str:
-    """
-    Auto-generate a directory name from a list of 'YYYY-MM' strings.
-
-    Examples:
-        ["2025-01","2025-02","2025-03"]  → full-2025.01-03
-        ["2025-07",..."2025-12"]         → full-2025.07-12
-        ["2025-01",..."2025-12"]         → full-2025-12month
-    """
-    parsed = sorted((int(m[:4]), int(m[5:])) for m in months)
-    first_year, first_month = parsed[0]
-    last_year, last_month = parsed[-1]
-    n = len(parsed)
-
-    if n == 12 and first_year == last_year:
-        return f"full-12month-{first_year}"
-    if n == 1:
-        return f"full-1month-{first_year}.{first_month:02d}"
-    return f"full-{n}month-{first_year}.{first_month:02d}-{last_month:02d}"
+OUTPUT_ROOT = Path("data/processed/experiment2/all-offset")
 
 
 # Per-asset processing
@@ -110,7 +92,7 @@ def _period_dir_name(months: list[str]) -> str:
 
 def _build_combined_row(
     asset: str,
-    sampling_k: int,
+    agg_level: int,
     offset: int,
     combined_bits: np.ndarray,
     combined_duration_seconds: float,
@@ -130,7 +112,7 @@ def _build_combined_row(
         "end_time": "",
         "duration_seconds": combined_duration_seconds,
         "preview_duplicate_timestamps": float("nan"),
-        "sampling_k": sampling_k,
+        "agg_level": agg_level,
         "offset": offset,
         "input_rows": float("nan"),
         "sampled_rows": float("nan"),
@@ -143,7 +125,6 @@ def _build_combined_row(
     }
     row = summarize_bits_full(
         bits=combined_bits,
-        history_length=HISTORY_LENGTH,
         metadata=metadata,
     )
     row["bits_per_second"] = bits_per_second
@@ -170,20 +151,20 @@ def process_asset(
 
     rows: list[dict[str, object]] = []
 
-    for sampling_k in sorted(set(SAMPLING_K_VALUES)):
-        print(f"[processing] asset={asset}  k={sampling_k}")
+    for agg_level in sorted(set(AGG_LEVELS)):
+        print(f"[processing] asset={asset}  ell={agg_level}")
 
         combined_bits_by_offset: dict[int, list[np.ndarray]] = {
-            offset: [] for offset in range(sampling_k)
+            offset: [] for offset in range(agg_level)
         }
         combined_duration_seconds = 0.0
 
         for prepared in prepared_months:
             combined_duration_seconds += prepared.context.duration_seconds
-            for bitstream in build_all_offset_bitstreams(prepared, sampling_k):
+            for bitstream in build_all_offset_bitstreams(prepared, agg_level):
                 combined_bits_by_offset[bitstream.offset].append(bitstream.bits)
 
-        for offset in range(sampling_k):
+        for offset in range(agg_level):
             chunks = combined_bits_by_offset[offset]
             if not chunks:
                 continue
@@ -191,7 +172,7 @@ def process_asset(
             rows.append(
                 _build_combined_row(
                     asset=asset,
-                    sampling_k=sampling_k,
+                    agg_level=agg_level,
                     offset=offset,
                     combined_bits=combined_bits,
                     combined_duration_seconds=combined_duration_seconds,
@@ -202,9 +183,9 @@ def process_asset(
                 bitstream_path = (
                     output_dir
                     / "bitstreams"
-                    / f"k_{sampling_k}"
+                    / f"agg_{agg_level}"
                     / asset
-                    / f"{asset}_combined_offset{offset}_k{sampling_k}.csv"
+                    / f"{asset}_combined_offset{offset}_agg{agg_level}.csv"
                 )
                 save_bitstream(combined_bits, bitstream_path)
 
@@ -220,9 +201,9 @@ def _summarize_acceptance(
     selection_rows: list[dict[str, object]] = []
     selected_rows: list[dict[str, object]] = []
 
-    grouped = combined_df.groupby(["asset", "sampling_k"], sort=True)
+    grouped = combined_df.groupby(["asset", "agg_level"], sort=True)
     for key, group in grouped:
-        asset, sampling_k = cast(tuple[str, int], key)
+        asset, agg_level = cast(tuple[str, int], key)
         valid = group[group["bit_count"] >= MIN_BIT_COUNT].copy()
         valid_offset_count = int(len(valid))
         total_offset_count = int(len(group))
@@ -231,7 +212,7 @@ def _summarize_acceptance(
             selection_rows.append(
                 {
                     "asset": asset,
-                    "sampling_k": sampling_k,
+                    "agg_level": agg_level,
                     "total_offset_count": total_offset_count,
                     "valid_offset_count": 0,
                     "valid_offset_ratio": 0.0,
@@ -239,6 +220,7 @@ def _summarize_acceptance(
                     "monobit_pass_rate": float("nan"),
                     "runs_pass_rate": float("nan"),
                     "approximate_entropy_pass_rate": float("nan"),
+                    "shannon_bias_pass_rate": float("nan"),
                     "avg_bits_per_second": float("nan"),
                     "min_bit_count_required": MIN_BIT_COUNT,
                     "alpha": ALPHA,
@@ -256,9 +238,12 @@ def _summarize_acceptance(
         approximate_entropy_pass_rate = float(
             (valid["approximate_entropy_pvalue"] >= ALPHA).mean()
         )
+        shannon_bias_pass_rate = float((valid["shannon_bias_pvalue"] >= ALPHA).mean())
         avg_bits_per_second = float(valid["bits_per_second"].mean())
+        valid_offset_ratio = valid_offset_count / total_offset_count
         is_acceptable = bool(
-            predictability_pass_rate >= PASS_RATE_THRESHOLD
+            valid_offset_ratio >= VALID_OFFSET_RATIO_THRESHOLD
+            and predictability_pass_rate >= PASS_RATE_THRESHOLD
             and monobit_pass_rate >= PASS_RATE_THRESHOLD
             and runs_pass_rate >= PASS_RATE_THRESHOLD
         )
@@ -266,14 +251,15 @@ def _summarize_acceptance(
         selection_rows.append(
             {
                 "asset": asset,
-                "sampling_k": sampling_k,
+                "agg_level": agg_level,
                 "total_offset_count": total_offset_count,
                 "valid_offset_count": valid_offset_count,
-                "valid_offset_ratio": valid_offset_count / total_offset_count,
+                "valid_offset_ratio": valid_offset_ratio,
                 "predictability_pass_rate": predictability_pass_rate,
                 "monobit_pass_rate": monobit_pass_rate,
                 "runs_pass_rate": runs_pass_rate,
                 "approximate_entropy_pass_rate": approximate_entropy_pass_rate,
+                "shannon_bias_pass_rate": shannon_bias_pass_rate,
                 "avg_bits_per_second": avg_bits_per_second,
                 "min_bit_count_required": MIN_BIT_COUNT,
                 "alpha": ALPHA,
@@ -282,16 +268,16 @@ def _summarize_acceptance(
             }
         )
 
-    selection_df = pd.DataFrame(selection_rows).sort_values(["asset", "sampling_k"])
+    selection_df = pd.DataFrame(selection_rows).sort_values(["asset", "agg_level"])
 
     for asset, group in selection_df.groupby("asset", sort=True):
-        acceptable = group[group["is_acceptable"]].sort_values("sampling_k")
+        acceptable = group[group["is_acceptable"]].sort_values("agg_level")
         if acceptable.empty:
             selected_rows.append(
                 {
                     "asset": asset,
-                    "selected_k": float("nan"),
-                    "selection_status": "no_acceptable_k",
+                    "selected_agg_level": float("nan"),
+                    "selection_status": "no_acceptable_ell",
                 }
             )
             continue
@@ -299,8 +285,8 @@ def _summarize_acceptance(
         selected_rows.append(
             {
                 "asset": asset,
-                "selected_k": int(chosen["sampling_k"]),
-                "selection_status": "selected_smallest_acceptable_k",
+                "selected_agg_level": int(chosen["agg_level"]),
+                "selection_status": "selected_smallest_acceptable_ell",
                 "predictability_pass_rate": chosen["predictability_pass_rate"],
                 "monobit_pass_rate": chosen["monobit_pass_rate"],
                 "runs_pass_rate": chosen["runs_pass_rate"],
@@ -325,9 +311,10 @@ def _save_asset_outputs(
         asset_dir = output_dir / "by_asset" / asset
         asset_dir.mkdir(parents=True, exist_ok=True)
 
-        combined_df[combined_df["asset"] == asset].to_csv(
-            asset_dir / f"{asset}_summary_exp2_offset_stats.csv", index=False
-        )
+        if SAVE_OFFSET_STATS:
+            combined_df[combined_df["asset"] == asset].to_csv(
+                asset_dir / f"{asset}_summary_exp2_offset_stats.csv", index=False
+            )
         selection_df[selection_df["asset"] == asset].to_csv(
             asset_dir / f"{asset}_summary_exp2_k_acceptance.csv", index=False
         )
@@ -339,7 +326,10 @@ def _save_asset_outputs(
 
 def _merge_all_assets(output_dir: Path) -> None:
     by_asset_dir = output_dir / "by_asset"
-    for suffix in ["offset_stats", "k_acceptance", "selected_k"]:
+    suffixes = ["k_acceptance", "selected_k"]
+    if SAVE_OFFSET_STATS:
+        suffixes = ["offset_stats", *suffixes]
+    for suffix in suffixes:
         frames = []
         for asset in sorted(ASSETS):
             candidate = by_asset_dir / asset / f"{asset}_summary_exp2_{suffix}.csv"
@@ -355,19 +345,6 @@ def _merge_all_assets(output_dir: Path) -> None:
         print(f"[merge] {out_path}")
 
 
-def _run_plot(project_root: Path, output_dir: Path) -> None:
-    cmd = [
-        str(project_root / ".venv" / "bin" / "python"),
-        "scripts/plot_exp2_all_offsets_optimized.py",
-        "--summary-dir",
-        str(output_dir),
-    ]
-    print(f"[plot] {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=project_root, check=False)
-    if result.returncode != 0:
-        print(f"[warn] plot script exited with code {result.returncode}")
-
-
 # Main
 
 
@@ -378,7 +355,7 @@ def main() -> None:
     total_start = time.perf_counter()
 
     for months in PERIODS:
-        period_name = _period_dir_name(months)
+        period_name = period_dir_name(months)
         output_dir = project_root / OUTPUT_ROOT / period_name
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -410,13 +387,17 @@ def main() -> None:
             continue
 
         combined_df = pd.DataFrame(all_rows).sort_values(
-            ["asset", "sampling_k", "offset"]
+            ["asset", "agg_level", "offset"]
         )
         selection_df, selected_df = _summarize_acceptance(combined_df)
 
         _save_asset_outputs(output_dir, combined_df, selection_df, selected_df)
         _merge_all_assets(output_dir)
-        _run_plot(project_root, output_dir)
+        run_plot_subprocess(
+            project_root,
+            "scripts/plot_exp2_all_offsets_optimized.py",
+            output_dir,
+        )
 
         period_elapsed = time.perf_counter() - period_start
         print(f"[time] {period_name}: {fmt_elapsed(period_elapsed)}")
