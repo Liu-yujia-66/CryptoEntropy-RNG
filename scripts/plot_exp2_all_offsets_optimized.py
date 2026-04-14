@@ -52,11 +52,15 @@ DEFAULT_FULL_DIRNAME = "full-3month-2026.01-03"
 PASS_RATE_THRESHOLD = 0.80
 
 # (csv_column, display_label, counted_in_is_acceptable)
+# Runs and D(k=2) are reference-only: Runs is known to systematically reject
+# due to 1st-order bid-ask-bounce structure (Paper §4.4 SNAP/F/CCL analog),
+# and D(k=2) is the Paper §4.4 diagnostic for the same phenomenon.
 TESTS = [
-    ("predictability_pass_rate", "Predictability", True),
+    ("predictability_pass_rate", "Predictability (adaptive k)", True),
+    ("predictability_k2_pass_rate", "Predictability (k=2)", False),
     ("shannon_bias_pass_rate", "Shannon Bias", False),
     ("monobit_pass_rate", "Monobit", True),
-    ("runs_pass_rate", "Runs", True),
+    ("runs_pass_rate", "Runs", False),
     ("approximate_entropy_pass_rate", "Approx. Entropy (m=5)", False),
 ]
 ACCEPTANCE_COLS = [col for col, _, ok in TESTS if ok]
@@ -64,6 +68,7 @@ ACCEPTANCE_COLS = [col for col, _, ok in TESTS if ok]
 # Colors for individual tests inside per-asset panels
 TEST_COLORS = {
     "predictability_pass_rate": "#1f77b4",
+    "predictability_k2_pass_rate": "#17becf",
     "shannon_bias_pass_rate": "#9467bd",
     "monobit_pass_rate": "#ff7f0e",
     "runs_pass_rate": "#2ca02c",
@@ -73,6 +78,7 @@ TEST_COLORS = {
 # Short names for the binding-test annotation in the summary chart
 _BINDING_SHORT = {
     "predictability_pass_rate": "Pred.",
+    "predictability_k2_pass_rate": "D(k=2)",
     "shannon_bias_pass_rate": "Shan.",
     "monobit_pass_rate": "Mono.",
     "runs_pass_rate": "Runs",
@@ -165,6 +171,16 @@ def _present_assets(df: pd.DataFrame) -> list[str]:
     return [a for a in ASSET_ORDER if a in df["asset"].values]
 
 
+def _period_label(summary_dir: Path) -> str:
+    """Derive a human-readable period tag from the summary directory name."""
+    name = summary_dir.name
+    if name.startswith("full-12month-"):
+        return f"{name.removeprefix('full-12month-')} (12 months)"
+    if name.startswith("full-3month-"):
+        return f"{name.removeprefix('full-3month-')} (3 months)"
+    return name
+
+
 def _selected_ell(selected_df: pd.DataFrame, asset: str) -> int | None:
     row = selected_df[selected_df["asset"] == asset]
     if row.empty:
@@ -182,6 +198,7 @@ def plot_pass_rate_curves(
     acceptance_df: pd.DataFrame,
     selected_df: pd.DataFrame,
     output_dir: Path,
+    period_label: str = "",
 ) -> None:
     """
     2×2 grid of pass-rate-vs-ℓ curves, one panel per statistical test.
@@ -199,7 +216,8 @@ def plot_pass_rate_curves(
         n_rows, n_cols, figsize=(12, 4 * n_rows), sharex=True, sharey=True
     )
     fig.suptitle(
-        r"Offset Pass Rate vs Aggregation Level $\ell$",
+        r"Offset Pass Rate vs Aggregation Level $\ell$"
+        + (f"\nPeriod: {period_label}" if period_label else ""),
         fontsize=13,
     )
 
@@ -281,6 +299,7 @@ def plot_asset_panels(
     acceptance_df: pd.DataFrame,
     selected_df: pd.DataFrame,
     output_dir: Path,
+    period_label: str = "",
 ) -> None:
     """
     One panel per asset (3-row × 2-col layout).
@@ -297,7 +316,8 @@ def plot_asset_panels(
     fig, axes = plt.subplots(nrows, ncols, figsize=(13, 4.5 * nrows))
     axes_flat = np.atleast_1d(axes).ravel()
     fig.suptitle(
-        r"Per-Asset Acceptance Curves and Throughput vs $\ell$",
+        r"Per-Asset Acceptance Curves and Throughput vs $\ell$"
+        + (f"\nPeriod: {period_label}" if period_label else ""),
         fontsize=13,
     )
 
@@ -379,6 +399,7 @@ def plot_tradeoff(
     acceptance_df: pd.DataFrame,
     selected_df: pd.DataFrame,
     output_dir: Path,
+    period_label: str = "",
 ) -> None:
     """
     Parametric trade-off: bottleneck pass rate vs avg bits/s (log x-axis).
@@ -388,7 +409,7 @@ def plot_tradeoff(
     rightmost point on the trajectory that first crosses the acceptance
     threshold, i.e. the cheapest ℓ that achieves acceptable randomness.
 
-    Bottleneck pass rate = min(Predictability, Monobit, Runs) — the test
+    Bottleneck pass rate = min(Predictability, Monobit) — the test
     that is hardest to satisfy at each ℓ.
     """
     assets = _present_assets(acceptance_df)
@@ -398,7 +419,8 @@ def plot_tradeoff(
     fig.suptitle(
         r"Randomness–Throughput Trade-off"
         "\n"
-        r"(trajectory: $\ell$ increases from right $\rightarrow$ left)",
+        r"(trajectory: $\ell$ increases from right $\rightarrow$ left)"
+        + (f"\nPeriod: {period_label}" if period_label else ""),
         fontsize=12,
     )
 
@@ -465,7 +487,7 @@ def plot_tradeoff(
     ax.set_xscale("log")
     ax.set_xlabel("Average Bits per Second  (log scale)", fontsize=10)
     ax.set_ylabel(
-        "Bottleneck Pass Rate\n(min of Predictability, Monobit, Runs)",
+        "Bottleneck Pass Rate\n(min of Predictability, Monobit)",
         fontsize=9,
     )
     ax.set_ylim(-0.02, 1.05)
@@ -485,6 +507,7 @@ def plot_selection_summary(
     acceptance_df: pd.DataFrame,
     selected_df: pd.DataFrame,
     output_dir: Path,
+    period_label: str = "",
 ) -> None:
     """
     Horizontal lollipop chart: selected ℓ (left panel) and corresponding
@@ -507,7 +530,8 @@ def plot_selection_summary(
         gridspec_kw={"width_ratios": [1.3, 1]},
     )
     fig.suptitle(
-        r"Experiment 2: Selected $\ell$ and Bit Rate per Asset",
+        r"Experiment 2: Selected $\ell$ and Bit Rate per Asset"
+        + (f"\nPeriod: {period_label}" if period_label else ""),
         fontsize=13,
     )
 
@@ -616,10 +640,11 @@ def main() -> None:
     )
     selected_df = _normalize_selected_df(load_summary_csv(summary_dir, "selected_k"))
 
-    plot_pass_rate_curves(acceptance_df, selected_df, output_dir)
-    plot_asset_panels(acceptance_df, selected_df, output_dir)
-    plot_tradeoff(acceptance_df, selected_df, output_dir)
-    plot_selection_summary(acceptance_df, selected_df, output_dir)
+    period_label = _period_label(summary_dir)
+    plot_pass_rate_curves(acceptance_df, selected_df, output_dir, period_label)
+    plot_asset_panels(acceptance_df, selected_df, output_dir, period_label)
+    plot_tradeoff(acceptance_df, selected_df, output_dir, period_label)
+    plot_selection_summary(acceptance_df, selected_df, output_dir, period_label)
 
 
 if __name__ == "__main__":

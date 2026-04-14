@@ -41,7 +41,8 @@ ALPHA = 0.01
 THRESHOLD = -np.log10(ALPHA)  # 2.0
 
 TESTS = [
-    ("predictability_pvalue", "Predictability"),
+    ("predictability_pvalue", "Predictability (adaptive k)"),
+    ("predictability_k2_pvalue", "Predictability (k=2)"),
     ("shannon_bias_pvalue", "Shannon Bias"),
     ("monobit_pvalue", "Monobit"),
     ("runs_pvalue", "Runs"),
