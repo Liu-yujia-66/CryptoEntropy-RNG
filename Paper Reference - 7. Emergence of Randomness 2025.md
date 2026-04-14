@@ -171,7 +171,9 @@ Paper 对每个 (asset, month, test) 画箱形图：x 轴 ℓ，y 轴每个 offs
 
 AAPL（6 trades/s）和 TSLA（8 trades/s）即使在 ℓ=100 时许多检验仍失败；低频资产 CCL（0.6 trades/s）和 LLY（0.5 trades/s）容易收敛。
 
-**对应到你的数据**：BTCUSDT 是最高频资产，这直接解释了你为什么 BTC 需要 ℓ >> 2000 才能通过 Runs/ApproxEntropy。**这是论文里已确立的 stylized fact，你可以直接引用解释 BTC 的行为。**
+**对应到你的数据**：BTCUSDT 是最高频资产，在 Exp2 all-offset 结果中是唯一跨全部 6 个 period 都拿不到 `selected_ℓ` 的资产（`predictability_pass_rate` 峰值 ≤ 0.80）。**这是论文里已确立的 stylized fact，写 thesis 时 BTC 单独作为 high-frequency outlier 讨论即可，不需要把 ℓ 上界推到 2000 以外。**
+
+另需留意：原 gate 下 Runs / ApproxEntropy 也会把 BTC 卡死，但那是结构性 1 阶依赖的副产物（见 Exp2 Limitations.md 的"acceptance gate 修订"一节 + Paper 本身 §4.4 对 SNAP/F/CCL 的同类分析）；本项目已把 Runs 降为 reference，acceptance 以 Pred + Monobit 为准。
 
 ### 3.3 非单调 Predictability 曲线（Case 3）
 

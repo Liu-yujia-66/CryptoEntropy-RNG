@@ -134,7 +134,34 @@ QQ-plot 三个设置：
 - 11-08: 召回 4 万辆车
 → **新闻事件 → 高频可预测性** 的经验证据。
 
-### 5.4 日内局部化（Table 8）
+### 5.4 Pairs of signs: 显式 k=2 诊断（§4.4, Table 4）
+
+在 adaptive-$k$ 主分析之外，Paper 为 **SNAP / F / CCL** 三个资产**额外单独跑了一次 $k=2$ 的 $D$ 检验**，目的是"直接检验当前价格方向是否依赖上一次价格方向"（一阶条件独立）：
+
+> "We set the user-defined parameter $k$ to be equal to 2. [...] the sum of two probabilities is less than 0.5 for predictable days. That is, the probability of **changing price direction is significantly high** for predictable days."
+
+关键发现（Paper Table 4）：
+
+| Stock | N. predictable days | $\hat p(00)+\hat p(11)$ predictable | $\hat p(00)+\hat p(11)$ unpredictable | p-value |
+|---|---|---|---|---|
+| SNAP | 36 | 0.469 | 0.501 | 0.0014 |
+| F | 25 | 0.460 | 0.493 | 2.67×10⁻¹⁰ |
+| CCL | 27 | 0.478 | 0.500 | 0.044 |
+
+**意义**：
+- 主分析（adaptive $k\approx 6$-$7$）在这三个低价/低频股上**检测力不够**（无法识别出重复模式），所以作者降到 $k=2$ 做专门诊断
+- $k=2$ 直接暴露出 "符号反转过强" 的 **bid-ask bounce** 机理
+- Paper 明说："As the number of symbols used to test dependence on past history increases, more days exhibit predictability [...] this characteristic [...] **diminishes as $k$ increases to around 5 or 6**"
+- → **自带 "adaptive-k D 对 1 阶效应稀释" 的观察**，和 thesis 在 crypto 数据上看到的 Runs vs adaptive-D 矛盾机理完全一致
+
+**对 thesis 的直接启示**：
+- 如果 thesis 补一个固定 $k=2$ 的 $D$ 检验（history_length=1），有 Paper §4.4 作为方法学背书，**不是 ad-hoc 诊断**
+- 预期：在高 $\ell$ 下 $D_{k=2}$ 的拒绝模式会**和 Runs 一致**（都是一阶依赖检测器，DOF=1）
+- 若 crypto 数据也出现 $\hat p(00)+\hat p(11) < 0.5$，即 Paper 里 SNAP/F/CCL 行为在加密货币上的再现
+
+---
+
+### 5.5 日内局部化（Table 8）
 
 用 Šidák 在日内寻找 $S$ 个等长子区间中的 predictable 子区间：
 - 多数 predictable 日只有 1 个 predictable 子区间（不连续）
@@ -150,6 +177,7 @@ QQ-plot 三个设置：
 |---|---|
 | Shannon entropy bias $B$ (Eq 2) | 未实现（Onofri 2025 仍保留，属 "optional"）|
 | NP/KL $D$ (Eq 3) | ✅ `entropy_predictability_test` |
+| Fixed-$k=2$ "pairs of signs" $D$ (§4.4) | ⚠️ 未实现；拟补 `entropy_predictability_test(bits, history_length=1)`，用于解释 Runs vs adaptive-$D$ 分歧 |
 | $k = \lfloor 0.5 \log_s n \rfloor$ | ✅ thesis 同公式 |
 | ns 同刻合并 | ⚠️ thesis 数据来自 Binance 1s/1min agg，已无 ns 问题；但值得在 Methodology 里注明"ns-level clustering 不适用于本 thesis 的数据源" |
 | Šidák 日内局部化 | thesis 未做；**可作为 future work 或 Exp3 扩展**  |

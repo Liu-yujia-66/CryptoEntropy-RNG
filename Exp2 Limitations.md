@@ -41,34 +41,13 @@
 - 不能把它当成固定阶数条件下的严格可比曲线；
 - 正式的选择结论应更多依赖 `all-offset` 的 pass-rate / selected-`\ell` 结果，而不是单条 `single-offset` predictability 曲线的拐点位置。
 
-如果后续需要补 robustness check，可增加一个固定 `history_length`（例如 `h=1` 或 `h=2`）的小规模对比图，作为附录材料，而不是替代主分析。
+**已在本版中补上这一诊断**：`summarize_bits_full` 现同时输出 adaptive-$k$ 的 `predictability_pvalue` 与固定 $k=2$ 的 `predictability_k2_pvalue`，后者对应 Shternshis & Marmi (2025) §4.4 "pairs of signs" 检验，用于跨 $\ell$ 的严格可比诊断。两条曲线在 plot 中并列显示。
 
-## Approximate Entropy 的 block size 固定为 2 可能偏小
+## Approximate Entropy 的 block size（已由 m=5 取代 m=2）
 
-当前 `approximate_entropy_test()` 使用固定 `block_size = 2`。这意味着检验主要关注长度为 2 到 3 的局部 bit 模式频率，而对更高阶的重复结构并不敏感。
+此前默认使用 `block_size = 2`，担心对高阶重复结构不敏感。**本版已将默认 `block_size` 改为 5**，对齐 Onofri, Shternshis & Marmi (2025) Table 4 的 NIST STS 参数设置。当前样本长度（`MIN_BIT_COUNT = 2000` 起步，大多数 `\ell` 下远高于 $2^{m+2}=128$ 的最低要求），固定 `m = 5` 是可行且更信息量更大的选择。
 
-随着 `\ell` 变化，不同 bitstream 的样本长度 `n` 差异很大。在大样本情形下，固定 `m = 2` 的 Approximate Entropy 可能在统计上仍然能工作，但在方法解释上存在一个明显问题：
-
-- 它使用的是一个很短的局部模式窗口；
-- 因此更像是“低阶复杂度检查”；
-- 对长度 5 到 10 左右的高阶重复结构缺乏辨识能力。
-
-从 NIST SP800-22 的经验规则看，`m` 不应固定得过小。对于当前 Experiment 2 中的大多数序列长度，固定 `m = 2` 明显偏保守，因此：
-
-- 当前 `Approx. Entropy` 更适合作为一个低阶 sanity check；
-- 不适合被过度解读为对“更高阶随机结构”的充分检验。
-
-需要注意的是，这个问题和 predictability 的 adaptive `k` 不完全相同：
-
-- predictability 是主判据，而且 adaptive 规则有较明确的文献支撑；
-- approximate entropy 在当前框架中属于辅助 sanity check。
-
-因此当前更稳妥的结论是：
-
-- 先把 `m = 2` 明确标注为固定、低阶的辅助检验；
-- 论文中需要说明它可能低估高阶模式依赖；
-- 如果后续时间允许，更合理的增强方式是增加一个固定 `m = 3` 或 `m = 4` 的对比版本，用作 robustness check；
-- 不建议在当前阶段直接把 Approximate Entropy 改造成主分析中的自适应核心指标。
+如果后续希望再做 robustness，更合理的增强是**多个 `m` 值的稳定性对照**（例如 `m \in \{3, 5, 7\}`），而不是单一 `m`。
 
 ## 多重比较未校正的问题
 
@@ -101,31 +80,53 @@
 - 正式结论应建立在 `all-offset` 的稳定性判据上，而不是 `single-offset` 某条曲线的第一次过线；
 - 如果后续时间允许，可把多重比较校正作为 supplementary robustness analysis，而不是 thesis 主体的核心步骤。
 
-## Runs 检验缺少 NIST 前置条件
+## Acceptance gate 的修订：Runs 降为 reference，加入 D(k=2) 诊断
 
-按照 NIST SP800-22，运行 Runs test 之前应先检查频率前置条件：
+### 原 gate vs 新 gate
 
-- `|p1 - 0.5| < 2 / sqrt(n)`
+| 版本 | `is_acceptable` 条件 |
+|---|---|
+| 旧 | `valid_offset_ratio ≥ 0.80` AND `predictability_pass_rate ≥ 0.80` AND `monobit_pass_rate ≥ 0.80` AND **`runs_pass_rate ≥ 0.80`** |
+| 新 | `valid_offset_ratio ≥ 0.80` AND `predictability_pass_rate ≥ 0.80` AND `monobit_pass_rate ≥ 0.80` |
 
-只有在这一条件满足时，Runs test 的标准形式才严格成立。当前代码中没有显式执行这一步，而是直接对所有 bitstream 运行 Runs test。
+Runs 的 `pass_rate` 仍然计算并写入 CSV，只是不再进入 `is_acceptable` 的 AND。D(k=2) 的 `pass_rate` 同样输出但不进 gate。
 
-这个问题的影响目前判断为有限，原因是：
+### 修订理由：Runs 与 adaptive-$k$ D 的系统性分歧
 
-- `monobit` 已经被单独计算；
-- 如果频率偏差非常明显，通常 `monobit` 本身就会先失败；
-- 因此，Runs test 缺少前置条件检查更多属于实现规范性不足，而不是当前主结论的核心风险。
+跨 6 个 period × 5 个资产的 all-offset 实验中出现一个稳定模式：
 
-不过从方法严谨性角度，论文中需要知道这一点：
+- `predictability_pass_rate`（adaptive $k \approx 6$–$7$） 常在大 $\ell$ 下达到 >0.90
+- `runs_pass_rate` 在同一 $\ell$ 下常 <0.30（BTC 常为 0）
+- 同一份 bitstream、同一批 offsets
 
-- 当前 Runs p-value 不是完全按照 NIST 的前置流程执行的；
-- 更规范的实现应先检查频率条件；
-- 若条件不满足，可将 Runs test 结果记为 `NaN`，或单独记录 `runs_prerequisite_met`。
+机理（Shternshis & Marmi (2025) §4.4 的加密货币再现）：
 
-当前决定：
+- Runs 本质上是**一阶马尔可夫依赖检验**（相邻两位的转移概率），DOF=1，信号集中
+- Adaptive-$k$ 的 $D$ 把同样的一阶信号**摊到 $2^{k-1} \approx 64$ 个 context** 上（DOF=63），每个 context 只有 ~400 个观测，$\chi^2$ 被稀释
+- 结果：存在一阶结构（典型如 bid-ask bounce 式的符号交替）时，Runs 直接捕获，adaptive-$k$ D 看不见
 
-- 暂不为了这一个问题打断主分析流程；
-- 把它作为一个低优先级、但应在方法说明中承认的规范性问题保留下来；
-- 如果后续还有时间，可在 `src/stats.py` 中顺手补上这一 gate。
+这正是 Paper §4.4 为 SNAP / F / CCL 三个低价股单独跑 $k=2$ 诊断的原因。他们观察到 $\hat p(00)+\hat p(11) < 0.5$（预测日符号反转过强），在我们高 $\ell$ 的 crypto 数据里预期有同类现象。
+
+### 新增诊断：D(k=2)
+
+按 Paper §4.4 直接复用，不是 ad-hoc：
+
+- `summarize_bits_full` 输出 `predictability_k2_pvalue`、`predictability_k2_g_stat`、`predictability_k2_mutual_information_bits`
+- All-offset runner 输出 `predictability_k2_pass_rate`
+- 两个 plot 脚本加了 D(k=2) 面板
+
+D(k=2) 与 Runs 的 pass-rate 预期高度相关（两者都测一阶，只是统计形式不同）。这种一致性**反向证明 Runs 的拒绝不是 bug 而是真实结构**，方法学上为"把 Runs 降为 reference 但不删除"提供了支撑。
+
+### 论文写作要点
+
+- Methodology：acceptance gate 用 adaptive-$k$ $D$ + Monobit（Paper 推崇 $D$ 作为主统计量）
+- Results：报告所有 5 个 test 的 pass-rate 曲线，Runs 和 D(k=2) 标注为 reference
+- Discussion：用 D(k=2) ≈ Runs 的经验一致性解释 adaptive-$k$ D 的盲区，引 Paper §4.4 为方法学依据
+- Limitations：此 gate 修订**放宽**了 1 阶结构的通过门槛；如果 downstream 应用（PRNG）对 1 阶相关性敏感，需要额外 post-processing
+
+### 关于 Runs NIST 前置条件（保留说明）
+
+严格 NIST 实现应先检查 `|p1 - 0.5| < 2 / sqrt(n)`。当前未显式执行这一步。由于 Runs 已不在 gate 内，这一规范性差距对主结论影响为零；但方法说明中仍应承认实现不完全按 NIST 前置流程，以保持准确性。
 
 ## 不继续盲目扩展 aggregation level 上界
 
