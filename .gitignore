@@ -14,3 +14,4 @@ data/raw/*
 !data/raw/.gitkeep
 
 data/processed/
+notes/
