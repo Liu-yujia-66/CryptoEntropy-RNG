@@ -28,7 +28,7 @@ pip install -r requirements.txt
 ├── scripts/          # experiment runners and plot scripts
 └── src/              # shared library modules
     ├── data_io.py    # data loading, timestamp detection, PreparedMonthData
-    ├── stats.py      # statistical tests (monobit, runs, approx entropy, predictability)
+    ├── stats.py      # statistical tests (monobit, runs, approx entropy m=5, shannon bias, predictability adaptive-k + k=2)
     └── bitstream.py  # offset-based bitstream construction
 ```
 
