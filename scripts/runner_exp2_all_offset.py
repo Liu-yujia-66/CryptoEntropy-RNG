@@ -12,6 +12,7 @@ Edit the configuration block below, then run:
 """
 
 import sys
+import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -83,7 +84,9 @@ SAVE_OFFSET_STATS = (
 
 MAX_WORKERS = 3
 
-INPUT_ROOT = Path("data/raw/binance/spot/aggTrades")
+INPUT_ROOT = Path(
+    os.getenv("CRYPTOENTROPY_INPUT_ROOT", "data/raw/binance/spot/aggTrades")
+)
 OUTPUT_ROOT = Path("data/processed/experiment2/all-offset")
 
 
@@ -217,6 +220,7 @@ def _summarize_acceptance(
                     "valid_offset_count": 0,
                     "valid_offset_ratio": 0.0,
                     "predictability_pass_rate": float("nan"),
+                    "predictability_k2_pass_rate": float("nan"),
                     "monobit_pass_rate": float("nan"),
                     "runs_pass_rate": float("nan"),
                     "approximate_entropy_pass_rate": float("nan"),
@@ -233,6 +237,11 @@ def _summarize_acceptance(
         predictability_pass_rate = float(
             (valid["predictability_pvalue"] >= ALPHA).mean()
         )
+        # Fixed-k=2 "pairs of signs" diagnostic (Shternshis & Marmi 2025 §4.4);
+        # reported alongside Runs for cross-check but not part of is_acceptable.
+        predictability_k2_pass_rate = float(
+            (valid["predictability_k2_pvalue"] >= ALPHA).mean()
+        )
         monobit_pass_rate = float((valid["monobit_pvalue"] >= ALPHA).mean())
         runs_pass_rate = float((valid["runs_pvalue"] >= ALPHA).mean())
         approximate_entropy_pass_rate = float(
@@ -241,11 +250,16 @@ def _summarize_acceptance(
         shannon_bias_pass_rate = float((valid["shannon_bias_pvalue"] >= ALPHA).mean())
         avg_bits_per_second = float(valid["bits_per_second"].mean())
         valid_offset_ratio = valid_offset_count / total_offset_count
+        # Acceptance gate: adaptive-k D + Monobit only. Runs is demoted to
+        # reference because the adaptive-k D (~6-7) dilutes 1st-order signal
+        # across 2^(k-1) contexts, producing systematic D/Runs disagreement
+        # matching Shternshis & Marmi (2025) §4.4's SNAP/F/CCL bid-ask-bounce
+        # stylized fact. predictability_k2 is the principled 1st-order
+        # diagnostic for post-hoc interpretation.
         is_acceptable = bool(
             valid_offset_ratio >= VALID_OFFSET_RATIO_THRESHOLD
             and predictability_pass_rate >= PASS_RATE_THRESHOLD
             and monobit_pass_rate >= PASS_RATE_THRESHOLD
-            and runs_pass_rate >= PASS_RATE_THRESHOLD
         )
 
         selection_rows.append(
@@ -256,6 +270,7 @@ def _summarize_acceptance(
                 "valid_offset_count": valid_offset_count,
                 "valid_offset_ratio": valid_offset_ratio,
                 "predictability_pass_rate": predictability_pass_rate,
+                "predictability_k2_pass_rate": predictability_k2_pass_rate,
                 "monobit_pass_rate": monobit_pass_rate,
                 "runs_pass_rate": runs_pass_rate,
                 "approximate_entropy_pass_rate": approximate_entropy_pass_rate,
@@ -288,6 +303,7 @@ def _summarize_acceptance(
                 "selected_agg_level": int(chosen["agg_level"]),
                 "selection_status": "selected_smallest_acceptable_ell",
                 "predictability_pass_rate": chosen["predictability_pass_rate"],
+                "predictability_k2_pass_rate": chosen["predictability_k2_pass_rate"],
                 "monobit_pass_rate": chosen["monobit_pass_rate"],
                 "runs_pass_rate": chosen["runs_pass_rate"],
                 "avg_bits_per_second": chosen["avg_bits_per_second"],

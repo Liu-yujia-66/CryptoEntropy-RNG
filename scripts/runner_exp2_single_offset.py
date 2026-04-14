@@ -11,6 +11,7 @@ Edit the configuration block below, then run:
 """
 
 import sys
+import os
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -70,7 +71,9 @@ MIN_BIT_COUNT = 2000
 SAVE_BITSTREAMS = False
 MAX_WORKERS = 3
 
-INPUT_ROOT = Path("data/raw/binance/spot/aggTrades")
+INPUT_ROOT = Path(
+    os.getenv("CRYPTOENTROPY_INPUT_ROOT", "data/raw/binance/spot/aggTrades")
+)
 OUTPUT_ROOT = Path("data/processed/experiment2/single-offset")
 
 

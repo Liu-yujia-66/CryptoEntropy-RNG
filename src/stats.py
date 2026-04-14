@@ -335,6 +335,13 @@ def summarize_bits_full(
     predictability_mi, predictability_g, predictability_p = entropy_predictability_test(
         bits, history_length=history_length
     )
+    
+    # Fixed-k=2 ("pairs of signs") diagnostic per Shternshis & Marmi (2025)
+    # §4.4 / Table 4: directly probes 1st-order conditional dependence on the
+    # previous bit, with DOF=1 matching the Runs test's sensitivity scale.
+    # Used to diagnose cases where the adaptive-k variant dilutes 1st-order
+    # structure across 2^(k-1) contexts.
+    pk2_mi, pk2_g, pk2_p = entropy_predictability_test(bits, history_length=1)
     shannon_bias_b, shannon_bias_h, shannon_bias_p = shannon_bias_test(
         bits, block_length=k
     )
@@ -359,6 +366,9 @@ def summarize_bits_full(
         "predictability_mutual_information_bits": predictability_mi,
         "predictability_g_stat": predictability_g,
         "predictability_pvalue": predictability_p,
+        "predictability_k2_mutual_information_bits": pk2_mi,
+        "predictability_k2_g_stat": pk2_g,
+        "predictability_k2_pvalue": pk2_p,
         "shannon_bias_b": shannon_bias_b,
         "shannon_bias_entropy_nats": shannon_bias_h,
         "shannon_bias_pvalue": shannon_bias_p,
