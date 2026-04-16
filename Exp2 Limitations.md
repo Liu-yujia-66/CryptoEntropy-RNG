@@ -41,11 +41,11 @@
 - 不能把它当成固定阶数条件下的严格可比曲线；
 - 正式的选择结论应更多依赖 `all-offset` 的 pass-rate / selected-`\ell` 结果，而不是单条 `single-offset` predictability 曲线的拐点位置。
 
-**已在本版中补上这一诊断**：`summarize_bits_full` 现同时输出 adaptive-$k$ 的 `predictability_pvalue` 与固定 $k=2$ 的 `predictability_k2_pvalue`，后者对应 Shternshis & Marmi (2025) §4.4 "pairs of signs" 检验，用于跨 $\ell$ 的严格可比诊断。两条曲线在 plot 中并列显示。
+**已在本版中补上这一诊断**：`summarize_bits_full` 现同时输出 adaptive-$k$ 的 `predictability_pvalue` 与固定 $k=2$ 的 `predictability_k2_pvalue`，后者对应 Price predictability 2024 §4.4 "pairs of signs" 检验，用于跨 $\ell$ 的严格可比诊断。两条曲线在 plot 中并列显示。
 
 ## Approximate Entropy 的 block size（已由 m=5 取代 m=2）
 
-此前默认使用 `block_size = 2`，担心对高阶重复结构不敏感。**本版已将默认 `block_size` 改为 5**，对齐 Onofri, Shternshis & Marmi (2025) Table 4 的 NIST STS 参数设置。当前样本长度（`MIN_BIT_COUNT = 2000` 起步，大多数 `\ell` 下远高于 $2^{m+2}=128$ 的最低要求），固定 `m = 5` 是可行且更信息量更大的选择。
+此前默认使用 `block_size = 2`，担心对高阶重复结构不敏感。**本版已将默认 `block_size` 改为 5**，对齐 Emergence of Randomness 2025 Table 4 的 NIST STS 参数设置。当前样本长度（`MIN_BIT_COUNT = 2000` 起步，大多数 `\ell` 下远高于 $2^{m+2}=128$ 的最低要求），固定 `m = 5` 是可行且更信息量更大的选择。
 
 如果后续希望再做 robustness，更合理的增强是**多个 `m` 值的稳定性对照**（例如 `m \in \{3, 5, 7\}`），而不是单一 `m`。
 
@@ -99,7 +99,7 @@ Runs 的 `pass_rate` 仍然计算并写入 CSV，只是不再进入 `is_acceptab
 - `runs_pass_rate` 在同一 $\ell$ 下常 <0.30（BTC 常为 0）
 - 同一份 bitstream、同一批 offsets
 
-机理（Shternshis & Marmi (2025) §4.4 的加密货币再现）：
+机理（Price predictability 2024 §4.4 的加密货币再现）：
 
 - Runs 本质上是**一阶马尔可夫依赖检验**（相邻两位的转移概率），DOF=1，信号集中
 - Adaptive-$k$ 的 $D$ 把同样的一阶信号**摊到 $2^{k-1} \approx 64$ 个 context** 上（DOF=63），每个 context 只有 ~400 个观测，$\chi^2$ 被稀释
@@ -161,3 +161,19 @@ D(k=2) 与 Runs 的 pass-rate 预期高度相关（两者都测一阶，只是�
 - 现在不围绕这个问题重构 Experiment 2 的主分析框架。
 - 先把这点作为论文中的显式解释风险保留下来。
 - 当前优先级仍然是 `all-offset` 的 acceptance logic，以及最终 selected-`\ell` 结果的整理与表达。
+
+## Relaxed all-offset gate（Plan A，启发式补充；已完成）
+
+按导师 Slack（2026-04）建议补充的 relaxed 路径：判据为 `num_pass ≥ max(F, ceil(f × N_valid))`，α=0.01 per offset 不校正。实际跑过 `(F, f) = (3, 0.03)` 与 `(5, 0.05)`，主分析版本是 **per-month (3, 0.03)**，5 asset × 15 月全覆盖（75/75）。**设计理由、评估、下一步、固有局限**详见独立文档：`Exp2 Plan A - Relaxed Gate.md`。
+
+要点：
+
+- 明确是 **heuristic robustness check**，不是正式多重校正（"∃ pass" 在标准理论中无对称校正，任何硬套公式都经不起推敲；Bonferroni/Šidák 实证测试了仍不采纳，方向问题见 Plan A doc §2）
+- strict (80%) 仍为主 gate，relaxed 作 asset coverage 的补充证据
+- PRNG 实用上 offset 必须固定，不能事后挑；selected offset 上 D(k=2)/Runs 通常仍 ≪ α，作为 Price predictability 2024 §4.4 SNAP/F/CCL bid-ask bounce 的 crypto replication 报告
+
+## Time-based aggregation（1-second bars，下一步）
+
+Plan A 只覆盖 transaction-time 轴（trade-count）。Thesis Specification §5 明确要求 "several time scales"，且 Specification §3 把研究问题框在 "statistically independent random sequences"；Transaction-time 下 k=2 / Runs 每个 witness 都 p ≪ α，独立性侧仍有空间。
+
+下一步：复用现有 all-offset + strict/relaxed gate 框架，数据管道改为 `aggTrades → 1-second bars → close price 序列`，先做 BTC 2026.03 pilot。导师 Slack 已确认该计划。
