@@ -27,7 +27,7 @@ import pandas as pd
 from src.bitstream import build_all_offset_bitstreams, save_bitstream
 from src.data_io import filter_month_files, prepare_month_data
 from src.stats import summarize_bits_full
-from src.utils import fmt_elapsed, period_dir_name, run_plot_subprocess
+from src.utils import ASSET_ORDER, fmt_elapsed, period_dir_name, run_plot_subprocess
 
 
 # Configuration
@@ -37,31 +37,46 @@ ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
 
 # Periods to process — each entry is a list of "YYYY-MM" month strings.
 PERIODS: list[list[str]] = [
-    # ["2026-01"],
+    # Monthly
+    ["2025-01"],
+    ["2025-02"],
+    ["2025-03"],
+    ["2025-04"],
+    ["2025-05"],
+    ["2025-06"],
+    ["2025-07"],
+    ["2025-08"],
+    ["2025-09"],
+    ["2025-10"],
+    ["2025-11"],
+    ["2025-12"],
+    ["2026-01"],
+    ["2026-02"],
+    ["2026-03"],
     # Quarterly
-    ["2025-01", "2025-02", "2025-03"],
-    ["2025-04", "2025-05", "2025-06"],
-    ["2025-07", "2025-08", "2025-09"],
-    ["2025-10", "2025-11", "2025-12"],
-    ["2026-01", "2026-02", "2026-03"],
+    # ["2025-01", "2025-02", "2025-03"],
+    # ["2025-04", "2025-05", "2025-06"],
+    # ["2025-07", "2025-08", "2025-09"],
+    # ["2025-10", "2025-11", "2025-12"],
+    # ["2026-01", "2026-02", "2026-03"],
     # Half-year
     # ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06"],
     # ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"],
     # Full year
-    [
-        "2025-01",
-        "2025-02",
-        "2025-03",
-        "2025-04",
-        "2025-05",
-        "2025-06",
-        "2025-07",
-        "2025-08",
-        "2025-09",
-        "2025-10",
-        "2025-11",
-        "2025-12",
-    ],
+    # [
+    #     "2025-01",
+    #     "2025-02",
+    #     "2025-03",
+    #     "2025-04",
+    #     "2025-05",
+    #     "2025-06",
+    #     "2025-07",
+    #     "2025-08",
+    #     "2025-09",
+    #     "2025-10",
+    #     "2025-11",
+    #     "2025-12",
+    # ],
 ]
 
 AGG_START = 50
@@ -73,21 +88,21 @@ MAX_ROWS: int | None = None
 MIN_BIT_COUNT = 2000
 ALPHA = 0.01
 PASS_RATE_THRESHOLD = 0.80
-VALID_OFFSET_RATIO_THRESHOLD = (
-    0.80  # min fraction of offsets that must have >= MIN_BIT_COUNT bits
-)
+VALID_OFFSET_RATIO_THRESHOLD = 0.80
 
 SAVE_BITSTREAMS = False
-SAVE_OFFSET_STATS = (
-    False  # per-(asset, ell, offset) raw stats CSV (~200MB); off by default
-)
+# per-(asset, ell, offset) raw stats CSV (~200MB); off by default
+SAVE_OFFSET_STATS = False
 
 MAX_WORKERS = 3
 
 INPUT_ROOT = Path(
     os.getenv("CRYPTOENTROPY_INPUT_ROOT", "data/raw/binance/spot/aggTrades")
 )
-OUTPUT_ROOT = Path("data/processed/experiment2/all-offset")
+# OUTPUT_ROOT = Path("data/processed/experiment2/all-offset")
+OUTPUT_ROOT = Path(
+    f"data/processed/experiment2/all-offset-per-month({AGG_START},{AGG_STOP},{AGG_STEP})"
+)
 
 
 # Per-asset processing
@@ -361,6 +376,92 @@ def _merge_all_assets(output_dir: Path) -> None:
         print(f"[merge] {out_path}")
 
 
+# Cross-period summary txt
+
+
+def _write_selected_ell_summary_txt(
+    summary_root: Path,
+    period_selected_frames: list[tuple[list[str], pd.DataFrame]],
+) -> None:
+    if not period_selected_frames:
+        return
+
+    display_names = {
+        "BNBUSDT": "BNB",
+        "BTCUSDT": "BTC",
+        "DOGEUSDT": "DOGE",
+        "ETHUSDT": "ETH",
+        "SOLUSDT": "SOL",
+    }
+    header_assets = [asset for asset in ASSET_ORDER if asset in display_names]
+    rows: list[tuple[str, list[str]]] = []
+
+    for months, selected_df in period_selected_frames:
+        parsed = sorted((int(m[:4]), int(m[5:])) for m in months)
+        first_year, first_month = parsed[0]
+        last_year, last_month = parsed[-1]
+        if len(parsed) == 12 and first_year == last_year:
+            period_label = f"{first_year}"
+        elif len(parsed) == 1:
+            period_label = f"{first_year}.{first_month:02d}"
+        else:
+            period_label = f"{first_year}.{first_month:02d}-{last_month:02d}"
+
+        selected_map = selected_df.set_index("asset")["selected_agg_level"].to_dict()
+        values: list[str] = []
+        for asset in header_assets:
+            value = selected_map.get(asset)
+            values.append("-" if pd.isna(value) else str(int(value)))
+        rows.append((period_label, values))
+
+    window_width = max(len("Window"), max(len(label) for label, _ in rows))
+    asset_widths = []
+    for i, asset in enumerate(header_assets):
+        width = max(
+            len(display_names[asset]), max(len(values[i]) for _, values in rows)
+        )
+        asset_widths.append(width)
+
+    column_widths = [window_width, *asset_widths]
+    header = " | ".join(
+        [f"{'Window':<{window_width}}"]
+        + [
+            f"{display_names[asset]:<{asset_widths[i]}}"
+            for i, asset in enumerate(header_assets)
+        ]
+    )
+    separator = "-+-".join("-" * width for width in column_widths)
+    body = [
+        " | ".join(
+            [f"{label:<{window_width}}"]
+            + [f"{values[i]:<{asset_widths[i]}}" for i in range(len(header_assets))]
+        )
+        for label, values in rows
+    ]
+
+    output_path = summary_root / "selected_ell_by_window.txt"
+    text = "\n".join(
+        [
+            "Strict gate (80% pass-rate). Selected ell per window:",
+            "",
+            f"PASS_RATE_THRESHOLD = {PASS_RATE_THRESHOLD}",
+            f"VALID_OFFSET_RATIO_THRESHOLD = {VALID_OFFSET_RATIO_THRESHOLD}",
+            f"ALPHA = {ALPHA}",
+            "",
+            f"AGG_START = {AGG_START}",
+            f"AGG_STOP = {AGG_STOP}",
+            f"AGG_STEP = {AGG_STEP}",
+            "",
+            header,
+            separator,
+            *body,
+            "",
+        ]
+    )
+    output_path.write_text(text, encoding="utf-8")
+    print(f"[saved] {output_path}")
+
+
 # Main
 
 
@@ -369,10 +470,13 @@ def main() -> None:
 
     project_root = Path(__file__).resolve().parent.parent
     total_start = time.perf_counter()
+    summary_root = project_root / OUTPUT_ROOT
+    summary_root.mkdir(parents=True, exist_ok=True)
+    period_selected_frames: list[tuple[list[str], pd.DataFrame]] = []
 
     for months in PERIODS:
         period_name = period_dir_name(months)
-        output_dir = project_root / OUTPUT_ROOT / period_name
+        output_dir = summary_root / period_name
         output_dir.mkdir(parents=True, exist_ok=True)
 
         print(f"\n{'='*60}")
@@ -409,6 +513,7 @@ def main() -> None:
 
         _save_asset_outputs(output_dir, combined_df, selection_df, selected_df)
         _merge_all_assets(output_dir)
+        period_selected_frames.append((months, selected_df.copy()))
         run_plot_subprocess(
             project_root,
             "scripts/plot_exp2_all_offsets_optimized.py",
@@ -420,6 +525,8 @@ def main() -> None:
 
         if failures:
             print(f"[warn] {len(failures)} asset(s) failed: {failures}")
+
+    _write_selected_ell_summary_txt(summary_root, period_selected_frames)
 
     total_elapsed = time.perf_counter() - total_start
     print(f"\n[done] all periods complete  total: {fmt_elapsed(total_elapsed)}")
