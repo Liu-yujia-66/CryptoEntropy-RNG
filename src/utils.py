@@ -40,10 +40,10 @@ def period_dir_name(months: list[str]) -> str:
     Auto-generate a directory name from a list of 'YYYY-MM' strings.
 
     Examples:
-        ["2025-01","2025-02","2025-03"]   → full-3month-2025.01-03
-        ["2025-07",..."2025-12"]          → full-6month-2025.07-12
-        ["2025-01",..."2025-12"]          → full-12month-2025
-        ["2025-04"]                       → full-1month-2025.04
+        ["2025-01","2025-02","2025-03"]   → 3month-2025.01-03
+        ["2025-07",..."2025-12"]          → 6month-2025.07-12
+        ["2025-01",..."2025-12"]          → 12month-2025
+        ["2025-04"]                       → 1month-2025.04
     """
     parsed = sorted((int(m[:4]), int(m[5:])) for m in months)
     first_year, first_month = parsed[0]
@@ -51,10 +51,10 @@ def period_dir_name(months: list[str]) -> str:
     n = len(parsed)
 
     if n == 12 and first_year == _last_year:
-        return f"full-12month-{first_year}"
+        return f"12month-{first_year}"
     if n == 1:
-        return f"full-1month-{first_year}.{first_month:02d}"
-    return f"full-{n}month-{first_year}.{first_month:02d}-{last_month:02d}"
+        return f"1month-{first_year}.{first_month:02d}"
+    return f"{n}month-{first_year}.{first_month:02d}-{last_month:02d}"
 
 
 def run_plot_subprocess(
