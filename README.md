@@ -42,26 +42,47 @@ python scripts/exp1_baseline.py
 
 ### Experiment 2 — Temporal Aggregation
 
-**All-offset analysis** (sweeps all k offsets, selects optimal k per asset):
+Experiment 2 has four runner variants that share the same pipeline shape
+(raw aggTrades → per-asset summary CSV → plots). They differ in the aggregation
+axis (transaction-time vs 1-second bars) and in the acceptance gate.
 
-```bash
-python scripts/runner_exp2_all_offset.py
-```
-
-**Single-offset analysis** (offset=0, generates -log(p-value) vs k curves):
+**Single-offset analysis** (offset=0, generates -log(p-value) vs ℓ curves; diagnostic):
 
 ```bash
 python scripts/runner_exp2_single_offset.py
-```
-
-**Plotting** (called automatically by runners, or run standalone):
-
-```bash
-python scripts/plot_exp2_all_offsets_optimized.py --summary-dir <path>
 python scripts/plot_exp2_single_offset.py --summary-dir <path>
 ```
 
-Edit the configuration block at the top of each runner to set assets, periods, and k values.
+**All-offset, strict gate** (≥80% of offsets must pass predictability + monobit):
+
+```bash
+python scripts/runner_exp2_all_offset.py
+python scripts/plot_exp2_all_offsets_optimized.py --summary-dir <path>
+```
+
+**All-offset, relaxed gate** (Plan A heuristic: ≥max(3, ⌈0.03·N⌉) offsets pass, α=0.01 per offset):
+
+```bash
+python scripts/runner_exp2_all_offset_relaxed.py
+```
+
+**Time-based (1-second bars)**:
+
+```bash
+python scripts/runner_exp2_all_offset_1sbars.py
+python scripts/plot_exp2_all_offset_1sbars.py --summary-dir <path>
+```
+
+After the 1sbars runner produces per-month k_acceptance CSVs, pick the
+smallest acceptable ℓ under three gates (base, +runs, +runs+apen):
+
+```bash
+python scripts/select_ell_exp2_1sbars.py --summary-dir <root>
+```
+
+Edit the configuration block at the top of each runner to set assets,
+periods, and ℓ ranges. See `Exp2 Limitations.md` for the gate taxonomy and
+`Exp2 Plan A - Relaxed Gate.md` for the relaxed-gate design.
 
 ## Data
 

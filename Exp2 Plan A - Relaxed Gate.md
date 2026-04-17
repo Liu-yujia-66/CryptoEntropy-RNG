@@ -104,7 +104,7 @@ witness 在 k=2 和 Runs 上一致被拒,最"好"一行(DOGE 2025.10)p ≈ 3.4e-
 
 因此 witness k=2 / Runs 爆表的正确定位是:**在 crypto 上复现了 Price predictability 2024 的 SNAP/F/CCL bid-ask bounce 模式**。是一个被 Reference 背书的 positive finding,**不是 Plan A(或 strict)的失败**。
 
-Strict gate 下的 k=2 / Runs pass-rate 本就贴 0,说明这是源数据属性,与 gate 的松紧无关。
+Strict gate 下的 k=2 / Runs pass-rate 本就贴 0,说明这是 transaction-time 聚合轴的属性,与 gate 的松紧无关。**注**:后续 1-second bar 分析(见 [Exp2 Plan B](Exp2%20Plan%20B%20-%20Time-Based%20Aggregation.md) §5)显示同样两个检验在物理时间轴上 62/75 窗口能达到 pass-rate ≥ 0.80——所以这条 1 阶依赖不是**源数据**的不可破坏属性,而是 transaction-time **聚合轴**的属性。
 
 ### 5.3 bits/s 对比
 
@@ -155,12 +155,12 @@ Paper 使用范围:**a = 1…50**(Price predictability 2024),**ℓ = 1…100**(E
 ## 6. 固有风险(要进 Limitations)
 
 1. **Offset 必须方法学上固定**。PRNG 不可"use the best offset post-hoc",必须按 deterministic rule 指定(例如 offset=0)。Selected offset 只是诊断,不是 PRNG spec。
-2. **D(k=2) / Runs 残留 1 阶结构**。见 §5.2,定位为复现 Price predictability 2024 §4.4 的 bid-ask bounce stylized fact。意味着下游若想做 post-processing-free 的 PRNG,仍需加 debiasing(von Neumann 等);但这超出两篇 Reference 的方法论范围,Reference 自己的 Application 章节(Emergence of Randomness 2025 §3.5)也没有声称不需要后处理。
+2. **D(k=2) / Runs 在 transaction-time 下残留 1 阶结构**。见 §5.2,定位为复现 Price predictability 2024 §4.4 的 bid-ask bounce stylized fact。意味着 transaction-time 下若想做 post-processing-free 的 PRNG,仍需加 debiasing(von Neumann 等);这超出两篇 Reference 的方法论范围,Reference 自己的 Application 章节(Emergence of Randomness 2025 §3.5)也没有声称不需要后处理。**注**:1-second bar 轴上该 1 阶依赖被 62/75 窗口打散(见 [Exp2 Plan B](Exp2%20Plan%20B%20-%20Time-Based%20Aggregation.md) §5),所以这条 limitation 只对 transaction-time 轴适用。
 3. **正相关 offset**。all-offset 序列共享底层 tick,正相关会压低 num_pass 的方差 → fraction 门槛的有效"证据量"比理论值低;但这是保守偏差(更难通过),对"防误判"方向 safe。
 4. **跨 ℓ 的 multiple selection 未校正**。与 strict 同病,不是 relaxed 独有。
 5. **月度 ℓ 时间趋势**。Per-month ℓ 在 2025-2026 呈单调下降,反映市场流动性/tick 结构演化。**独立于 gate 的真实发现**,可作正面叙事;但意味着 selected ℓ 没有"资产稳定值",PRNG spec 需带时间标注。
 
-## 7. 决策:切 1-second bars(已与导师对齐)
+## 7. 决策:切 1-second bars(已完成)
 
 Plan A 在 transaction-time 轴上已达成所有可声明的目标:
 
@@ -171,23 +171,15 @@ Plan A 在 transaction-time 轴上已达成所有可声明的目标:
 - 资产 ℓ 排序 = 复现 Emergence of Randomness 2025 Case 2(见 §5.4)
 - ℓ = 50–2000 是 Price predictability 2024 §5.1 外推预测的兑现
 
-**下一步:切 1-second bars**。**这不是 Plan A 失败的 fallback,而是 thesis specification 原本要求的第二条聚合轴**。两条独立动机:
+1-second bars 作为第二条聚合轴已实现(Thesis Specification §5 的 "several
+time scales" 义务 + Spec 的 "statistically independent random sequences"
+独立性侧补充),详见 [Exp2 Plan B - Time-Based Aggregation.md](Exp2%20Plan%20B%20-%20Time-Based%20Aggregation.md)。
 
-1. **Thesis Specification §5 明确要求"several time scales"**(spec line 97)。Plan A 只覆盖 transaction-time 轴(trade-count),**时间轴尚未做**。Spec 是预先约定的 deliverable,不是 scope creep
-2. **Spec 把研究问题框在"statistically independent random sequences"**(spec line 56)。Transaction-time 下 k=2 / Runs 在每个 witness 上 p ≪ α,**独立性侧仍有空间**。1s bars 是探索这一侧的自然下一步
-
-### 7.1 与导师的对齐(2026-04 Slack,见 `notes/conversation.txt`)
-
-- 导师确认 thesis methodology 按时间顺序写:strict → relaxed,作为 speed/coverage 改进
-- 导师确认 k=2 / Runs 残留作为 Price predictability 2024 §4.4 的 crypto replication
-- 用户已声明计划:**Friday(2026-04-17)前完成首个 1s bars 数据集**,周末开始写 Exp1 + Exp2 章节
-- 1s bars 先做 short pilot,再决定是否升级为 Exp2 的 second main analysis
-
-### 7.2 实现复用
-
-- 复用现有 all-offset + strict/relaxed gate 框架,不重新设计
-- 数据管道:`aggTrades → 1-second OHLC bars → close price 序列 → 套用 build_offset_bitstream_from_arrays`
-- Pilot 配置:BTC 2026.03(transaction-time selected ℓ = 880),看 1s bars 下的 selected ℓ 与 witness `pD_k2` / `pRuns` 是否结构性变化
+**关键后续 finding(见 Plan B §5)**:1-second bar 下 D(k=2) / Runs 在
+62/75 个窗口达到 pass-rate ≥ 0.80,与本节 Plan A 观察到的 "每个 witness
+p ≪ α" 形成鲜明对比。因此 §5.2 里 "k=2 / Runs 残留是源数据属性" 的表述
+需要**收紧**为 "是 transaction-time 轴的属性";物理时间轴在数据密度充足
+时可以打散它。
 
 ## 8. 论文定位
 

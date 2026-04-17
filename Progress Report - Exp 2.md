@@ -15,8 +15,9 @@ Initial Plan 里 Exp2 的目标是：在多个 aggregation level $\ell$ 下把 c
 | 阶段 | 聚合方式 | 检验 gate | 来源 |
 |---|---|---|---|
 | 初版 | single-offset | 直接看 Shannon entropy、p(1)、runs p-value | Initial Plan |
-| 中间版 | all-offset strict | ≥80% offsets 过 D + Monobit | Emergence of Randomness 2025 |
-| 终版 | all-offset relaxed | heuristic ∃-pass gate | 导师 2026-04 建议 |
+| 中间版 | transaction-time all-offset strict | ≥80% offsets 过 D + Monobit | Emergence of Randomness 2025 |
+| relaxed | transaction-time all-offset relaxed | heuristic ∃-pass gate | 导师 2026-04 建议 |
+| 终版 | **1-second bar** all-offset strict | ≥80% offsets 过 D + Monobit（base）；另报 +Runs / +Runs+ApEn | Spec §5 "several time scales" + 独立性侧空间 |
 
 数据：5 个 USDT spot 对（BTC, ETH, BNB, SOL, DOGE），2025 全年 + 2026Q1，来自 Binance aggTrades。
 
@@ -209,11 +210,82 @@ is_acceptable_relaxed =
 
 1. **全覆盖**：5 asset × 15 month = 75/75 月份全部 selected（含 BTC、ETH 所有窗口）。对比 monthly strict 的 63/75（BTC 7/15、ETH 13/15、SOL 13/15），relaxed 把剩下 12 个未覆盖 cell 全部补齐
 2. **吞吐量提升**：bits/s 从 strict 的 ~0.003 抬升到 ~0.02，约 **7×**
-3. **Witness-offset k=2 / Runs 仍拒绝**：75/75 的 witness 在 D(k=2) 和 Runs 上 p ≪ α；这与 strict 下相同，说明是**源数据结构性特征**（bid-ask bounce），不是 gate 问题。Price predictability 2024 §4.4 为 SNAP/F/CCL 三支低频股报告过完全一致的现象（Paper Table 4 的 predictable-day k=2 p 值 = 0.0014 / 2.67e-10 / 0.044，Paper 明说 adaptive-k 会稀释 1 阶信号）。本 thesis 在 crypto 上复现了这个 stylized fact
+3. **Witness-offset k=2 / Runs 仍拒绝**：75/75 的 witness 在 D(k=2) 和 Runs 上 p ≪ α；这与 strict 下相同，说明这条 1 阶依赖**是 transaction-time 聚合轴的属性**（Price predictability 2024 §4.4 的 bid-ask bounce 机理），不是 relaxed gate 的问题。Paper Table 4 的 predictable-day k=2 p 值 = 0.0014 / 2.67e-10 / 0.044 在 SNAP/F/CCL 上一致呈现，Paper 明说 adaptive-k 会稀释 1 阶信号。本 thesis 在 crypto 上复现了这个 stylized fact。**后续 1-second bar 分析（§5 补充）显示该 1 阶结构在物理时间轴上可被破坏**——因此不是"源数据属性"，而是"transaction-time 轴属性"
 
 ---
 
-## 5. 三重一致性：本实验在两篇 Reference 框架下的定位
+## 5. 1-Second Bar（time-based aggregation）阶段
+
+### 5.1 动机
+
+Thesis Specification §5 明确要求在 "several time scales" 上做聚合；§3–§4 只覆盖 transaction-time 轴（trade-count），时间轴尚未做。另外 transaction-time 下 D(k=2) / Runs 在每个 witness 上 p ≪ α，独立性侧仍有空间。
+
+### 5.2 数据管道
+
+- `aggTrades → 1-second close-price bar`（空秒 forward-fill）`→ 交易符号 bit 流`
+- ℓ 网格 = 10..700 step 2（ℓ 单位：秒）
+- 仍是 all-offset 构造
+- Gate 与 transaction-time 一致：≥80% offset 同时通过 D_adaptive 和 Monobit（α=0.01）
+- 数据：5 个 USDT spot × 15 个月（2025 全年 + 2026 Q1）
+- 实现详见 [scripts/runner_exp2_all_offset_1sbars.py](scripts/runner_exp2_all_offset_1sbars.py)
+
+### 5.3 三档 gate
+
+| Gate | 判据 | 位置 | 通过窗口 |
+|---|---|---|---|
+| base | pred + mono | CSV 列 `is_acceptable` | **70/75** |
+| +Runs | base AND runs ≥ 0.80 | CSV 列 `is_acceptable_with_runs` | 62/75 |
+| +Runs+ApEn | base + runs AND apen ≥ 0.80 | post-processing 合成 | 62/75 |
+
+Base gate 失败的 5 个窗口全部落在 seconds-with-trades coverage < 0.75 的月份（DOGE/ETH 2025.12、2026.02–03；BNB 2025.07）——属数据密度问题，不是 gate 问题。
+
+### 5.4 Selected $\ell$（base gate, 单位：秒）
+
+| Month | BNB | BTC | DOGE | ETH | SOL |
+|---|---|---|---|---|---|
+| 2025.01 | 148 |  54 |  32 |  58 |  32 |
+| 2025.02 |  70 |  88 |  84 | 204 | 506 |
+| 2025.03 |  70 |  70 |  36 | 414 |  42 |
+| 2025.04 |  64 |  46 |  22 |  16 |  22 |
+| 2025.05 | 332 |  76 |  92 | 566 | 200 |
+| 2025.06 | 120 |  52 |  18 |  —  |  18 |
+| 2025.07 |  —  | 114 |  48 | 110 | 322 |
+| 2025.08 | 118 | 110 |  44 |  36 |  54 |
+| 2025.09 | 254 |  80 |  64 |  74 |  70 |
+| 2025.10 |  38 |  62 |  16 |  34 |  28 |
+| 2025.11 |  26 |  26 |  22 |  50 |  10 |
+| 2025.12 |  92 |  34 |  24 |  —  | 468 |
+| 2026.01 |  76 |  50 |  16 |  36 |  20 |
+| 2026.02 |  32 |  18 |  —  |  —  | 354 |
+| 2026.03 | 216 | 250 | 196 | 334 | 356 |
+
+$\ell$\* 量级 10²–10³ 秒（分钟级），对应 bits/s ≈ 10⁻³。
+
+### 5.5 核心 finding：独立性在 1-second bar 轴上可被破坏
+
+- Transaction-time（§3–§4）：D(k=2) / Runs 在所有窗口的所有 witness 上 p ≪ α
+- 1-second bar：两个检验在 **62/75** 个窗口达到 pass-rate ≥ 0.80
+
+这条对比**收紧** §3.1 / §4.4 / §6.2 中的 "bid-ask bounce 1 阶结构" 定位：
+
+- 这条依赖**不是源数据的不可破坏属性**
+- 它是 **transaction-time 聚合轴**的属性
+- 物理时间轴在数据密度充足时可以打散它
+
+失败的 13/75 个 +Runs 窗口与 base gate 失败相关联——都落在 coverage < 0.75 的月份，说明独立性的改善是**数据密度条件性**的，不是 1-second bar 的普适性质。
+
+### 5.6 方法学含义
+
+两条轴给论文两个互补 PRNG 规格：
+
+- **transaction-time**：每 ℓ\_trades 个 tick 出 1 bit，吞吐随流动性变化
+- **1-second bar**：每 ℓ\_sec 秒出 1 bit，吞吐与 trade 频率解耦（PRNG latency 友好）
+
+下游按 "latency vs throughput" 偏好选。详见 [Exp2 Plan B - Time-Based Aggregation.md](Exp2%20Plan%20B%20-%20Time-Based%20Aggregation.md)。
+
+---
+
+## 6. 三重一致性：本实验在两篇 Reference 框架下的定位
 
 ### 5.1 Paper 内部：trades/s ↑ → 所需 $\ell$ ↑（Emergence of Randomness 2025 Case 2）
 
@@ -263,25 +335,25 @@ Exp2 的实验结果在三个层面上与 Reference 一致：
 
 ---
 
-## 6. Limitations（进论文 Limitations 章节）
+## 7. Limitations（进论文 Limitations 章节）
 
 1. **Offset 方法学上必须固定**。PRNG 部署不能事后挑最佳 offset；selected witness offset 仅作诊断用。
-2. **D(k=2) / Runs 残留 1 阶结构**。bid-ask bounce 是源数据属性，任何 gate 都存在。下游若要 post-processing-free 的 PRNG，需加 debiasing（von Neumann 等）。
+2. **D(k=2) / Runs 在 transaction-time 下残留 1 阶结构**。这条依赖是 transaction-time 聚合轴的属性（bid-ask bounce）；1-second bar 轴上在 62/75 窗口被打散（见 §5）。因此不是源数据的不可破坏属性，但 transaction-time 下若要 post-processing-free 的 PRNG，仍需加 debiasing（von Neumann 等）。
 3. **跨 $\ell$ 的 multiple selection 未校正**。候选 $\ell$ 网格的 selection 维度未做 Bonferroni / FDR 校正；属已知 limitation。
 4. **Relaxed gate 是 heuristic**，不是正式 multiple-testing correction；"∃-pass" 规则在标准理论中无对称校正。
 
 ---
 
-## 7. 下一步
+## 8. 下一步
 
 综合 [Thesis Specification](thesis_specification.md) §5（"Financial time series will be aggregated at **several time scales**"）和 [Initial Plan](notes/Initial%20Plan.txt) 的 Deliverable：
 
-### 7.1 Exp2 内必做（Spec 义务）
+### 8.1 Exp2 内必做（Spec 义务）
 
-- **Time-based aggregation（1-second bars）**：Spec §5 明确要求在"several time scales"上做聚合。当前 Exp2 完成的是 transaction-time 下的 $\ell$ sweep（trade-count 轴），尚未覆盖时间轴。计划：以月为单位先把 aggTrades 重采样为 1-second bars，再套用当前 all-offset + strict/relaxed gate 框架重跑，对比 transaction-time 结果
-- **Exp2 结稿**：将本 report 整合进 thesis Methodology + Results 章节；Limitations 章节吸收 §6；Discussion 章节引用 §5 三重一致性作为 cross-market replication 的正面贡献
+- ~~**Time-based aggregation（1-second bars）**~~：**已完成**，见 §5。
+- **Exp2 结稿**：将本 report 整合进 thesis Methodology + Results 章节；Limitations 章节吸收 §7；Discussion 章节引用 §6 三重一致性（cross-market replication）和 §5.5（时间轴破坏 1 阶依赖）作为两个正面贡献。
 
-### 7.2 后续 Experiments（都要做）
+### 8.2 后续 Experiments（都要做）
 
 顺序：**Exp3 → Exp4 → Password Generator**。理由：
 
@@ -296,37 +368,38 @@ Exp2 的实验结果在三个层面上与 Reference 一致：
 - **Exp4 多资产融合**：Initial Plan 的 BTC+ETH（及扩展）KL independence 分析 + 多源拼接。目标是把单资产的 per-month bitstream 融合成更长、更独立的 entropy 流，回应 Spec §5 "independence of random number sequences" 评估维度
 - **Password Generator prototype**：Spec §4 + Initial Plan Deliverable #3，基于 Exp3/Exp4 的 entropy bit 产出做一个最小可用脚本
 
-### 7.3 加分项（时间允许则做）
+### 8.3 加分项（时间允许则做）
 
 - **选点 TestU01 Rabbit**：在 selected $\ell$ 的 witness bitstream 上做外部验证（单点跑，非 $\ell$ sweep）
-- **Post-processing 层**：针对 §6.2 的 bid-ask bounce 残留，实现 von Neumann debiasing；重测 k=2 / Runs 是否能抬到 α 以上
+- **Post-processing 层**：针对 §7.2 的 bid-ask bounce 残留，实现 von Neumann debiasing；重测 k=2 / Runs 是否能抬到 α 以上
 - **NIST battery 补全**：按 Emergence of Randomness 2025 Table 4 补齐 Block Frequency、Cumulative Sums、Longest Run、DFT、Serial、Non-overlapping Template 6 个（substring-based）
 - **Economic cost analysis**：Initial Plan Deliverable #4，可写成 Discussion 一节而非独立实验
 
-### 7.4 时间评估
+### 8.4 时间评估
 
-| 项 | 估计工作量 |
-|---|---|
-| 1-second bars 主分析（复用现有 runner 框架） | 1–1.5 周 |
-| Exp2 thesis 写作（含 transaction + time-based 双线对比） | 1 周 |
-| Exp3 entropy rate 分析 + 写作 | 1 周 |
-| Exp4 多资产融合 + KL independence 分析 | 1.5 周 |
-| Password generator 最小 prototype | 1 天 |
-| 整合 + Discussion + Limitations | 1 周 |
-| TestU01 Rabbit 单点验证（加分） | 0.5 天 |
-| von Neumann extractor + 重测（加分） | 2–3 天 |
-| NIST battery 补 6 个（加分） | 3 天 |
-| **必做项合计** | **~5.5–6 周** |
+| 项 | 状态 | 估计工作量 |
+|---|---|---|
+| 1-second bar 主分析 | **已完成** | — |
+| Exp2 thesis 写作（含 transaction + time-based 双线对比） | 进行中 | 1 周 |
+| Exp3 entropy rate 分析 + 写作 | 下周起 | 1 周 |
+| Exp4 多资产融合 + KL independence 分析 | 待排 | 1.5 周 |
+| Password generator 最小 prototype | 待排 | 1 天 |
+| 整合 + Discussion + Limitations | 待排 | 1 周 |
+| TestU01 Rabbit 单点验证（加分） | 待排 | 0.5 天 |
+| von Neumann extractor + 重测（加分） | 待排 | 2–3 天 |
+| NIST battery 补 6 个（加分） | 待排 | 3 天 |
+| **剩余必做合计** | — | **~4.5 周** |
 
 符合导师"being on time is more important than details of the setup"的建议。
 
 ---
 
-## 8. 当前结论
+## 9. 当前结论
 
-Experiment 2 已达到 Initial Plan 的核心目标（识别 $\ell$ 对随机性的影响），并在 Reference 框架下获得两条主要 findings：
+Experiment 2 已达到 Initial Plan 的核心目标（识别 $\ell$ 对随机性的影响），并在 Reference 框架下获得三条主要 findings：
 
-1. **方法学可迁移**：Emergence of Randomness 2025 的 all-offset 检验框架在 crypto spot 市场可用，selected $\ell$ 在 relaxed gate 下对所有 5 个 asset × 15 个月份全覆盖
-2. **Cross-market replication**：trades/s ↑ ⇒ 所需 $\ell$ ↑ 的 Emergence of Randomness 2025 Case 2 规律在 crypto 上再现；bid-ask bounce 导致的 k=2 残留在 crypto 上再现 Price predictability 2024 §4.4 的 SNAP/F/CCL 模式
+1. **方法学可迁移**：Emergence of Randomness 2025 的 all-offset 检验框架在 crypto spot 市场可用，selected $\ell$ 在 transaction-time relaxed gate 下对所有 5 个 asset × 15 个月份全覆盖；在 1-second bar strict base gate 下覆盖 70/75
+2. **Cross-market replication**：trades/s ↑ ⇒ 所需 $\ell$ ↑ 的 Emergence of Randomness 2025 Case 2 规律在 crypto 上再现；transaction-time 下 bid-ask bounce 导致的 k=2 残留在 crypto 上再现 Price predictability 2024 §4.4 的 SNAP/F/CCL 模式
+3. **独立性可在时间轴被打散**（Plan B 新增 finding）：transaction-time 下 D(k=2) / Runs 在每个 witness 都 p ≪ α，1-second bar 下同样两个检验在 62/75 窗口达到 pass-rate ≥ 0.80。这把 Plan A 里"bid-ask bounce 是源数据属性"的表述收紧为"是 transaction-time 聚合轴的属性"；物理时间轴在数据密度充足时可破坏它
 
-下一步以进入 Exp3（entropy rate）+ 论文写作为主，按 §7.4 时间表执行。
+下一步以进入 Exp3（entropy rate）+ 论文写作为主，按 §8.4 时间表执行。

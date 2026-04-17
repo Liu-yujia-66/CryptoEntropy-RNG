@@ -117,12 +117,20 @@ Runs 的 `pass_rate` 仍然计算并写入 CSV，只是不再进入 `is_acceptab
 
 D(k=2) 与 Runs 的 pass-rate 预期高度相关（两者都测一阶，只是统计形式不同）。这种一致性**反向证明 Runs 的拒绝不是 bug 而是真实结构**，方法学上为"把 Runs 降为 reference 但不删除"提供了支撑。
 
+### 后续 1-second bar 分析的收紧
+
+上述"Runs / D(k=2) 在 crypto 上持续拒绝"的结论最初被解读为**源数据的 1 阶依赖属性**。1-second bar（time-based aggregation）分析显示，该 1 阶依赖在 62/75 个 (asset, month) 窗口下被 1s-bar 聚合打散（两个检验 pass-rate ≥ 0.80）。因此该结论需要**收紧**为：
+
+> bid-ask bounce 导致的 1 阶依赖是 **transaction-time 聚合轴**的属性，不是 **源数据**的不可破坏属性；物理时间轴（1-second bar）在数据密度充足时可以打散它。
+
+详见 `Exp2 Plan B - Time-Based Aggregation.md` §5。论文里本节的 Runs-降级论证仍有效（只针对 transaction-time 轴），但 Limitations / Discussion 里应补上轴相关性的说明。
+
 ### 论文写作要点
 
-- Methodology：acceptance gate 用 adaptive-$k$ $D$ + Monobit（Paper 推崇 $D$ 作为主统计量）
-- Results：报告所有 5 个 test 的 pass-rate 曲线，Runs 和 D(k=2) 标注为 reference
-- Discussion：用 D(k=2) ≈ Runs 的经验一致性解释 adaptive-$k$ D 的盲区，引 Paper §4.4 为方法学依据
-- Limitations：此 gate 修订**放宽**了 1 阶结构的通过门槛；如果 downstream 应用（PRNG）对 1 阶相关性敏感，需要额外 post-processing
+- Methodology：transaction-time acceptance gate 用 adaptive-$k$ $D$ + Monobit（Paper 推崇 $D$ 作为主统计量）
+- Results：报告所有 5 个 test 的 pass-rate 曲线，Runs 和 D(k=2) 在 transaction-time 下标注为 reference；1-second bar 下 +Runs 作为主结果（见 Plan B §5）
+- Discussion：用 D(k=2) ≈ Runs 的经验一致性解释 transaction-time 下 adaptive-$k$ D 的盲区，引 Paper §4.4 为方法学依据；**1-second bar 下独立性改善**作为本 thesis 相对 Reference 的方法学贡献
+- Limitations：transaction-time 下的 Runs gate 修订**放宽**了 1 阶结构的通过门槛；如果下游应用（PRNG）选 transaction-time 轴且对 1 阶相关性敏感，需要额外 post-processing；1-second bar 轴本身把这类下游需求内化了一部分
 
 ### 关于 Runs NIST 前置条件（保留说明）
 
@@ -172,8 +180,25 @@ D(k=2) 与 Runs 的 pass-rate 预期高度相关（两者都测一阶，只是�
 - strict (80%) 仍为主 gate，relaxed 作 asset coverage 的补充证据
 - PRNG 实用上 offset 必须固定，不能事后挑；selected offset 上 D(k=2)/Runs 通常仍 ≪ α，作为 Price predictability 2024 §4.4 SNAP/F/CCL bid-ask bounce 的 crypto replication 报告
 
-## Time-based aggregation（1-second bars，下一步）
+## Time-based aggregation（1-second bars，已完成）
 
 Plan A 只覆盖 transaction-time 轴（trade-count）。Thesis Specification §5 明确要求 "several time scales"，且 Specification §3 把研究问题框在 "statistically independent random sequences"；Transaction-time 下 k=2 / Runs 每个 witness 都 p ≪ α，独立性侧仍有空间。
 
-下一步：复用现有 all-offset + strict/relaxed gate 框架，数据管道改为 `aggTrades → 1-second bars → close price 序列`，先做 BTC 2026.03 pilot。导师 Slack 已确认该计划。
+实现：`scripts/runner_exp2_all_offset_1sbars.py` 复用 all-offset strict 框架，数据管道改为 `aggTrades → 1-second bars（src/bars.py）→ close price 序列`；ℓ 范围 `(10, 700, step=2)`，5 asset × 15 月全覆盖。
+
+## Gate taxonomy（四档 acceptance rule）
+
+到当前版本为止，Exp 2 的可选 gate 共四档，由松到严：
+
+| Gate | 判据 | 出处 | 用途 |
+|---|---|---|---|
+| `relaxed` | `num_pass ≥ max(3, ⌈0.03·N_valid⌉)` on pred + mono, α=0.01 per offset | `runner_exp2_all_offset_relaxed.py` | Plan A heuristic，asset coverage 的补充证据 |
+| `is_acceptable`（base） | `valid_offset_ratio ≥ 0.80` AND `pred_pass_rate ≥ 0.80` AND `monobit_pass_rate ≥ 0.80` | `runner_exp2_all_offset{,_1sbars}.py` | 主 gate（transaction-time 与 1s-bars 通用） |
+| `is_acceptable_with_runs` | base AND `runs_pass_rate ≥ 0.80` | `runner_exp2_all_offset_1sbars.py` | 1s-bars CSV 的额外列；对一阶相关性敏感的下游场景参考 |
+| `is_acceptable_with_runs_apen` | base + runs AND `approximate_entropy_pass_rate ≥ 0.80` | `select_ell_exp2_1sbars.py`（post-processing 合成，不写回 CSV） | 进一步收紧到高阶 block 结构；实测会明显推高 ℓ\*，仅作 sensitivity 参考 |
+
+实证结论（1s-bars，15 窗口 × 5 资产）：
+- base → +runs：大部分窗口 ℓ\* 不变或小幅上移，少数被完全封死（无可行 ℓ）
+- +runs → +runs+apen：多数窗口 ℓ\* 再上移 0–60；少数资产（BNB 2026.02、ETH 2026.01）因 ApproxEntropy 在低 ℓ 有凹陷被推高数百 ℓ
+
+**论文立场**：正文只用 base gate；`+runs` 与 `+runs+apen` 作为 robustness 附录，说明即使把 reference 测试纳入门槛，结论方向不变，仅 throughput 代价上升。
