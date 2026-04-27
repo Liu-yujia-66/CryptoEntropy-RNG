@@ -1,6 +1,8 @@
 .DS_Store
 **/.DS_Store
 mine.txt
+thesis_specification.md
+MASTER_THESIS_PLAN___Random_Number_Generator-signed.pdf
 
 .venv/
 __pycache__/
