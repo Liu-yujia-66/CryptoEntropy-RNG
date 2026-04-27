@@ -1,0 +1,100 @@
+\documentclass[11pt, a4paper]{article}
+
+% --- Encoding & language ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+
+% --- Math & symbols ---
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{mathtools}
+
+% --- Layout ---
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{setspace}
+\onehalfspacing
+\usepackage{microtype}
+
+% --- Graphics & tables ---
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{subcaption}
+\graphicspath{{figures/}}
+
+% --- Code listings ---
+\usepackage{listings}
+\usepackage{xcolor}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray!80},
+  stringstyle=\color{red!70!black},
+}
+
+% --- References ---
+\usepackage[backend=biber, style=ieee, sorting=none]{biblatex}
+\addbibresource{references.bib}
+
+% --- Hyperlinks (load last) ---
+\usepackage[hidelinks]{hyperref}
+\usepackage{cleveref}
+
+% --- Title ---
+\title{Crypto-Market Entropy as a Source of Randomness \\
+       \large Master's Thesis}
+\author{Yujia Liu \\ Uppsala University}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+\noindent TODO: abstract.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+% =====================================================
+\section{Introduction}
+\label{sec:introduction}
+TODO.
+
+% =====================================================
+\section{Background}
+\label{sec:background}
+TODO.
+
+% =====================================================
+\section{Methodology}
+\label{sec:methodology}
+TODO.
+
+% =====================================================
+\section{Experiments}
+\label{sec:experiments}
+TODO.
+
+% =====================================================
+\section{Results}
+\label{sec:results}
+TODO.
+
+% =====================================================
+\section{Discussion}
+\label{sec:discussion}
+TODO.
+
+% =====================================================
+\section{Conclusion}
+\label{sec:conclusion}
+TODO.
+
+% =====================================================
+\printbibliography
+
+\end{document}
