@@ -8,8 +8,14 @@
 \usepackage[scale=0.9]{inconsolata}
 
 \usepackage[sf]{titlesec}
-\usepackage[square,sort,colon,authoryear]{natbib}
+\usepackage[round,sort,authoryear]{natbib}
 %\usepackage[export]{adjustbox}
+
+%% Math and algorithm support (added to align with the
+%% Sjölund & Mair "Advice for Master's thesis reports" guidelines).
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 
 \usepackage{
   marginnote, % Improved margin notes
@@ -155,13 +161,15 @@
 \vspace*{3cm}
 \section*{Abstract}
 
-\RED{Replace this with the actual abstract. Obviously.}
-Suspendisse luctus leo et porta mattis. In semper, nisi et
-suscipit iaculis, leo urna laoreet lacus, ut laoreet lorem tellus
-eget dui. Vestibulum eu auctor nisi. Morbi pharetra euismod velit
-ac mattis. Maecenas tempor vitae augue ut aliquam. Nunc auctor,
-nibh at imperdiet finibus, ex leo semper lacus, ac vehicula quam
-nisl condimentum leo.
+%% TODO: 论文摘要,约 200--300 词。建议结构:
+%%   1) 问题背景与重要性(1--2 句);
+%%   2) 现有方法的不足与本研究动机;
+%%   3) 你提出的方法概述;
+%%   4) 主要实验结果;
+%%   5) 结论与影响。
+\RED{Write the abstract last. It should mirror, in compressed form,
+the Introduction and the Conclusion: setting, research questions,
+method, key results, and takeaway.}
 
 
 \tableofcontents
@@ -170,109 +178,198 @@ nisl condimentum leo.
 
 \mainmatter
 
+%% =====================================================================
+%% Chapter 1 — Introduction
+%% Guidelines (Introduction): 1) Motivation, 2) Brief literature review,
+%% 3) Research questions.
+%% =====================================================================
 \chapter{Introduction}
+\label{cha:introduction}
 
-\lipsum[1]
+\section{Motivation}
+\label{sec:motivation}
 
-\begin{MarginNote}[3cm]
-  \lipsum[2]
+%% TODO (指南 Introduction §1):
+%% Start with a high-level introduction to the area and then motivate
+%% why the topic of the thesis is important.
 
-  \RED{Use linebreaks\-to\-insert\-hyphens\-where\-needed\-in the margin.}
-\end{MarginNote}
+\section{Brief Literature Review}
+\label{sec:brief-lit-review}
 
-Footnotes\Footnote[-1cm]{Like this one. Note the manual vertical offset in the source code.} will go into the margin. They should be used sparingly.
+%% TODO (指南 Introduction §2):
+%% Briefly summarize the main existing methods and their shortcomings.
 
-\begin{itemize}[label=\leftpointright]
-\item The \texttt{enumitem} package will help you customise lists
-\item Like weird labels like this
-  \begin{itemize}
-  \item Try \texttt{texdoc enumitem} on your command line if you
-    have a local \LaTeX{} installation (and have your mind blown)
-  \end{itemize}
-\end{itemize}
+\section{Research Questions}
+\label{sec:research-questions}
 
-You can use \texttt{cleveref} to cross-reference in your text.
-For chapters, it will produce something like this: \Cref{cha:background}.
-For sections, it will produce something like this: \Cref{sec:purpose-goals}.
+%% TODO (指南 Introduction §3):
+%% In light of the motivation and existing knowledge, what are the
+%% outstanding gaps that you intend to fill?
 
-\lipsum[3]
+%% =====================================================================
+%% Chapter 2 — Background
+%% Guidelines (Background): 1) Literature review, 2) Background information.
+%% =====================================================================
+\chapter{Background}
+\label{cha:background}
 
-\section{Purpose and Goals}
-\label{sec:purpose-goals}
+\section{Literature Review}
+\label{sec:literature-review}
 
-\lipsum[4-6]
+%% TODO (指南 Background §1):
+%% This should not read like a shopping list, but instead synthesize
+%% and compare different approaches related to your research questions.
 
-\begin{itemize}
-\item FWIW, this is my favourite list label for unordered lists. I
-  find bullets too ``clumsy.'' If you do not like it, you can
-  override the default settings (see the source).
-\item But your thesis is your thesis. And, ofc, don't use words
-  like FWIW, ofc, and don't in a thesis text.
+\section{Background Information}
+\label{sec:background-information}
 
-  \begin{itemize}
-  \item You can nest lists if you want.
+%% TODO (指南 Background §2):
+%% Provide sufficient detail so that one of your peers would be able
+%% to understand the thesis. In other words, your thesis should be
+%% self-contained for someone in the same program.
 
-    \begin{itemize}
-    \item But do not go overboard.
-    \end{itemize}
+%% =====================================================================
+%% Chapter 3 — Methods
+%% Guidelines (Methods): 1) Focus on your contributions, 2) Use
+%% mathematical formalism. (No further subsections prescribed.)
+%% =====================================================================
+\chapter{Methods}
+\label{cha:methods}
 
-  \end{itemize}
-  
-\end{itemize}
+%% TODO (指南 Methods §1, §2):
+%% Describe your method in detail, focusing on the parts that are new
+%% or different from previous work. Explain in what way your method
+%% addresses your research questions. Use mathematical formalism where
+%% appropriate; algorithms should preferably be typeset using the
+%% algorithm environment.
 
-This is how you typeset descriptions:
+%% =====================================================================
+%% Chapter 4 — Experiments
+%% Guidelines (Experiments): 1) Experimental setup, 2) Data,
+%% 3) Baselines, 4) Results.
+%% =====================================================================
+\chapter{Experiments}
+\label{cha:experiments}
 
-\begin{description}
-\item[Beach Boys] \lipsum[1]
-\item[The Ronettes] \lipsum[2]
-\end{description}
+\section{Experimental Setup}
+\label{sec:experimental-setup}
 
-Enumerated lists:
+%% TODO (指南 Experiments §1):
+%% Ideally, it should be possible to relate each experiment to one of
+%% the research questions, e.g., by proving or disproving a hypothesis,
+%% studying the impact of a particular component using an ablation
+%% study, or investigating the effect of varying a parameter.
 
-\begin{enumerate}
-\item One
-\item Two
-\end{enumerate}
+\section{Data}
+\label{sec:data}
 
-Note that you can resume lists.
+%% TODO (指南 Experiments §2):
+%% Describe how the data was acquired and what it contains. Also,
+%% describe any preprocessing steps you perform.
 
-\begin{enumerate}[resume]
-\item One
-\item Two \label{lst:two}
-\end{enumerate}
+\section{Baselines}
+\label{sec:baselines}
 
-And reference back to individual list items, \eg{}~\cref{lst:two}.
+%% TODO (指南 Experiments §3):
+%% Explain which methods you compare against and what their setup is
+%% (hyperparameters, etc.).
 
-\section{Thesis Outline}
-\label{sec:thesis-outline}
+\section{Results}
+\label{sec:results}
 
-\lipsum[7]
+%% TODO (指南 Experiments §4):
+%% Comment briefly on the results as you present them, highlighting
+%% especially noteworthy things. In-depth discussions should be saved
+%% for the discussion section. Strive to keep the presentation of a
+%% given experiment relatively self-contained and focused.
 
+%% =====================================================================
+%% Chapter 5 — Discussion
+%% Guidelines (Discussion): 1) Link results to research questions,
+%% 2) Limitations and future work.
+%% =====================================================================
+\chapter{Discussion}
+\label{cha:discussion}
+
+\section{Linking Results to Research Questions}
+\label{sec:linking-results-rq}
+
+%% TODO (指南 Discussion §1):
+%% Explain what the experiments tell you about your research questions.
+%% If any of the experiments "failed" or did not behave as expected,
+%% try to reason about potential explanations and propose additional
+%% experiments that could be performed to lead the investigation further.
+
+\section{Limitations and Future Work}
+\label{sec:limitations-future-work}
+
+%% TODO (指南 Discussion §2):
+%% Describe the limitations of your work, i.e., under what assumptions
+%% do your conclusions hold? What potentially relevant aspects were
+%% outside the scope of your study? Possibly, suggest avenues for
+%% future work building upon your study.
+
+%% =====================================================================
+%% Chapter 6 — Conclusion
+%% Guidelines (Conclusion): 1) Recap the motivation and setting,
+%% 2) Summarize your contributions in light of the experimental results.
+%% =====================================================================
+\chapter{Conclusion}
+\label{cha:conclusion}
+
+\section{Recap of the Motivation and Setting}
+\label{sec:conclusion-recap}
+
+%% TODO (指南 Conclusion §1):
+%% The conclusion section is often quite similar to the abstract, but
+%% longer. It should give a brief recap of the problem setting and the
+%% research questions.
+
+\section{Summary of Contributions}
+\label{sec:summary-contributions}
+
+%% TODO (指南 Conclusion §2):
+%% Describe how the method you proposed manages to answer your
+%% research questions.
+
+%% =====================================================================
+%% Bibliography
+%% Guidelines (References §1): check style, no URLs/DOIs unless necessary,
+%% prefer the published version over arXiv preprints when available.
+%% =====================================================================
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\end{document}
+
+%% =====================================================================
+%% Template syntax cheatsheet (everything below \end{document} is
+%% ignored by LaTeX). Copy a block into the body when you need it.
+%% These are taken from the original Wrigstad template.
+%% =====================================================================
+
+%% --- Figure (top of page) -------------------------------------------
 \begin{figure}[t]
   \begin{center}
-    \vspace*{1em}
-    \verb+\includegraphics[width=0.9\linewidth]{image.pdf}+
-    \vspace*{1em}
+    \includegraphics[width=0.9\linewidth]{image.pdf}
   \end{center}
-  \caption{This is a figure, it will be placed top-most of a page (if possible).}
-  \label{fig:example-1}
+  \caption{Caption goes BELOW the figure.}
+  \label{fig:example}
 \end{figure}
 
+%% --- Wide figure (extends into the margin) --------------------------
 \begin{figure*}[t]
   \begin{center}
-    \vspace*{1em}
-    \verb+\includegraphics[width=0.9\linewidth]{image.pdf}+
-    \vspace*{1em}
+    \includegraphics[width=0.9\linewidth]{image.pdf}
   \end{center}
-\caption[Check the source to see how to customise a figure's LoF entry.]{This is a wider figure, it too will be placed top-most of a page (if possible).}
-  \label{fig:example-2}
+  \caption[Short caption for the LoF.]{Long caption for the body.}
+  \label{fig:example-wide}
 \end{figure*}
 
-
+%% --- Table (booktabs; caption ABOVE the table) ----------------------
 \begin{table}[b]
-  \caption{This is a table, it will be placed at the bottom of a
-    page (if possible). Note that captions for tables are placed
-    \emph{above} the table.}
+  \caption{Caption goes ABOVE the table.}
+  \label{tab:example}
   \begin{center}
     \begin{tabular}{lll}
       \toprule
@@ -283,25 +380,10 @@ And reference back to individual list items, \eg{}~\cref{lst:two}.
       \bottomrule
     \end{tabular}
   \end{center}
-  
-  \label{tab:example-1}
 \end{table}
 
-\chapter{Background}
-\label{cha:background}
-
-This chapter typically contains a discussion of the related work.
-BibTeX is a great way to manage bibliography information. If you
-use Emacs, tools like RefTeX will help you insert references into
-your code. Given that we are not constrained for space, we can use
-citations that look like this: \citep{Acm_Curriculum_2013,
-  CWE_193}. To give the text a bit better flow, you can sometimes
-work them into the text. Using numbered references is allowed but
-it will cause them to be much like Dijkstra's
-\citeyearpar{Dijkstra_1968} dreaded GOTO's.
-
-\chapter{Methodology}
-\lipsum[1] Code \c{int inline = ++x;} looks like so:
+%% --- Inline code & code blocks --------------------------------------
+Inline: \c{int inline = ++x;}.
 
 \begin{Code}
 public class HelloWorld<T> extends Something<T> {
@@ -311,8 +393,6 @@ public class HelloWorld<T> extends Something<T> {
 }
 \end{Code}
 
-You can also get it with line numbers:
-
 \begin{Code_Numbered}
 public class HelloWorld<T> extends Something<T> {
   public static void main(String[] args) {
@@ -321,55 +401,108 @@ public class HelloWorld<T> extends Something<T> {
 }
 \end{Code_Numbered}
 
-
-You can refer to lines like this: \verb+\cref{code:hello}+ (gives you \cref{code:hello}, see source for more details).
-
-Verbatim text is set in a monospaced typewriter font:
-
-\begin{verbatim}
-----------,
-          |           ASCII art!
-          '--> (*)
-\end{verbatim}
-
-\lipsum[2-4]
-
-\begin{table}[!h]
-  \caption{bar}
-  \label{tab:bar}
-\end{table}
-
+%% --- Code listing as a float (with caption) -------------------------
 \begin{listing*}[t]
 \begin{Code_Numbered}
 public class HelloWorld<T> extends Something<T> {
   public static void main(String[] args) {
-    System.out.println("Hello, world!"); @\label{code:hello:2}@
+    System.out.println("Hello, world!");
   }
 }
 \end{Code_Numbered}
-\caption{If you like, you can have code listings inside a \c{listing} float.}
-\label{lst:foo}
+\caption{Code listings can also live inside a \c{listing} float.}
+\label{lst:example}
 \end{listing*}
 
-Referencing Listing~\ref{lst:foo}.
-Probably better to use cleveref: \cref{lst:foo}.
+%% --- Algorithm (uses the algorithm + algpseudocode packages) --------
+\begin{algorithm}
+  \caption{Example algorithm}
+  \label{alg:example}
+  \begin{algorithmic}[1]
+    \Require Input $x$
+    \Ensure Output $y$
+    \State $y \gets f(x)$
+    \State \Return $y$
+  \end{algorithmic}
+\end{algorithm}
 
-\chapter{Design}
-\lipsum
+%% --- Equation (use \eqref to cite it; equation is part of a sentence) -
+The relation is given by
+\begin{equation}
+  y = f(x),
+  \label{eq:example}
+\end{equation}
+which we refer back to using \eqref{eq:example}.
 
-\chapter{Implementation}
-\lipsum
+%% --- Verbatim (block + inline) --------------------------------------
+\begin{verbatim}
+plain monospaced text, no LaTeX commands processed
+\end{verbatim}
 
-\chapter{Evaluation}
-\lipsum
+Inline verbatim: \verb+\cref{code:hello}+ (use any matching delimiter
+that does not appear in the verbatim text, e.g. \verb!...! or \verb|...|).
 
-\chapter{Conclusions}
-\lipsum
+%% --- Margin note & footnote (margin) --------------------------------
+\begin{MarginNote}[3cm]
+  Margin note text. Use \texttt{\\-} to insert hyphens for line breaks
+  in the narrow margin column.
+\end{MarginNote}
 
-\bibliographystyle{plainnat}
-\bibliography{references}
+Footnote text\Footnote[-1cm]{This footnote is rendered in the margin.}.
 
-\end{document}
+%% --- Lists ----------------------------------------------------------
+\begin{itemize}
+\item Standard itemize item.
+  \begin{itemize}
+  \item Nested item.
+  \end{itemize}
+\end{itemize}
+
+\begin{itemize}[label=\leftpointright]
+\item Custom label via enumitem.
+\end{itemize}
+
+\begin{enumerate}
+\item Numbered item.
+\item Another numbered item. \label{lst:two}
+\end{enumerate}
+
+\begin{enumerate}[resume]
+\item Resumed numbering continues from above.
+\end{enumerate}
+
+\begin{description}
+\item[Term] Definition or explanation.
+\end{description}
+
+%% --- Cross-references (cleveref) ------------------------------------
+%% \Cref{...}  -- capitalised, use at the START of a sentence:
+%%               "Chapter~3 ..." -> \Cref{cha:methods}
+%% \cref{...}  -- lower-case, use mid-sentence:
+%%               "as shown in chapter~3" -> as shown in \cref{cha:methods}
+%% \eqref{...} -- equations only, gives "(N)":   see \eqref{eq:example}
+%% \ref{...}   -- plain reference, no auto-prefix (rarely needed when
+%%               cleveref is loaded).
+%%
+%% Targets work the same way for chapters / sections / subsections /
+%% figures / tables / listings / algorithms / list items, e.g.:
+%%   \cref{lst:two}      (item label inside an enumerate)
+%%   \cref{code:hello}   (line label inside a Code_Numbered block)
+
+%% --- Citations (natbib, Harvard) ------------------------------------
+%% Active  (read it out loud):  \citet{key}        -> "Author (Year) shows ..."
+%% Passive (not read out loud): \citep{key}        -> "... (Author, Year)."
+%% Multiple keys:               \citep{key1,key2}
+%% Year only:                   \citeyearpar{key}  -> "(Year)"
+%% Author only:                 \citeauthor{key}   -> "Author"
+
+%% --- Custom commands defined in the preamble ------------------------
+\RED{Red highlight, used to flag TODO-style placeholders.}
+\textsb{Semibold text (Libertine SB).}
+\ie{} that is, used like this.
+\eg{} for example, used like this.
+\etal{} for "et al." in author lists.
+\Yes{} \No{} dingbat check / cross marks (used in tables).
 
 %%% Local Variables: ***
 %%% mode: latex ***
