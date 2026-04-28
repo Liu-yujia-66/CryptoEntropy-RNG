@@ -30,7 +30,7 @@ import pandas as pd
 from src.bars import BarsCoverage, prepare_month_bars
 from src.bitstream import build_all_offset_bitstreams, save_bitstream
 from src.data_io import filter_month_files
-from src.stats import summarize_bits_full
+from src.exp2_summary import build_combined_row
 from src.utils import ASSET_ORDER, fmt_elapsed, period_dir_name, run_plot_subprocess
 
 
@@ -92,47 +92,6 @@ OUTPUT_ROOT = Path(
 # Per-asset processing
 
 
-def _build_combined_row(
-    asset: str,
-    agg_level: int,
-    offset: int,
-    combined_bits: np.ndarray,
-    combined_duration_seconds: float,
-    source_files: list[Path],
-) -> dict[str, object]:
-    bits_per_second = (
-        float(combined_bits.size / combined_duration_seconds)
-        if combined_duration_seconds > 0
-        else float("nan")
-    )
-    metadata: dict[str, object] = {
-        "asset": asset,
-        "date": "combined",
-        "source_file": ",".join(str(p) for p in source_files),
-        "timestamp_unit": "1s_bars",
-        "start_time": "",
-        "end_time": "",
-        "duration_seconds": combined_duration_seconds,
-        "preview_duplicate_timestamps": float("nan"),
-        "agg_level": agg_level,
-        "offset": offset,
-        "input_rows": float("nan"),
-        "sampled_rows": float("nan"),
-        "retained_rows": int(combined_bits.size),
-        "zero_delta_count": float("nan"),
-        "zero_delta_ratio": float("nan"),
-        "duplicate_timestamp_count": float("nan"),
-        "analysis_scope": "combined_offset_1sbars",
-        "bits_per_second": bits_per_second,
-    }
-    row = summarize_bits_full(
-        bits=combined_bits,
-        metadata=metadata,
-    )
-    row["bits_per_second"] = bits_per_second
-    return row
-
-
 def process_asset(
     asset: str,
     months: list[str],
@@ -174,13 +133,15 @@ def process_asset(
                 continue
             combined_bits = np.concatenate(chunks)
             rows.append(
-                _build_combined_row(
+                build_combined_row(
                     asset=asset,
                     agg_level=agg_level,
                     offset=offset,
                     combined_bits=combined_bits,
                     combined_duration_seconds=combined_duration_seconds,
                     source_files=files,
+                    timestamp_unit="1s_bars",
+                    analysis_scope="combined_offset_1sbars",
                 )
             )
             if SAVE_BITSTREAMS:

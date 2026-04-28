@@ -26,8 +26,8 @@ import pandas as pd
 
 from src.bitstream import build_all_offset_bitstreams, save_bitstream
 from src.data_io import filter_month_files, prepare_month_data
-from src.stats import summarize_bits_full
-from src.utils import ASSET_ORDER, fmt_elapsed, period_dir_name, run_plot_subprocess
+from src.exp2_summary import build_combined_row, format_selection_table
+from src.utils import fmt_elapsed, period_dir_name, run_plot_subprocess
 
 
 # Configuration
@@ -108,47 +108,6 @@ OUTPUT_ROOT = Path(
 # Per-asset processing
 
 
-def _build_combined_row(
-    asset: str,
-    agg_level: int,
-    offset: int,
-    combined_bits: np.ndarray,
-    combined_duration_seconds: float,
-    source_files: list[Path],
-) -> dict[str, object]:
-    bits_per_second = (
-        float(combined_bits.size / combined_duration_seconds)
-        if combined_duration_seconds > 0
-        else float("nan")
-    )
-    metadata: dict[str, object] = {
-        "asset": asset,
-        "date": "combined",
-        "source_file": ",".join(str(p) for p in source_files),
-        "timestamp_unit": "mixed",
-        "start_time": "",
-        "end_time": "",
-        "duration_seconds": combined_duration_seconds,
-        "preview_duplicate_timestamps": float("nan"),
-        "agg_level": agg_level,
-        "offset": offset,
-        "input_rows": float("nan"),
-        "sampled_rows": float("nan"),
-        "retained_rows": int(combined_bits.size),
-        "zero_delta_count": float("nan"),
-        "zero_delta_ratio": float("nan"),
-        "duplicate_timestamp_count": float("nan"),
-        "analysis_scope": "combined_offset",
-        "bits_per_second": bits_per_second,
-    }
-    row = summarize_bits_full(
-        bits=combined_bits,
-        metadata=metadata,
-    )
-    row["bits_per_second"] = bits_per_second
-    return row
-
-
 def process_asset(
     asset: str,
     months: list[str],
@@ -188,13 +147,15 @@ def process_asset(
                 continue
             combined_bits = np.concatenate(chunks)
             rows.append(
-                _build_combined_row(
+                build_combined_row(
                     asset=asset,
                     agg_level=agg_level,
                     offset=offset,
                     combined_bits=combined_bits,
                     combined_duration_seconds=combined_duration_seconds,
                     source_files=files,
+                    timestamp_unit="mixed",
+                    analysis_scope="combined_offset",
                 )
             )
             if SAVE_BITSTREAMS:
@@ -386,78 +347,22 @@ def _write_selected_ell_summary_txt(
     if not period_selected_frames:
         return
 
-    display_names = {
-        "BNBUSDT": "BNB",
-        "BTCUSDT": "BTC",
-        "DOGEUSDT": "DOGE",
-        "ETHUSDT": "ETH",
-        "SOLUSDT": "SOL",
-    }
-    header_assets = [asset for asset in ASSET_ORDER if asset in display_names]
-    rows: list[tuple[str, list[str]]] = []
-
-    for months, selected_df in period_selected_frames:
-        parsed = sorted((int(m[:4]), int(m[5:])) for m in months)
-        first_year, first_month = parsed[0]
-        last_year, last_month = parsed[-1]
-        if len(parsed) == 12 and first_year == last_year:
-            period_label = f"{first_year}"
-        elif len(parsed) == 1:
-            period_label = f"{first_year}.{first_month:02d}"
-        else:
-            period_label = f"{first_year}.{first_month:02d}-{last_month:02d}"
-
-        selected_map = selected_df.set_index("asset")["selected_agg_level"].to_dict()
-        values: list[str] = []
-        for asset in header_assets:
-            value = selected_map.get(asset)
-            values.append("-" if pd.isna(value) else str(int(value)))
-        rows.append((period_label, values))
-
-    window_width = max(len("Window"), max(len(label) for label, _ in rows))
-    asset_widths = []
-    for i, asset in enumerate(header_assets):
-        width = max(
-            len(display_names[asset]), max(len(values[i]) for _, values in rows)
-        )
-        asset_widths.append(width)
-
-    column_widths = [window_width, *asset_widths]
-    header = " | ".join(
-        [f"{'Window':<{window_width}}"]
-        + [
-            f"{display_names[asset]:<{asset_widths[i]}}"
-            for i, asset in enumerate(header_assets)
-        ]
-    )
-    separator = "-+-".join("-" * width for width in column_widths)
-    body = [
-        " | ".join(
-            [f"{label:<{window_width}}"]
-            + [f"{values[i]:<{asset_widths[i]}}" for i in range(len(header_assets))]
-        )
-        for label, values in rows
+    intro = [
+        "Strict gate (80% pass-rate). Selected ell per window:",
+        "",
+        f"PASS_RATE_THRESHOLD = {PASS_RATE_THRESHOLD}",
+        f"VALID_OFFSET_RATIO_THRESHOLD = {VALID_OFFSET_RATIO_THRESHOLD}",
+        f"ALPHA = {ALPHA}",
+        "",
+        f"AGG_START = {AGG_START}",
+        f"AGG_STOP = {AGG_STOP}",
+        f"AGG_STEP = {AGG_STEP}",
     ]
+    text = format_selection_table(period_selected_frames, intro)
+    if not text:
+        return
 
     output_path = summary_root / "selected_ell_by_window.txt"
-    text = "\n".join(
-        [
-            "Strict gate (80% pass-rate). Selected ell per window:",
-            "",
-            f"PASS_RATE_THRESHOLD = {PASS_RATE_THRESHOLD}",
-            f"VALID_OFFSET_RATIO_THRESHOLD = {VALID_OFFSET_RATIO_THRESHOLD}",
-            f"ALPHA = {ALPHA}",
-            "",
-            f"AGG_START = {AGG_START}",
-            f"AGG_STOP = {AGG_STOP}",
-            f"AGG_STEP = {AGG_STEP}",
-            "",
-            header,
-            separator,
-            *body,
-            "",
-        ]
-    )
     output_path.write_text(text, encoding="utf-8")
     print(f"[saved] {output_path}")
 

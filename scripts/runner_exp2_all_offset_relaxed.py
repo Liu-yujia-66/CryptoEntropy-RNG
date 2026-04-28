@@ -42,7 +42,8 @@ from src.stats import (
     monobit_test,
     summarize_bits_full,
 )
-from src.utils import ASSET_ORDER, fmt_elapsed, period_dir_name
+from src.exp2_summary import format_selection_table
+from src.utils import fmt_elapsed, period_dir_name
 
 
 # Configuration
@@ -412,82 +413,26 @@ def _write_selected_ell_summary_txt(
     if not period_selected_frames:
         return
 
-    display_names = {
-        "BNBUSDT": "BNB",
-        "BTCUSDT": "BTC",
-        "DOGEUSDT": "DOGE",
-        "ETHUSDT": "ETH",
-        "SOLUSDT": "SOL",
-    }
-    header_assets = [asset for asset in ASSET_ORDER if asset in display_names]
-    rows: list[tuple[str, list[str]]] = []
-
-    for months, selected_df in period_selected_frames:
-        parsed = sorted((int(m[:4]), int(m[5:])) for m in months)
-        first_year, first_month = parsed[0]
-        last_year, last_month = parsed[-1]
-        if len(parsed) == 12 and first_year == last_year:
-            period_label = f"{first_year}"
-        elif len(parsed) == 1:
-            period_label = f"{first_year}.{first_month:02d}"
-        else:
-            period_label = f"{first_year}.{first_month:02d}-{last_month:02d}"
-
-        selected_map = selected_df.set_index("asset")["selected_agg_level"].to_dict()
-        values: list[str] = []
-        for asset in header_assets:
-            value = selected_map.get(asset)
-            values.append("-" if pd.isna(value) else str(int(value)))
-        rows.append((period_label, values))
-
-    window_width = max(len("Window"), max(len(label) for label, _ in rows))
-    asset_widths = []
-    for i, asset in enumerate(header_assets):
-        width = max(
-            len(display_names[asset]), max(len(values[i]) for _, values in rows)
-        )
-        asset_widths.append(width)
-
-    column_widths = [window_width, *asset_widths]
-    header = " | ".join(
-        [f"{'Window':<{window_width}}"]
-        + [
-            f"{display_names[asset]:<{asset_widths[i]}}"
-            for i, asset in enumerate(header_assets)
-        ]
-    )
-    separator = "-+-".join("-" * width for width in column_widths)
-    body = [
-        " | ".join(
-            [f"{label:<{window_width}}"]
-            + [f"{values[i]:<{asset_widths[i]}}" for i in range(len(header_assets))]
-        )
-        for label, values in rows
+    intro = [
+        "Results. Selected ell per window:",
+        "",
+        f"RELAXED_MIN_PASS_ABSOLUTE = {RELAXED_MIN_PASS_ABSOLUTE}",
+        f"RELAXED_MIN_PASS_FRACTION = {RELAXED_MIN_PASS_FRACTION}",
+        "",
+        f"DEFAULT_AGG_START = {AGG_START}",
+        f"DEFAULT_AGG_STOP = {AGG_STOP}",
+        f"DEFAULT_AGG_STEP = {AGG_STEP}",
+        "",
+        *[
+            f"{asset} = ({start}, {stop}, {step})"
+            for asset, (start, stop, step) in ASSET_AGG_CONFIG.items()
+        ],
     ]
+    text = format_selection_table(period_selected_frames, intro)
+    if not text:
+        return
 
     output_path = summary_root / "selected_ell_by_window.txt"
-    text = "\n".join(
-        [
-            "Results. Selected ell per window:",
-            "",
-            f"RELAXED_MIN_PASS_ABSOLUTE = {RELAXED_MIN_PASS_ABSOLUTE}",
-            f"RELAXED_MIN_PASS_FRACTION = {RELAXED_MIN_PASS_FRACTION}",
-            "",
-            f"DEFAULT_AGG_START = {AGG_START}",
-            f"DEFAULT_AGG_STOP = {AGG_STOP}",
-            f"DEFAULT_AGG_STEP = {AGG_STEP}",
-            "",
-            *[
-                f"{asset} = ({start}, {stop}, {step})"
-                for asset, (start, stop, step) in ASSET_AGG_CONFIG.items()
-            ],
-            "",
-            header,
-            separator,
-            *body,
-            "",
-        ]
-    )
     output_path.write_text(text, encoding="utf-8")
     print(f"[saved] {output_path}")
 
