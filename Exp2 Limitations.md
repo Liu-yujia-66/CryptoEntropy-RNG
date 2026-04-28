@@ -41,11 +41,11 @@
 - 不能把它当成固定阶数条件下的严格可比曲线；
 - 正式的选择结论应更多依赖 `all-offset` 的 pass-rate / selected-`\ell` 结果，而不是单条 `single-offset` predictability 曲线的拐点位置。
 
-**已在本版中补上这一诊断**：`summarize_bits_full` 现同时输出 adaptive-$k$ 的 `predictability_pvalue` 与固定 $k=2$ 的 `predictability_k2_pvalue`，后者对应 Price predictability 2024 §4.4 "pairs of signs" 检验，用于跨 $\ell$ 的严格可比诊断。两条曲线在 plot 中并列显示。
+为缓解此问题，`summarize_bits_full` 同时输出 adaptive-$k$ 的 `predictability_pvalue` 与固定 $k=2$ 的 `predictability_k2_pvalue`，后者对应 Price predictability 2024 §4.4 "pairs of signs" 检验，用于跨 $\ell$ 的严格可比诊断。两条曲线在 plot 中并列显示。
 
 ## Approximate Entropy 的 block size（已由 m=5 取代 m=2）
 
-此前默认使用 `block_size = 2`，担心对高阶重复结构不敏感。**本版已将默认 `block_size` 改为 5**，对齐 Emergence of Randomness 2025 Table 4 的 NIST STS 参数设置。当前样本长度（`MIN_BIT_COUNT = 2000` 起步，大多数 `\ell` 下远高于 $2^{m+2}=128$ 的最低要求），固定 `m = 5` 是可行且更信息量更大的选择。
+采用默认 `block_size = 5`，对齐 Emergence of Randomness 2025 Table 4 的 NIST STS 参数设置。当前样本长度（`MIN_BIT_COUNT = 2000` 起步，大多数 `\ell` 下远高于 $2^{m+2}=128$ 的最低要求），固定 `m = 5` 是可行且更信息量更大的选择；早期版本曾用 `m = 2`，对高阶重复结构不敏感。
 
 如果后续希望再做 robustness，更合理的增强是**多个 `m` 值的稳定性对照**（例如 `m \in \{3, 5, 7\}`），而不是单一 `m`。
 
@@ -188,14 +188,16 @@ Plan A 只覆盖 transaction-time 轴（trade-count）。Thesis Specification §
 
 ## Gate taxonomy（四档 acceptance rule）
 
-到当前版本为止，Exp 2 的可选 gate 共四档，由松到严：
+到当前版本为止，Exp 2 的可选 gate 共四档，由松到严。**注意 gate 与聚合轴绑定**：`relaxed` 仅用于 transaction-time（Plan A），`+runs` / `+runs+apen` 仅用于 1s-bars（Plan B）；`is_acceptable` (base) 是两条轴的共用主 gate。
 
-| Gate | 判据 | 出处 | 用途 |
-|---|---|---|---|
-| `relaxed` | `num_pass ≥ max(3, ⌈0.03·N_valid⌉)` on pred + mono, α=0.01 per offset | `runner_exp2_all_offset_relaxed.py` | Plan A heuristic，asset coverage 的补充证据 |
-| `is_acceptable`（base） | `valid_offset_ratio ≥ 0.80` AND `pred_pass_rate ≥ 0.80` AND `monobit_pass_rate ≥ 0.80` | `runner_exp2_all_offset{,_1sbars}.py` | 主 gate（transaction-time 与 1s-bars 通用） |
-| `is_acceptable_with_runs` | base AND `runs_pass_rate ≥ 0.80` | `runner_exp2_all_offset_1sbars.py` | 1s-bars CSV 的额外列；对一阶相关性敏感的下游场景参考 |
-| `is_acceptable_with_runs_apen` | base + runs AND `approximate_entropy_pass_rate ≥ 0.80` | `select_ell_exp2_1sbars.py`（post-processing 合成，不写回 CSV） | 进一步收紧到高阶 block 结构；实测会明显推高 ℓ\*，仅作 sensitivity 参考 |
+| Gate | 适用聚合轴 | 判据 | 出处 | 用途 |
+|---|---|---|---|---|
+| `relaxed` | **transaction-time only** | `num_pass ≥ max(3, ⌈0.03·N_valid⌉)` on pred + mono, α=0.01 per offset | `runner_exp2_all_offset_relaxed.py` | Plan A heuristic，asset coverage 的补充证据 |
+| `is_acceptable`（base） | transaction-time / 1s-bars 共用 | `valid_offset_ratio ≥ 0.80` AND `pred_pass_rate ≥ 0.80` AND `monobit_pass_rate ≥ 0.80` | `runner_exp2_all_offset{,_1sbars}.py` | 主 gate |
+| `is_acceptable_with_runs` | **1s-bars only** | base AND `runs_pass_rate ≥ 0.80` | `runner_exp2_all_offset_1sbars.py` | 1s-bars CSV 的额外列；Plan B 下报告独立性改善的核心证据（不是 sensitivity） |
+| `is_acceptable_with_runs_apen` | **1s-bars only** | base + runs AND `approximate_entropy_pass_rate ≥ 0.80` | `select_ell_exp2_1sbars.py`（post-processing 合成，不写回 CSV） | 进一步收紧到高阶 block 结构；实测会明显推高 ℓ\*，仅作 sensitivity 参考 |
+
+Bonferroni / Šidák 不在表内，因为它们是 `relaxed` 在 transaction-time 下的 sensitivity mode（per-offset α 改为 α/N_valid 或 1−(1−α)^(1/N_valid)，仍走 ∃-pass 规则）。结果保存于 `data/processed/experiment2/relaxed-all-offset-per-month-bonferroni-(10,2000,2)/`，不采纳为主分析的方向性论证见 [Plan A §8.2](Exp2%20Plan%20A%20-%20Relaxed%20Gate.md#82-bonferroni--šidák-作为-sensitivity-mode)。
 
 实证结论（1s-bars，15 窗口 × 5 资产）：
 - base → +runs：大部分窗口 ℓ\* 不变或小幅上移，少数被完全封死（无可行 ℓ）

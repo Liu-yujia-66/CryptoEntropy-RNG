@@ -67,21 +67,20 @@ is_acceptable_relaxed =
 
 ## 5. 事后结果
 
-实际跑过的配置(详见 `data/processed/experiment2/relaxed-*`):
+主分析配置:`data/processed/experiment2/relaxed-all-offset-per-month(3,0.03)-(10,2000,2)/`(per-month,heuristic gate `(F=3, f=0.03)`,$\ell$ 网格 step=2;BNB/DOGE/SOL = (10, 2000, 2),ETH = (300, 2000, 2),BTC = (700, 3000, 2))。
+
+Sensitivity 配置:`data/processed/experiment2/relaxed-all-offset-per-month-bonferroni-(10,2000,2)/`(per-month,Bonferroni gate `α/N`,同 step=2 网格,仅 2025.01-03 三个月)。详见 §8.2。
 
 | 配置 | 覆盖率 | 备注 |
 |---|---|---|
-| Quarterly, (3, 0.03), step 2 | BTC 5/5,ETH 5/5 | BTC 季度 ℓ 落在 1292-2356 |
-| Quarterly, (5, 0.05), step 10 | BTC 5/5,ETH 5/5 | 略高,BTC 1330-2610 |
-| Quarterly, (5, 0.05), step 25 | BTC 2/6(粗网格漏) | 网格太粗,边界 ℓ 被跳过 |
-| **Per-month, (3, 0.03), step 2** | **5 asset × 15 month 全覆盖** | 主分析版本 |
-| Per-month, (3, 0.03), step 5 | 同上 | 数值和 step 2 几乎一致 |
+| **Per-month, heuristic (3, 0.03), step 2** | **5 asset × 15 month 全覆盖** | 主分析版本 |
+| Per-month, Bonferroni, step 2 (3 months) | 3/3 月份 × 5 asset 全覆盖 | Sensitivity 对照,见 §8.2 |
 
-### 5.1 Per-month 主结果
+### 5.1 Per-month 主结果(heuristic step=2)
 
 - **全 75 个 (asset, month) 都 selected**:Plan A 在 asset coverage 层面完全达成目标
-- BTC per-month ℓ 范围 870-1750,呈**跨时间单调下降**(2025.01 = 1750 → 2026.03 = 880)
-- DOGE、SOL 等流动性较低的资产也有类似下降趋势
+- BTC per-month ℓ 范围 870-1750,大趋势是跨时间下降(2025.01 = 1750 → 2026.03 = 880),但中间月份不是严格单调(2025.07 = 1376 反弹)
+- DOGE 48-594、SOL 66-596、BNB 128-464、ETH 400-1194;DOGE/SOL/BNB 在 2026 后期已掉到 48-128 量级
 - Throughput ~0.02 bits/s(对比 strict ~0.003,约 7× 提升)
 
 ### 5.2 Witness 诊断(k=2 / Runs 残留)
@@ -110,7 +109,7 @@ Strict gate 下的 k=2 / Runs pass-rate 本就贴 0,说明这是 transaction-tim
 
 | 方案 | bits/s(典型) |
 |---|---|
-| strict 80%, quarterly | ~0.003 |
+| strict 80%, monthly | ~0.003 |
 | relaxed (3, 0.03), monthly | ~0.02 |
 
 ### 5.4 跨市场一致性:复现 Emergence of Randomness 2025 Case 2("高交易活动资产收敛慢")
@@ -133,17 +132,17 @@ Emergence of Randomness 2025 Case 2 明确陈述:randomness 收敛速度与 trad
 
 Paper 使用范围:**a = 1…50**(Price predictability 2024),**ℓ = 1…100**(Emergence of Randomness 2025)。
 
-**本 thesis 的 5 个 crypto**(Binance Spot,per-month relaxed selected ℓ):
+**本 thesis 的 5 个 crypto**(Binance Spot,per-month relaxed selected ℓ;§5.1 step=2 主分析):
 
 | Asset | 日均 trades/s(量级) | selected ℓ 范围(15 mo) | 2026.03 代表值 |
 |---|---|---|---|
 | BTCUSDT | ~50–200 | 870–1750 | 880 |
-| ETHUSDT | ~30–100 | 420–1194 | 442 |
-| SOLUSDT | ~20–80  | 66–598   | 66 |
+| ETHUSDT | ~30–100 | 400–1194 | 442 |
+| SOLUSDT | ~20–80  | 66–596   | 66  |
 | BNBUSDT | ~5–30   | 128–464  | 128 |
-| DOGEUSDT| ~5–30   | 48–594   | 48 |
+| DOGEUSDT| ~5–30   | 48–594   | 48  |
 
-本 thesis 使用范围:**ℓ = 50…2000, step 2**。起点即 Emergence of Randomness 2025 上限,上限是 Emergence of Randomness 2025 的 20×、Price predictability 2024 的 40×。
+本 thesis 使用范围:**ℓ = 10…2000, step 2**(per-asset start 见 §5)。起点低于 Emergence of Randomness 2025 上限,上限是 Emergence of Randomness 2025 的 20×、Price predictability 2024 的 40×。
 
 **三重一致性**:
 1. Paper 内部:股票 trades/s ↑ ⇒ 所需 ℓ ↑(Emergence of Randomness 2025 Case 2)
@@ -197,7 +196,7 @@ p ≪ α" 形成鲜明对比。因此 §5.2 里 "k=2 / Runs 残留是源数据�
 >
 > (1) **Direction mismatch**: Bonferroni / Šidák control the family-wise probability of falsely rejecting H₀ (Type I error) by shrinking α. Under an ∃-pass rule, shrinking α makes each offset *easier* to pass (p ≥ α/N is a strictly weaker bar than p ≥ α), so the family-wise probability of falsely *accepting* a non-random sequence *increases* rather than decreases. The correction goes in the wrong direction for the 'random by chance' concern it is meant to address. This is essentially a Type-I-vs-Type-II mismatch: classical α-correction does not directly address the Type-II side, which is the side relevant to ∃-pass.
 >
-> (2) **Empirical check**: On the 2025-01 window, Bonferroni mode with per-offset α = 0.01 / N_valid produced systematically *smaller* selected ℓ than the heuristic gate (BNB 218 vs 244, BTC 1364 vs 1750, DOGE 274 vs 594, ETH 500 vs 800, SOL 334 vs 596). As predicted by (1), the lower ℓ reflects a more permissive threshold rather than a stronger randomness claim. Šidák produces essentially identical numbers for our N (where α/N ≈ 1 − (1−α)^(1/N))."
+> (2) **Empirical check**: On the 2025-01–03 windows, Bonferroni mode with per-offset α = 0.01 / N_valid produced systematically *smaller* selected ℓ than the heuristic gate (both at step=2 on the same grid). For 2025.01: BNB 218 vs 244, BTC 1364 vs 1750, DOGE 274 vs 594, ETH 500 vs 800, SOL 334 vs 596. 2025.02 and 2025.03 follow the same direction. As predicted by (1), the lower ℓ reflects a more permissive threshold rather than a stronger randomness claim. Šidák produces essentially identical numbers for our N (where α/N ≈ 1 − (1−α)^(1/N))."
 
 ### 8.3 代码实现位置
 

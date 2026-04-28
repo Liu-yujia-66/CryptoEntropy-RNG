@@ -45,7 +45,7 @@ PASS_RATE_THRESHOLD = 0.80，ALPHA = 0.01 per offset，与 Plan A strict 一致�
 |---|---|---|
 | 聚合轴 | trade-count | physical seconds |
 | ℓ 范围 | 50–2000, step 25 | 10–700, step 2 |
-| Strict base coverage | 低（BTC/ETH 跨季度才能过）→ 逼出 relaxed | **70/75 = 93%** |
+| Strict base coverage | 低（BTC 8/15、ETH 2/15、SOL 2/15 月份不过）→ 逼出 relaxed | **70/75 = 93%** |
 | 主 gate | heuristic relaxed `(3, 0.03)` | strict base（80% pass rate） |
 | 需要 relaxed？ | 是（否则无覆盖） | 否（strict 已达标） |
 

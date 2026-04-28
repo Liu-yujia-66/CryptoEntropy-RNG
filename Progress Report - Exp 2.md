@@ -15,11 +15,11 @@ Initial Plan 里 Exp2 的目标是：在多个 aggregation level $\ell$ 下把 c
 | 阶段 | 聚合方式 | 检验 gate | 来源 |
 |---|---|---|---|
 | 初版 | single-offset | 直接看 Shannon entropy、p(1)、runs p-value | Initial Plan |
-| 中间版 | transaction-time all-offset strict | ≥80% offsets 过 D + Monobit | Emergence of Randomness 2025 |
+| 中间版 | transaction-time all-offset strict | ≥80% valid + ≥80% pass D + ≥80% pass Monobit（完整 gate 见 §3.1） | Emergence of Randomness 2025 |
 | relaxed | transaction-time all-offset relaxed | heuristic ∃-pass gate | 导师 2026-04 建议 |
-| 终版 | **1-second bar** all-offset strict | ≥80% offsets 过 D + Monobit（base）；另报 +Runs / +Runs+ApEn | Spec §5 "several time scales" + 独立性侧空间 |
+| 终版 | **1-second bar** all-offset strict | ≥80% valid + ≥80% pass D + ≥80% pass Monobit（base）；另报 +Runs / +Runs+ApEn | Spec §5 "several time scales" + 独立性侧空间 |
 
-数据：5 个 USDT spot 对（BTC, ETH, BNB, SOL, DOGE），2025 全年 + 2026Q1，来自 Binance aggTrades。
+数据：5 个 USDT spot 对（BTC, ETH, BNB, SOL, DOGE），2025.01–2026.03（15 个月），来自 Binance aggTrades。所有 gate 均以 per-month 为分析单元。
 
 ---
 
@@ -30,41 +30,44 @@ Initial Plan 里 Exp2 的目标是：在多个 aggregation level $\ell$ 下把 c
 对齐 Initial Plan 的最初设计：每个 asset 只生成一条聚合序列，扫描 $\ell$ 观察 p-value 随 $\ell$ 的演化。
 
 - 固定 `offset = 0`（取每 $\ell$ 个 trade 的第一笔价格）
-- $\ell \in \{50, 100, \ldots, 2000\}$，step 50
-- Periods：5 个季度 + 2025 全年
+- $\ell \in \{50, 75, \ldots, 2000\}$，step 25
+- Periods：15 个月（2025.01–2026.03）
 - 每个 (asset, $\ell$) 上跑完整检验电池：Monobit、Runs、ApproxEntropy (m=5)、Predictability D（adaptive k）、D(k=2)、Shannon-bias
 - 实现详见 [scripts/runner_exp2_single_offset.py](scripts/runner_exp2_single_offset.py)
 
 **更早的非正式试探**（使用 Shannon entropy、p(1)、lag-1 autocorrelation 等直接指标）曾给出 $\ell \approx 200 / 500 / 1000$ 的启发性分档。引入正式检验电池后这组启发值被 supersede，下文以 runner 输出的正式 p-value 结果为准。
 
-### 2.2 结果（2025 全年）
+### 2.2 结果（per-month, single-offset gate）
 
-**每个 asset 的首次过线 $\ell$**（p-value ≥ 0.01；"—" 表示 $\ell \leq 2000$ 内从未过线）：
+数据：`data/processed/experiment2/single-offset-per-month(50,2000,25)/selected_ell_by_window.txt`。
+判据：在 $\ell$ 网格 $\{50, 75, \ldots, 2000\}$（step 25）上取最小的 $\ell$，使 offset=0 的 bitstream 同时满足 Predictability（adaptive $k$）p ≥ α 和 Monobit p ≥ α，且 `bit_count ≥ MIN_BIT_COUNT = 2000`。"—" 表示 $\ell \leq 2000$ 内无可接受 $\ell$。
 
-| Asset | Monobit | Runs | ApproxEntropy | Predictability (adaptive k) | D(k=2) |
+| Window | BNB | BTC  | DOGE | ETH  | SOL |
 |---|---|---|---|---|---|
-| BNBUSDT  | 150 | — | 1550 | 950  | — |
-| BTCUSDT  | 950 | — | —    | —    | — |
-| DOGEUSDT | 450 | — | 1450 | 900  | — |
-| ETHUSDT  | 250 | — | —    | —    | — |
-| SOLUSDT  | 50  | — | 1250 | 1250 | — |
+| 2025.01 | 275 | —    | 825  | 925  | 750 |
+| 2025.02 | 475 | 1650 | 225  | 875  | 500 |
+| 2025.03 | 250 | 1800 | 375  | 625  | 275 |
+| 2025.04 | 250 | 1700 | 275  | 750  | 225 |
+| 2025.05 | 250 | 1500 | 225  | 1250 | 400 |
+| 2025.06 | 200 | 1100 | 125  | 525  | 225 |
+| 2025.07 | 375 | 1975 | 250  | 600  | 400 |
+| 2025.08 | 275 | —    | 250  | 1575 | 475 |
+| 2025.09 | 350 | 900  | 250  | 850  | 300 |
+| 2025.10 | 850 | 1375 | 175  | 725  | 225 |
+| 2025.11 | 300 | 1125 | 150  | 875  | 150 |
+| 2025.12 | 275 | 1050 | 75   | 600  | 125 |
+| 2026.01 | 250 | 1300 | 125  | 725  | 175 |
+| 2026.02 | 250 | 1225 | 100  | 550  | 200 |
+| 2026.03 | 175 | 1075 | 100  | 575  | 100 |
 
-**$\ell = 2000$ 时的 p-value（2025 全年）**：
-
-| Asset | Monobit | Runs | ApproxEntropy | Pred | D(k=2) | bits/s |
-|---|---|---|---|---|---|---|
-| BNB  | 0.38   | 2.4e-3 | 0.68   | 0.60   | 2.4e-3 | 2.6e-3 |
-| BTC  | 1.5e-3 | 5.7e-50| 4.5e-43| ≈ 0    | ≈ 0    | 7.0e-3 |
-| DOGE | 0.054  | 2.2e-4 | 0.18   | 0.47   | 2.3e-4 | 2.1e-3 |
-| ETH  | 0.58   | 5.3e-14| 1.9e-8 | 5.3e-5 | 5.3e-14| 7.5e-3 |
-| SOL  | 0.19   | 7.5e-4 | 0.11   | 0.13   | 7.6e-4 | 2.5e-3 |
+Coverage：**73/75** cells（BNB / DOGE / ETH / SOL 15/15，BTC 13/15；BTC 在 2025.01 与 2025.08 单 offset 下不过）。
 
 ### 2.3 观察
 
-1. **Monobit 最易满足**：除 BTC 外 4 个资产在 $\ell \leq 450$ 就过线
-2. **Predictability / ApproxEntropy 需要大 $\ell$**：BNB/DOGE/SOL 在 900–1550 过线；**BTC/ETH 在整个 $\ell \leq 2000$ 区间都不过**
-3. **Runs 和 D(k=2) 全 5 个资产在整个 $\ell$ 扫描范围内都不过**：即使 $\ell = 2000$ 也 p ≪ α。这是 1 阶结构（bid-ask bounce 式符号交替）在 single-offset 下的直接表现，与 Price predictability 2024 §4.4 的 SNAP/F/CCL 机理一致
-4. **BTC 是最难的 asset**：在 $\ell = 2000$ 时 5 个检验里只有 Monobit 接近边缘通过（p=0.0015），其余全部 p ≪ 10⁻⁴⁰
+1. **BTC 是最难的 asset**：单 offset 也只有 13/15 月份过线；过线月份 selected $\ell$ 仍在 900–1975 之间，远高于其它 4 个资产
+2. **DOGE / BNB 最容易**：DOGE 后期 selected $\ell$ 已掉到 75–125（2025.12–2026.03），BNB 多月在 200–300 区间
+3. **跨月稳定性差**：同一资产相邻月份 selected $\ell$ 跳动剧烈（如 BNB 2025.10 = 850 vs 2025.09 = 350、2025.11 = 300），single-offset 没有"稳定值"概念
+4. **跨年下降趋势**：除 BTC 外 4 个资产从 2025.01 → 2026.03 总体呈下降，与微观结构演化一致（per-month 时间分辨率才能看到）
 
 ### 2.4 Single-offset 的方法学局限
 
@@ -94,30 +97,13 @@ Initial Plan 里 Exp2 的目标是：在多个 aggregation level $\ell$ 下把 c
 ### 3.2 Grid 设计
 
 - $\ell \in \{50, 75, \ldots, 2000\}$，step 25（共 79 个候选）
-- Periods：5 个季度 + 2025 全年（共 6 个窗口）
+- Periods：15 个月（2025.01–2026.03）
 - 每 period 内 3 个并发 worker
 - 实现详见 [scripts/runner_exp2_all_offset.py](scripts/runner_exp2_all_offset.py)
 
-### 3.3 Selected $\ell$（strict, quarterly）结果
+### 3.3 Selected $\ell$（strict, per-month）结果
 
-最初的 strict 跑的是 5 个季度 + 2025 全年 6 个 window：
-
-| Window | BNB | BTC | DOGE | ETH | SOL |
-|---|---|---|---|---|---|
-| 2025.01-03 | 1300 | — | 1450 | 1550 | 1825 |
-| 2025.04-06 | 625  | — | 700  | 1325 | 825 |
-| 2025.07-09 | 800  | — | 950  | —    | 1100 |
-| 2025.10-12 | 875  | — | 1675 | 1550 | 450 |
-| 2026.01-03 | 375  | — | 850  | 1575 | 1900 |
-| 2025 全年  | 1775 | — | 1450 | —    | 1600 |
-
-（"—" 表示 $\ell \leq 2000$ 内无满足 gate 的 $\ell$）
-
-Coverage：22/30 cells。BTC 全部 6 个窗口失败，ETH 2 个窗口失败。
-
-### 3.4 Selected $\ell$（strict, per-month）结果
-
-为了与后文的 relaxed per-month 保持同一 analysis unit，后来补跑了 strict 的月度版本（同一 gate、同一 grid step=25）：
+数据：`data/processed/experiment2/all-offset-per-month(50,2000,25)/selected_ell_by_window.txt`。
 
 | Month | BNB | BTC | DOGE | ETH | SOL |
 |---|---|---|---|---|---|
@@ -137,32 +123,16 @@ Coverage：22/30 cells。BTC 全部 6 个窗口失败，ETH 2 个窗口失败。
 | 2026.02 | 325  | —    | 125  | 650  | 225 |
 | 2026.03 | 200  | 1225 | 125  | 750  | 150 |
 
-Coverage：**63/75** cells（BNB 15/15、DOGE 15/15、ETH 13/15、SOL 13/15、BTC 7/15）。相比 quarterly 的 22/30（73%）提升到 84%：monthly 粒度让 BTC 在 2025H2 + 2026Q1 的 7 个月份首次进入 selected，同时 ETH/SOL 的失败数从 quarterly 的 2/6 压到 monthly 的 2/15 左右。**季度窗口把某些月份的通过信号平均掉了**。
+Coverage：**63/75** cells（BNB 15/15、DOGE 15/15、ETH 13/15、SOL 13/15、BTC 7/15）。BTC 在 8/15 个月份 strict 下不过；ETH（2025.05、2025.08）与 SOL（2025.01、2025.02）各有 2 个月份不过。
 
-### 3.5 Selected $\ell$ 上的 reference 检验 pass-rate
+### 3.4 Strict 结果的局限
 
-Gate 外的 Runs 和 D(k=2) 在 selected $\ell$ 处表现差异显著：
-
-| Window | Asset | $\ell$* | D (gate) | Monobit (gate) | D(k=2) | Runs | bits/s |
-|---|---|---|---|---|---|---|---|
-| 2025 | BNB | 1775 | 0.82 | 1.00 | 0.03 | 0.03 | 2.9e-3 |
-| 2025 | DOGE | 1450 | 0.83 | 0.81 | 0.01 | 0.01 | 2.8e-3 |
-| 2025 | SOL | 1600 | 0.87 | 0.88 | 0.00 | 0.00 | 3.1e-3 |
-| Q4 2025 | DOGE | 1675 | 0.98 | 0.85 | **1.00** | **1.00** | 1.7e-3 |
-| Q4 2025 | SOL | 450 | 0.98 | 0.85 | **0.73** | **0.72** | 1.0e-2 |
-| Q1 2026 | DOGE | 850 | 0.98 | 0.86 | **1.00** | **1.00** | 2.2e-3 |
-| Q1 2026 | SOL | 1900 | 1.00 | 0.82 | **0.98** | **0.98** | 1.6e-3 |
-
-大多数 selected $\ell$ 下 D(k=2) / Runs pass-rate ≤ 0.05（即 1 阶结构显著），**但在 2025Q4 和 2026Q1 的 DOGE / SOL 上出现例外**：两项 reference 检验 pass-rate ≥ 0.72，和 gate 检验一起全部通过。说明在某些 (asset, period) 组合下，单一 $\ell$ 可以让全部 5 项检验同时通过。
-
-### 3.6 Strict 结果的局限
-
-- **Quarterly 下 BTC 全部 6 个窗口失败**；ETH 2 个窗口失败（2025.07-09, 2025 全年）。Monthly 下 BTC 仍有 8/15 个月份不过；ETH、SOL 各 2 个月份不过
-- Selected $\ell$ 跨窗口跳动剧烈（e.g., BNB quarterly: 1300 → 625 → 800 → 875 → 375 → 1775；monthly 下 BTC 在能过的月份里也在 1225–1825 之间跳动），regime-dependent
+- BTC 8/15 个月份不过；ETH、SOL 各 2 个月份不过。Asset coverage 在月度粒度下仍只有 63/75（84%）
+- Selected $\ell$ 跨月份跳动剧烈（e.g., BNB 在能过的月份里 200–1025 之间；BTC 在能过的月份里 1225–1825 之间），regime-dependent
 - 吞吐量 ~0.003 bits/s（selected $\ell \sim 1500$ 时），实用性边缘
-- D(k=2) / Runs 在大多数 selected $\ell$ 上贴 0，印证 §3.1 的 bid-ask bounce 机理（Price predictability 2024 §4.4 在 crypto 的再现）
+- D(k=2) / Runs 在大多数 selected $\ell$ 上 pass-rate 贴 0，印证 §3.1 的 bid-ask bounce 机理（Price predictability 2024 §4.4 在 crypto 的再现）；per-asset / per-month 的 `runs_pass_rate` / `predictability_k2_pass_rate` 见 `all-offset-per-month(50,2000,25)/by_asset/<ASSET>/<ASSET>_summary_exp2_k_acceptance.csv`
 
-→ Monthly 粒度让 strict 的 asset coverage 从 quarterly 的 73%（22/30）升到 84%（63/75），但 BTC 仍有接近一半月份不过；asset coverage 不完整是**不能被 Methodology 规避的结果**。需要方法学调整。
+→ Strict 在月度下 asset coverage 仍不完整，特别是 BTC；这是**不能被 Methodology 规避的结果**，需要方法学调整。
 
 ---
 
@@ -188,29 +158,51 @@ is_acceptable_relaxed =
 
 ### 4.3 Selected $\ell$（relaxed, per-month, step 2）
 
-| Month | BNB | BTC | DOGE | ETH | SOL |
+数据：`data/processed/experiment2/relaxed-all-offset-per-month(3,0.03)-(10,2000,2)/selected_ell_by_window.txt`。
+Per-asset $\ell$ 网格：BNB / DOGE / SOL = (10, 2000, 2)；ETH = (300, 2000, 2)；BTC = (700, 3000, 2)。
+
+| Month | BNB | BTC  | DOGE | ETH  | SOL |
 |---|---|---|---|---|---|
-| 2025.01 | 244 | 1750 | 594 | 800  | 596 |
-| 2025.02 | 286 | 1550 | 172 | 610  | 312 |
-| 2025.03 | 180 | 1576 | 214 | 436  | 180 |
-| 2025.04 | 176 | 1370 | 162 | 444  | 196 |
-| 2025.05 | 198 | 1248 | 156 | 550  | 226 |
-| 2025.06 | 146 | 924  | 72  | 400  | 104 |
-| 2025.07 | 268 | 1376 | 220 | 576  | 298 |
-| 2025.08 | 212 | 1314 | 214 | 1194 | 388 |
-| 2025.09 | 256 | 900  | 238 | 698  | 270 |
-| 2025.10 | 464 | 1150 | 124 | 714  | 164 |
-| 2025.11 | 232 | 988  | 72  | 660  | 108 |
-| 2025.12 | 206 | 870  | 48  | 470  | 98  |
-| 2026.01 | 218 | 1030 | 66  | 556  | 110 |
-| 2026.02 | 158 | 998  | 56  | 420  | 76  |
-| 2026.03 | 128 | 880  | 48  | 442  | 66  |
+| 2025.01 | 244 | 1750 | 594  | 800  | 596 |
+| 2025.02 | 286 | 1550 | 172  | 610  | 312 |
+| 2025.03 | 180 | 1576 | 214  | 436  | 180 |
+| 2025.04 | 176 | 1370 | 162  | 444  | 196 |
+| 2025.05 | 198 | 1248 | 156  | 550  | 226 |
+| 2025.06 | 146 | 924  | 72   | 400  | 104 |
+| 2025.07 | 268 | 1376 | 220  | 576  | 298 |
+| 2025.08 | 212 | 1314 | 214  | 1194 | 388 |
+| 2025.09 | 256 | 900  | 238  | 698  | 270 |
+| 2025.10 | 464 | 1150 | 124  | 714  | 164 |
+| 2025.11 | 232 | 988  | 72   | 660  | 108 |
+| 2025.12 | 206 | 870  | 48   | 470  | 98  |
+| 2026.01 | 218 | 1030 | 66   | 556  | 110 |
+| 2026.02 | 158 | 998  | 56   | 420  | 76  |
+| 2026.03 | 128 | 880  | 48   | 442  | 66  |
 
 ### 4.4 Relaxed 阶段的主要 findings
 
 1. **全覆盖**：5 asset × 15 month = 75/75 月份全部 selected（含 BTC、ETH 所有窗口）。对比 monthly strict 的 63/75（BTC 7/15、ETH 13/15、SOL 13/15），relaxed 把剩下 12 个未覆盖 cell 全部补齐
 2. **吞吐量提升**：bits/s 从 strict 的 ~0.003 抬升到 ~0.02，约 **7×**
 3. **Witness-offset k=2 / Runs 仍拒绝**：75/75 的 witness 在 D(k=2) 和 Runs 上 p ≪ α；这与 strict 下相同，说明这条 1 阶依赖**是 transaction-time 聚合轴的属性**（Price predictability 2024 §4.4 的 bid-ask bounce 机理），不是 relaxed gate 的问题。Paper Table 4 的 predictable-day k=2 p 值 = 0.0014 / 2.67e-10 / 0.044 在 SNAP/F/CCL 上一致呈现，Paper 明说 adaptive-k 会稀释 1 阶信号。本 thesis 在 crypto 上复现了这个 stylized fact。**后续 1-second bar 分析（§5 补充）显示该 1 阶结构在物理时间轴上可被破坏**——因此不是"源数据属性"，而是"transaction-time 轴属性"
+
+### 4.5 Bonferroni / Šidák sensitivity（不采纳为主分析）
+
+数据：`data/processed/experiment2/relaxed-all-offset-per-month-bonferroni-(10,2000,2)/selected_ell_by_window.txt`（仅跑 2025.01–03 三个月作为对照）。判据：保留 ∃-pass 规则，但 per-offset 阈值改为 $\alpha / N_\text{valid}$（Bonferroni）或 $1 - (1-\alpha)^{1/N_\text{valid}}$（Šidák）。$\ell$ 网格 step 2（BNB/DOGE/SOL: (10, 2000, 2)；ETH: (300, 2000, 2)；BTC: (700, 3000, 2)），与 §4.3 主分析共用同一网格分辨率，可直接比较。
+
+| Month | BNB | BTC  | DOGE | ETH | SOL |
+|---|---|---|---|---|---|
+| 2025.01 | 218 | 1364 | 274  | 500 | 334 |
+| 2025.02 | 190 | 1144 | 132  | 422 | 208 |
+| 2025.03 | 156 | 1252 | 102  | 338 | 154 |
+
+与 §4.3 同月对照（heuristic vs Bonferroni，同 step=2）：
+
+| 2025.01 | BNB | BTC | DOGE | ETH | SOL |
+|---|---|---|---|---|---|
+| heuristic (3, 0.03) | 244 | 1750 | 594 | 800 | 596 |
+| Bonferroni | 218 | 1364 | 274 | 500 | 334 |
+
+Bonferroni 系统性给出**更小**的 selected $\ell$。理由是缩小 per-offset α 在 ∃-pass 规则下让单 offset **更容易**过线（$p \geq \alpha/N$ 比 $p \geq \alpha$ 严格更弱），与"防止偶然通过"的初衷方向相反。这是 Type-I-vs-Type-II 不匹配的实证表现，详细论证见 [Plan A §8.2](Exp2%20Plan%20A%20-%20Relaxed%20Gate.md#82-bonferroni--šidák-作为-sensitivity-mode)。**Šidák 在本 N 量级下数值与 Bonferroni 几乎一致**（$\alpha/N \approx 1 - (1-\alpha)^{1/N}$）。
 
 ---
 
@@ -226,7 +218,7 @@ Thesis Specification §5 明确要求在 "several time scales" 上做聚合；§
 - ℓ 网格 = 10..700 step 2（ℓ 单位：秒）
 - 仍是 all-offset 构造
 - Gate 与 transaction-time 一致：≥80% offset 同时通过 D_adaptive 和 Monobit（α=0.01）
-- 数据：5 个 USDT spot × 15 个月（2025 全年 + 2026 Q1）
+- 数据：5 个 USDT spot × 15 个月（2025.01–2026.03）
 - 实现详见 [scripts/runner_exp2_all_offset_1sbars.py](scripts/runner_exp2_all_offset_1sbars.py)
 
 ### 5.3 三档 gate
@@ -287,7 +279,7 @@ $\ell$\* 量级 10²–10³ 秒（分钟级），对应 bits/s ≈ 10⁻³。
 
 ## 6. 三重一致性：本实验在两篇 Reference 框架下的定位
 
-### 5.1 Paper 内部：trades/s ↑ → 所需 $\ell$ ↑（Emergence of Randomness 2025 Case 2）
+### 6.1 Paper 内部：trades/s ↑ → 所需 $\ell$ ↑（Emergence of Randomness 2025 Case 2）
 
 Price predictability 2024 / Emergence of Randomness 2025 的 9 支美股（2022-08 至 2022-11，6.5h 交易日）：
 
@@ -307,31 +299,35 @@ Paper 使用的 aggregation range：**Price predictability 2024: $a = 1\ldots50$
 
 Emergence of Randomness 2025 明确陈述：高交易活动资产收敛慢。AAPL/TSLA 在 $\ell=100$ 仍有许多检验失败；CCL/LLY 在小 $\ell$ 即收敛。
 
-### 5.2 本 thesis 内部：同一规律
+### 6.2 本 thesis 内部：同一规律
+
+数据来源：§4.3 relaxed per-month step=2（覆盖 5 asset × 15 月）。
 
 | Asset | 日均 trades/s（量级） | selected $\ell$ 范围（15 mo）| 2026.03 代表 |
 |---|---|---|---|
 | BTCUSDT | ~50–200 | 870–1750 | 880 |
-| ETHUSDT | ~30–100 | 420–1194 | 442 |
-| SOLUSDT | ~20–80  | 66–598  | 66 |
-| BNBUSDT | ~5–30   | 128–464 | 128 |
-| DOGEUSDT| ~5–30   | 48–594  | 48 |
+| ETHUSDT | ~30–100 | 400–1194 | 442 |
+| SOLUSDT | ~20–80  | 66–596   | 66  |
+| BNBUSDT | ~5–30   | 128–464  | 128 |
+| DOGEUSDT| ~5–30   | 48–594   | 48  |
 
 **$\ell$ 排序 = trades/s 排序**（BTC > ETH > SOL ≈ BNB ≈ DOGE）。
 
-### 5.3 跨市场外推
+### 6.3 跨市场外推
 
 - crypto trades/s ≈ 股票的 10×（BTC ~100+ vs TSLA ~8）
 - 所需 $\ell$ 也 ≈ 10×（Paper 的 ~100 → 本 thesis 的 ~1000 量级）
 
 → 本 thesis 的 **$\ell = 50\ldots2000$** 不是任意上限选择，而是 Price predictability 2024 §5.1 外推预测（"crypto 比 AAPL 更高频 → 需要比 50 更大的 $\ell$"）的兑现。
 
-### 5.4 小结
+### 6.4 小结
 
 Exp2 的实验结果在三个层面上与 Reference 一致：
 1. 复现 Price predictability 2024 §4.4 的 SNAP/F/CCL bid-ask bounce（k=2 / Runs 残留）
 2. 复现 Emergence of Randomness 2025 Case 2 的 trades/s vs $\ell$ 单调关系
 3. crypto 到 $\ell \sim 2000$ 的外推兑现 Price predictability 2024 §5.1 的预判
+
+注：上述跨市场一致性论证**限定在 transaction-time 聚合轴**。1-second bar 轴上每个 bar 的信息量随 trades/s 饱和，trades/s ↑ ⇒ $\ell_\text{sec}$ ↑ 的单调关系不直接转移（见 [Plan B §4.4](Exp2%20Plan%20B%20-%20Time-Based%20Aggregation.md#44)）。
 
 ---
 
