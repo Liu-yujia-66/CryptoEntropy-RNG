@@ -22,14 +22,21 @@ pip install -r requirements.txt
 ```text
 .
 ├── data/
-│   ├── raw/          # original downloaded aggTrades CSV files
-│   ├── interim/      # intermediate files (e.g. matplotlib config cache)
-│   └── processed/    # experiment outputs (not tracked by git)
-├── scripts/          # experiment runners and plot scripts
-└── src/              # shared library modules
-    ├── data_io.py    # data loading, timestamp detection, PreparedMonthData
-    ├── stats.py      # statistical tests (monobit, runs, approx entropy m=5, shannon bias, predictability adaptive-k + k=2)
-    └── bitstream.py  # offset-based bitstream construction
+│   ├── raw/             # original downloaded aggTrades CSV files
+│   ├── interim/         # intermediate files (e.g. matplotlib config cache)
+│   └── processed/       # experiment outputs (not tracked by git)
+├── scripts/             # experiment runners, plot scripts, ℓ* selectors
+├── src/                 # shared library modules
+│   ├── data_io.py       # data loading, timestamp detection, PreparedMonthData
+│   ├── bars.py          # 1-second bar pipeline (UTC bucketing + forward-fill)
+│   ├── bitstream.py     # offset-based bitstream construction
+│   ├── stats.py         # randomness tests (Monobit, Runs, ApEn m=5, Shannon bias, Predictability D adaptive-k + k=2)
+│   ├── exp2_summary.py  # shared summary helpers used by Experiment 2 runners
+│   └── utils.py         # small utilities
+└── thesis/              # LaTeX thesis source
+    ├── main.tex         # primary thesis manuscript
+    ├── references.bib   # bibliography
+    └── figures/         # figures included in the manuscript
 ```
 
 ## Running Experiments
@@ -57,7 +64,7 @@ python scripts/plot_exp2_single_offset.py --summary-dir <path>
 
 ```bash
 python scripts/runner_exp2_all_offset.py
-python scripts/plot_exp2_all_offsets_optimized.py --summary-dir <path>
+python scripts/plot_exp2_all_offset_optimized.py --summary-dir <path>
 ```
 
 **All-offset, relaxed gate** (Plan A heuristic: ≥max(3, ⌈0.03·N⌉) offsets pass, α=0.01 per offset):
@@ -81,8 +88,11 @@ python scripts/select_ell_exp2_1sbars.py --summary-dir <root>
 ```
 
 Edit the configuration block at the top of each runner to set assets,
-periods, and ℓ ranges. See `Exp2 Limitations.md` for the gate taxonomy and
-`Exp2 Plan A - Relaxed Gate.md` for the relaxed-gate design.
+periods, and ℓ ranges. Design notes:
+
+- `Exp2 Limitations.md` — gate taxonomy and known limitations
+- `Exp2 Plan A - Relaxed Gate.md` — relaxed-gate heuristic
+- `Exp2 Plan B - Time-Based Aggregation.md` — 1-second bar physical-time axis
 
 ## Data
 
@@ -98,3 +108,12 @@ Two granularities are used:
 - **Experiment 2** — monthly files (e.g. `BTCUSDT-aggTrades-2025-01.csv`)
 
 Assets used: `BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`
+
+## Thesis
+
+The accompanying thesis manuscript lives under `thesis/` and is built from
+`thesis/main.tex` against `thesis/references.bib`. The manuscript's
+Methods chapter (Ch.~3) maps onto source files as follows: `src/stats.py`
+provides the test battery, `src/bars.py` provides the 1-second bar pipeline,
+and the runners under `scripts/` drive the all-offset acceptance loop on
+both the transaction-time and physical-time axes.
