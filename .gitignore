@@ -2,18 +2,16 @@
 **/.DS_Store
 mine.txt
 thesis_specification.md
-MASTER_THESIS_PLAN___Random_Number_Generator-signed.pdf
+thesis-draft-chinese.md
 
 .venv/
 __pycache__/
 *.pyc
 *.pyo
-*.egg-info/
 
 data/interim/.mplconfig/
 
 data/raw/*
-!data/raw/.gitkeep
 
 data/processed/
 notes/

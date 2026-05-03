@@ -1,4 +1,7 @@
-\documentclass[11pt,titlepage,openright]{book}
+% \documentclass[11pt,titlepage,openright]{book}
+\documentclass[11pt,titlepage,openany]{book}  % screen-only PDF: chapters start on any page (no blank-page padding)
+\let\cleardoublepage\clearpage
+
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[british]{babel}
@@ -8,6 +11,11 @@
 \usepackage[scale=0.9]{inconsolata}
 
 \usepackage[sf]{titlesec}
+%% Force all sections and subsections (numbered and starred) to render in bold sans-serif.
+\titleformat{\section}{\sffamily\Large\bfseries}{\thesection}{1em}{}
+\titleformat{name=\section,numberless}{\sffamily\Large\bfseries}{}{0pt}{}
+\titleformat{\subsection}{\sffamily\large\bfseries}{\thesubsection}{1em}{}
+\titleformat{name=\subsection,numberless}{\sffamily\large\bfseries}{}{0pt}{}
 \usepackage[round,sort,authoryear]{natbib}
 %\usepackage[export]{adjustbox}
 
@@ -44,6 +52,15 @@
 \setlist[itemize,3]{label=\RED{AVOID}}
 % Description lists to use semibold labels
 \setlist[description]{font=\libertineSB}
+
+%% Paragraph spacing: visible vertical gap between paragraphs.
+\setlength{\parskip}{0.6em plus 0.15em minus 0.05em}
+%% American/technical style: no first-line indent, rely on parskip alone.
+\setlength{\parindent}{0pt}
+
+%% Make lists hug their lead-in paragraph: drop the extra topsep/partopsep
+%% so the gap before/after itemize/enumerate equals \parskip, not parskip + topsep.
+\setlist{topsep=0pt, partopsep=0pt}
 
 \usepackage[twoside,labelfont=sf]{caption}
 
@@ -189,22 +206,44 @@ method, key results, and takeaway.}
 \section{Motivation}
 \label{sec:motivation}
 
-%% TODO (指南 Introduction §1):
-%% Start with a high-level introduction to the area and then motivate
-%% why the topic of the thesis is important.
+Random numbers are used in many areas, including cryptography, digital signatures, data anonymisation, and simulation. They are one of the most basic building blocks for system security and correctness. There are two common types of random number sources. The first type is the pseudo-random number generator (PRNG), which uses a deterministic algorithm. Its output is unpredictable when the seed is unknown, but the algorithm itself still needs a high-entropy seed to start with. The second type is the true random number generator (TRNG), which uses physical processes such as electronic noise or quantum sources. TRNGs provide real unpredictability, but they require special hardware, are expensive to deploy, and are not easy to access on ordinary user devices.
+
+In recent years, a middle-ground approach has attracted research interest: can we extract randomness from high-entropy natural data sources that already exist and are publicly accessible? Financial market data is a typical candidate. It is produced by a large number of participants at very high frequency, contains microstructure noise that is hard to model, and shows complexity that is hard to compress beyond simple statistical structure. Several previous works have explored this idea under the name \emph{financial randomness beacon}~\citep{clark2010beacon,chiba2024lfsr,landis2025beacon}, trying to turn public market data into a trusted random source.
+
+However, using the sign of price changes directly as a random bit stream does not work. Many studies have shown that high-frequency trading sequences look balanced at the marginal level (for example, the up/down ratio is close to 1:1), but neighbouring symbols are strongly correlated at short lags. A common cause is microstructure noise such as the bid-ask bounce~\citep{cont2001stylized,shternshis2025predictability}. To turn this kind of ``looks random but is conditionally predictable'' data into a qualified random bit stream, the key question is: can suitable time aggregation bypass these short-range dependencies so that the resulting sequence passes standard randomness tests? If so, on which ``time'' axis should we aggregate, and how coarse should the aggregation be?
+
+This thesis focuses on the cryptocurrency spot market. Compared to traditional stock markets, the cryptocurrency market runs 24~hours a day without exchange closures, and its public APIs (such as Binance) allow direct download of every trade, with no broker batching or routing layer in between, so market activity is directly visible to end users. From an engineering point of view, this makes it more suitable for building a public random number service. Using this data as input, we study the feasibility of the full pipeline of ``aggregation $\Rightarrow$ encoding $\Rightarrow$ testing $\Rightarrow$ application.''
 
 \section{Brief Literature Review}
 \label{sec:brief-lit-review}
 
-%% TODO (指南 Introduction §2):
-%% Briefly summarize the main existing methods and their shortcomings.
+The literature directly related to this work falls into two categories.
+
+The first category studies financial data as a randomness source. \citet{clark2010beacon} discussed how public financial data can be used as a public random beacon. \citet{chiba2024lfsr} combined cryptocurrency prices with a Linear Feedback Shift Register (LFSR) to design a structured extraction scheme. \citet{landis2025beacon} evaluated the security of financial beacons under an active attacker model.
+
+The second category studies the statistical properties of financial data itself. \citet{cont2001stylized} summarised a set of stylised facts about returns, including heavy tails, volatility clustering, and the slow decay of absolute-returns autocorrelation. \citet{bouchaud2002orderbooks} described the microstructure of price formation from an order-book point of view. \citet{shternshis2025predictability} formalised the bid-ask bounce as a testable diagnostic for negative correlation between neighbouring symbols. Together, these works explain why raw financial data cannot be used as a random source directly.
+
+The most directly relevant works are \citet{shternshis2025predictability} and \citet{onofri2025emergence}. The first paper introduces an entropy-based predictability test $D$ based on the Kullback--Leibler divergence. It also shows empirically that low-price stocks display first-order negative correlation caused by the bid-ask bounce when $k$ is small. The second paper extends this framework into an ``all-offset'' aggregation construction. On 8~US stocks and 1~ETF, it observes a same-direction relationship: the higher the trades per second, the larger the aggregation level $\ell$ that is needed. \citet{shternshis2022moscow} provides complementary evidence from another market: the efficiency of the Moscow Stock Exchange varies over time and across industry sectors.
+
+We can summarise two methodological gaps in the existing work:
+\begin{enumerate}
+\item \textbf{Cross-market transfer of method.} It is not yet clear whether the statistical framework from the second category (the entropy-based $D$ test and the all-offset construction) still works on the cryptocurrency market, which has higher frequency and is more continuous. The required parameter adjustments (especially the aggregation level $\ell$ and the choice of aggregation axis) have not been systematically tested.
+\item \textbf{End-to-end engineering pipeline.} The first category (protocol design and engineering) and the second category (statistical validation) are separate. The full chain from ``aggregation parameter selection $\to$ single-asset throughput $\to$ multi-asset fusion $\to$ password generator'' has not been completed on cryptocurrency data.
+\end{enumerate}
+
+This thesis addresses both gaps. Experiment~2 responds to gap~(1), and along the way explores two aggregation axes (transaction-time and 1-second bar), where we also observe that independence depends on the axis. Experiment~3, Experiment~4, and the Password Generator Prototype together respond to gap~(2).
 
 \section{Research Questions}
 \label{sec:research-questions}
 
-%% TODO (指南 Introduction §3):
-%% In light of the motivation and existing knowledge, what are the
-%% outstanding gaps that you intend to fill?
+Based on the motivation and the literature gaps above, this thesis answers the three research questions:
+\begin{description}
+\item[RQ1.] How can we design an aggregation algorithm that extracts statistically independent random sequences from cryptocurrency price data?
+\item[RQ2.] To what extent can these sequences pass standard randomness tests?
+\item[RQ3.] Can this data-driven randomness be effectively applied to secure password generation?
+\end{description}
+
+A note on the scope of RQ3: statistical tests are necessary but not sufficient for cryptographic security. The prototype in this thesis treats market-derived bits as entropy input to a cryptographic component, not directly as a password string. The phrase ``effective application'' in RQ3 is therefore limited to ``providing acceptable entropy for a standard password-conditioning pipeline,'' rather than replacing that pipeline.
 
 %% =====================================================================
 %% Chapter 2 — Background
@@ -216,17 +255,56 @@ method, key results, and takeaway.}
 \section{Literature Review}
 \label{sec:literature-review}
 
-%% TODO (指南 Background §1):
-%% This should not read like a shopping list, but instead synthesize
-%% and compare different approaches related to your research questions.
+This section reviews seven related papers and follows the two-category split introduced in the Brief Literature Review. The statistical validation line~\citep{cont2001stylized,shternshis2025predictability,onofri2025emergence,shternshis2022moscow} focuses on the randomness structure of financial time series itself. The application / protocol line~\citep{clark2010beacon,chiba2024lfsr,landis2025beacon} focuses on turning that data into cryptographic components.
+
+\subsection*{Stylised facts and microstructure noise}
+
+On the statistical properties of high-frequency financial time series, \citet{cont2001stylized} summarised a set of ``stylised facts'' from the returns viewpoint. These include heavy-tailed distributions, volatility clustering, slow power-law decay of the autocorrelation of absolute returns, and---most relevant to this thesis---negative autocorrelation at very short lags (microstructure scale) caused by the bid-ask bounce. That is, trade prices switch frequently between the best bid and the best ask, which makes the bit sequence encoded by the sign of $\Delta p$ strongly negatively correlated at neighbouring positions. \citet{shternshis2025predictability} formalised this negative autocorrelation as a testable first-order residual diagnostic, and provided empirical evidence on three low-price stocks: SNAP, F, and CCL.
+
+Together, these works show that any approach which directly treats the ``sign of price change'' as i.i.d.\ random bits is almost certain to fail at the raw tick level. This is the fundamental reason why this thesis treats ``aggregation'' as the core of the method.
+
+\subsection*{Financial data as a randomness source}
+
+This line of work can be split into three complementary levels of abstraction.
+\begin{enumerate}
+\item \textbf{Protocol level.} \citet{clark2010beacon} used computational finance tools to estimate that each stock in the Dow Jones 30 provides 6--9 bits of entropy per day. Based on this, they designed a 128-bit verifiable beacon protocol---this answers the question ``does financial data really contain randomness, and can it be turned into a cryptographic seed?''.
+\item \textbf{Bit extraction level.} \citet{chiba2024lfsr} used cryptocurrency prices to perturb the sampling interval of an LFSR, produced a bit stream, and ran Diehard tests as a sanity check---this answers ``how can we engineer and whiten market signals into usable random bits?''.
+\item \textbf{Adversarial security level.} \citet{landis2025beacon} showed under an active attacker model that manipulating an S\&P~100 beacon would require billions of dollars of capital and millions of dollars of slippage cost---this moves the question from ``how much entropy is there'' to ``is the entropy trustworthy under adversarial conditions?''.
+\end{enumerate}
+
+These three works each operate at a different level of abstraction, but none of them connects all the way from ``is the underlying data really random'' to a ``production-grade RNG''---this is exactly the Brief Literature Review gap~(2) made concrete on cryptocurrency data. This thesis sits at the bit extraction level, but differs from \citet{chiba2024lfsr} in that it does not depend on extra LFSR post-processing, and instead directly evaluates whether the aggregated raw data itself satisfies modern randomness tests.
+
+\subsection*{Entropy-based predictability and the all-offset construction}
+
+\citet{shternshis2025predictability} proposed an entropy-based predictability test $D$ based on the Kullback--Leibler divergence (formal definition in \cref{sec:background-information}). The test treats $k$ as a user-defined hyper-parameter; \citet{shternshis2025predictability} use the fixed setting $k = 2$ in their~\S4.4 to study first-order pair-of-signs predictability (the bid-ask bounce mentioned above). This thesis adopts the same $k = 2$ setup as a first-order diagnostic, complementary to the adaptive-$k$ main statistic, which gives the methodological starting point for separating first-order structure from higher-order structure. We follow this $D$ test and the dual-$k$ setup (adaptive $k$ + fixed $k = 2$).
+
+\citet{onofri2025emergence} further upgraded this framework into an ``all-offset'' construction (which Onofri calls ``$\ell$-samplings''): for each aggregation level $\ell$, it constructs $\ell$ separate bit streams from $\ell$ different starting offsets and tests each independently, then uses a ``pass-rate threshold'' as the acceptance rule for $\ell$. This construction replaces ``does a single $p$-value pass the line'' with ``do most offsets pass the line at the same time'', and uses a box plot of $-\log_{10}(p)$ to directly show how the $p$-value distribution shifts as $\ell$ grows. The paper produces a robust empirical observation on 8 US stocks plus 1 ETF: the higher the trades per second of an asset, the larger the minimum required aggregation level $\ell^*$ (the original paper also notes that some assets show non-monotonic behaviour). This thesis directly reuses this all-offset construction and pass-rate threshold framework, and extends it for the cryptocurrency setting with a relaxed gate and a 1-second bar physical-time axis.
+
+\subsection*{Market efficiency under stress}
+
+\citet{shternshis2022moscow} used Shannon entropy, KL distance, and Monte Carlo simulation to show that the efficiency of the Moscow Stock Exchange in 2012--2021 changed significantly over time and depended on the industry sector. This is independent evidence from another type of market that ``the properties of financial time series are not stationary''. This observation supports our choice to report the selected $\ell^*$ across monthly time windows rather than treating it as a stable value.
 
 \section{Background Information}
 \label{sec:background-information}
 
-%% TODO (指南 Background §2):
-%% Provide sufficient detail so that one of your peers would be able
-%% to understand the thesis. In other words, your thesis should be
-%% self-contained for someone in the same program.
+This section reviews the core concepts used in the later Methods chapter. All randomness tests are based on the same null hypothesis $H_0$: the sequence is i.i.d. Each test gives a $p$-value, and this thesis uses $\alpha = 0.01$ uniformly as the acceptance threshold.
+
+\textbf{Shannon entropy and conditional unpredictability.} For a binary random variable $X \in \{0, 1\}$, the Shannon entropy is defined as $H(X) = -\sum p(x) \log_2 p(x)$, and reaches its maximum value of 1 when $p(0) = p(1) = 0.5$. It is worth emphasising that a marginal entropy close to 1 does not imply that the sequence is unpredictable---a sequence that simply alternates between 0 and 1 also has marginal distribution 0.5/0.5, but its conditional entropy $H(X_t \mid X_{t-1}) \approx 0$. The criterion for ``is it random'' used in this thesis is always based on conditional distributions or multi-symbol statistics, not on $H$ alone. Throughout this thesis we report the deviation $|H(X) - 1|$ as the \emph{Shannon bias}, used as a summary indicator only and not as an acceptance criterion.
+
+\textbf{Predictability $\boldsymbol{D}$.} The entropy-based predictability test proposed by \citet{shternshis2025predictability} is based on the Kullback--Leibler divergence. It measures how much the joint distribution of consecutive symbol blocks of length $k$ in the sequence deviates from the distribution that would be expected under i.i.d. Under $H_0$ it asymptotically follows a $\chi^2$ distribution with $(s^{k-1} - 1)(s - 1)$ degrees of freedom (which equals $2^{k-1} - 1$ in the binary case). The window length $k$ is a user-chosen hyper-parameter.
+
+\textbf{NIST SP800-22 STS.} The NIST Statistical Test Suite (STS) is a randomness test battery published by NIST. It contains 15 sub-tests in 5 categories: Frequency, Pattern, Entropy / Complexity, Spectral, and Random Walks. Common representative sub-tests include:
+\begin{itemize}
+\item \textbf{Monobit (frequency category).} It uses the standard-normal approximation of $|S_n|/\sqrt{n}$ to detect deviation of the frequency of 1s from 0.5.
+\item \textbf{Runs (pattern category).} It splits the sequence into maximal same-symbol segments and uses ``the deviation of the number of segments from the i.i.d.\ expectation'' as the statistic, which is sensitive to correlation between neighbouring bits.
+\item \textbf{Approximate Entropy (entropy / complexity category).} It measures the complexity of the sequence by taking the difference of the appearance frequencies of windows of length $m$ and $m + 1$; the window length $m$ is a user-chosen hyper-parameter.
+\end{itemize}
+
+\textbf{TestU01 batteries.} It is a randomness test library (used by \citet{onofri2025emergence} on financial data). Per the TestU01 user guide, it contains sub-batteries such as Alphabit (9 sub-tests, friendly to small samples) and Rabbit (26 sub-tests, comprehensive). It complements NIST STS.
+
+\textbf{Aggregated trades and 1-second bars.} Binance provides two main data views: tick-by-tick trades (\texttt{trades}) and aggregated trades (\texttt{aggTrades}). The latter merges trades that happen at the same price, in the same direction, and at the same time into a single record. This reduces data size while keeping the price-change and sign information. Based on these two views, aggregation can be done on the transaction-time axis (by trade count) and on the physical-time axis (by second) respectively.
+
+\textbf{Multiple testing.} The Bonferroni and Šidák corrections are used to control the family-wise Type-I error rate, by tightening the per-test significance level $\alpha$ to $\alpha/N$ or $1 - (1 - \alpha)^{1/N}$. They target the ``$\exists$-reject'' family; the same kind of correction has no symmetric form for the ``$\exists$-pass'' family.
 
 %% =====================================================================
 %% Chapter 3 — Methods
@@ -236,12 +314,186 @@ method, key results, and takeaway.}
 \chapter{Methods}
 \label{cha:methods}
 
-%% TODO (指南 Methods §1, §2):
-%% Describe your method in detail, focusing on the parts that are new
-%% or different from previous work. Explain in what way your method
-%% addresses your research questions. Use mathematical formalism where
-%% appropriate; algorithms should preferably be typeset using the
-%% algorithm environment.
+This chapter describes all the methods used in this thesis to turn a price sequence into a random bit stream that can be tested. It is organised in the order ``encoding $\to$ construction $\to$ tests $\to$ acceptance rule $\to$ axis comparison $\to$ throughput.''
+\begin{itemize}
+\item \textbf{Reused from prior work.} The $D$ test and the dual-$k$ setup from \citet{shternshis2025predictability}; the all-offset construction and Approximate Entropy with $m = 5$ from \citet{onofri2025emergence}. The strict gate (\cref{sec:acceptance-gates}) operationalises Onofri's all-offset framework with a fixed 0.80 pass-rate threshold.
+\item \textbf{New in this thesis} (all are adjustments for the 24/7 continuous high-frequency cryptocurrency market): the relaxed gate (\cref{sec:acceptance-gates}), the 1-second bar physical-time pipeline (\cref{sec:time-based-pipeline}), and the throughput metric (\cref{sec:throughput-metric}).
+\end{itemize}
+
+\section{Aggregation and Encoding}
+\label{sec:aggregation-encoding}
+
+Let the original tick sequence be $\{(t_i, p_i)\}_{i=0}^{N-1}$, where $t_i$ is the timestamp and $p_i$ is the trade price (0-based indexing, consistent with the code implementation). An aggregation level $\ell$ and a starting offset $o \in \{0, 1, \ldots, \ell - 1\}$ together define a sampled subsequence
+\begin{equation}
+q^{(\ell, o)}_j = p_{o + j\ell}, \qquad j = 0, 1, \ldots, \lfloor (N - o - 1) / \ell \rfloor.
+\end{equation}
+Its difference is $\Delta q^{(\ell, o)}_j = q^{(\ell, o)}_j - q^{(\ell, o)}_{j-1}$, for $j = 1, 2, \ldots, \lfloor (N - o - 1) / \ell \rfloor$. The bit encoding takes the sign:
+\begin{equation}
+b^{(\ell, o)}_j = \mathbb{1}\!\left[\Delta q^{(\ell, o)}_j > 0\right].
+\end{equation}
+
+If $\Delta q^{(\ell, o)}_j = 0$, that bit is removed (\emph{drop-zero}, consistent with \citet{shternshis2025predictability}) and the later bits shift forward to keep the bit stream continuous. This removal is necessary: the share of zero differences is large at small $\ell$, and mapping zeros to either 0 or 1 by any fixed rule would inject a clear bias.
+
+On the transaction-time axis, the unit of $\ell$ is ``number of trades''. On the physical-time axis, $p_i$ is first converted into ``per-second close price'' through the 1-second bar pipeline described in \cref{sec:time-based-pipeline}, and the unit of $\ell$ then becomes ``number of seconds''. All other encoding steps are the same on the two axes, which allows the experimental results from the two axes to be compared directly.
+
+\begin{algorithm}
+  \caption{Aggregation and bit encoding (single offset)}
+  \label{alg:encode}
+  \begin{algorithmic}[1]
+    \Require Tick prices $\{p_0, p_1, \ldots, p_{N-1}\}$, level $\ell$, offset $o$
+    \Ensure Bit stream $b$
+    \State $q \gets [\,p_o,\; p_{o+\ell},\; p_{o+2\ell},\; \ldots\,]$
+    \State $b \gets [\,]$
+    \For{$j = 1$ \textbf{to} $|q| - 1$}
+      \State $\Delta \gets q[j] - q[j-1]$
+      \If{$\Delta > 0$}
+        \State append $1$ to $b$
+      \ElsIf{$\Delta < 0$}
+        \State append $0$ to $b$
+      \Else
+        \State \textbf{skip} \Comment{drop-zero}
+      \EndIf
+    \EndFor
+    \State \Return $b$
+  \end{algorithmic}
+\end{algorithm}
+
+\section{All-Offset Construction}
+\label{sec:all-offset}
+
+The all-offset construction described in this section comes directly from the ``$\ell$-samplings'' framework proposed by \citet{onofri2025emergence}---for each aggregation level $\ell$, $\ell$ separate bit streams are built, one from each starting offset ($o = 0, 1, \ldots, \ell - 1$). This thesis follows this construction, and only adjusts the parameters on the cryptocurrency data (per-asset $\ell$ grid, step, and upper bound).
+
+For a fixed $\ell$, there are $\ell$ candidate offsets. The construction considers all $\ell$ bit streams together. Let $p^{(o)}$ denote the test $p$-value on each stream; the pass rate is defined as
+\begin{equation}
+r_{\text{pass}}(\ell, \alpha) = \frac{1}{N_{\text{valid}}(\ell)} \sum_{o \in \mathcal{O}_{\text{valid}}(\ell)} \mathbb{1}\!\left[p^{(o)} \ge \alpha\right],
+\end{equation}
+where $\mathcal{O}_{\text{valid}}(\ell)$ is the set of offsets with bit count at least $\texttt{MIN\_BIT\_COUNT} = 2000$. This threshold is a conservative engineering floor that ensures enough samples to support the $\chi^2$ asymptotic approximation of the $D$ test. Because different offsets share the same underlying tick data, the $\ell$ bit streams are strongly correlated (especially for large $\ell$); their simultaneous passing provides robust evidence that ``the sequence passes from many starting points'', but it cannot be interpreted as the result of compounding independent tests. This point determines the design choice for the acceptance rule in \cref{sec:acceptance-gates}.
+
+\section{Test Battery}
+\label{sec:test-battery}
+
+The test battery of this thesis is as follows:
+\begin{itemize}
+\item \textbf{Predictability $\boldsymbol{D}$ (adaptive $k$).} The main statistic, with $k = \lfloor 0.5 \log_2 n \rfloor$.
+\item \textbf{Predictability $\boldsymbol{D}$ (fixed $k = 2$).} A first-order diagnostic for residuals such as the bid-ask bounce.
+\item \textbf{Monobit.} A basic frequency test that checks the overall 0/1 balance.
+\item \textbf{Runs.} NIST-style, checking correlation between neighbouring bits. The NIST pre-frequency check is not implemented separately, since Monobit passing at $\alpha = 0.01$ implies $|\pi - 0.5| \le 1.288/\sqrt{n}$, which is strictly tighter than the NIST threshold $2/\sqrt{n}$; the check is therefore equivalently absorbed by the Monobit gate on every accepted~$\ell$.
+\item \textbf{Approximate Entropy ($m = 5$).} The multi-window complexity difference, aligned with Table~4 of \citet{onofri2025emergence}. The NIST default is $m = 2$ (more stable on short sequences); $m = 5$ is more sensitive to short-range structure but requires $n \gtrsim 10 \cdot 2^m \approx 320$ for the asymptotic distribution to be reliable. This thesis uses $n \ge 2000$, well above this threshold.
+\item \textbf{TestU01 Alphabit + Rabbit.} Cross-battery external validation for Experiments 3 and 4.
+\end{itemize}
+
+\textbf{When TestU01 is enabled.} Following the cross-battery design of \citet{onofri2025emergence}, the methodology of this thesis further includes the Alphabit and Rabbit sub-batteries of TestU01 as cross-battery external validation. Experiment 2 does not enable them---its goal is a coarse $\ell^*$ selection on the $\ell$ grid, and the per-(asset, $\ell$, offset) bit stream is only an intermediate output on the selection grid; its length is usually below the range where the cross-battery sanity check applies, so it is not a suitable input for cross-battery validation. Experiments 3 and 4 concatenate across months, assets, and offsets at the selected $\ell^*$, so that the length meets the sanity-check range in Table~3 of \citet{onofri2025emergence}, and the corresponding subsets of the Alphabit and Rabbit sub-tests are then enabled.
+
+\textbf{Why both fixed $\boldsymbol{k = 2}$ and adaptive $\boldsymbol{k}$?} Adaptive $k = \lfloor 0.5 \log_2 n \rfloor$ is usually 5 to 6 on ultra-high-frequency monthly samples. The $D$ test then has $2^{k-1} \approx 16$ to $32$ contexts; first-order correlation (such as the symbol reversal caused by the bid-ask bounce) is diluted across more than ten or even tens of positions, and the statistical power drops quickly. \citet{shternshis2025predictability} provides empirical evidence consistent with this: on predictable days, with fixed $k = 2$, the ``too strong sign reversal'' pattern (i.e., $\hat{p}(00) + \hat{p}(11) < 0.5$) is significant; when $k$ is raised to about 5 to 6, this pattern is no longer significant. We therefore keep $D(k = 2)$ as a first-order diagnostic for residuals such as the bid-ask bounce, complementary to $D(\text{adaptive } k)$. The former captures short-range structure, while the latter measures the overall predictability.
+
+\section{Acceptance Gates}
+\label{sec:acceptance-gates}
+
+The acceptance rule is the key step in the all-offset framework that maps the ``pass rate'' to ``whether $\ell$ is accepted''. This thesis uses two gates, introduced in chronological order.
+
+\textbf{Strict gate.} We operationalise the all-offset framework of \citet{onofri2025emergence} with a fixed 0.80 pass-rate threshold, and require the following three conditions to hold at the same time:
+\begin{equation}
+\begin{aligned}
+r_{\text{valid}}(\ell)            &\ge 0.80 \\
+r_{\text{pass}}^{D}(\ell)         &\ge 0.80 \\
+r_{\text{pass}}^{\text{Mono}}(\ell) &\ge 0.80
+\end{aligned}
+\end{equation}
+Here $\alpha = 0.01$ is taken from \citet{onofri2025emergence}. The pass rates of Runs and $D(k = 2)$ are recorded as supplementary diagnostics only and do not enter the acceptance criterion; the reason is given in \cref{sec:test-battery} on the dual-$k$ setup.
+
+\textbf{Relaxed gate (a heuristic newly introduced in this thesis).} The all-offset bit streams are strongly correlated. From an engineering point of view, the final system only needs to pick one usable witness offset; but in the statistical selection process, a simple ``$\exists$ pass'' rule would introduce a serious selection bias---even if the underlying sequence is completely random, as long as the number of offsets is large enough, it is almost certain that one of them will pass the $\alpha$ threshold by chance.
+
+Furthermore, no symmetric formal correction is available in standard multiple-testing theory---Bonferroni / Šidák controls the Type-I error of ``$\exists$ reject''; tightening $\alpha$ makes each offset \emph{more likely} to pass, so the family-wise probability of being ``mistakenly accepted as random'' actually rises in the opposite direction. This thesis therefore neither adopts ``$\exists$ pass'' (selection bias) nor adopts the Bonferroni / Šidák formal correction (the direction is reversed), and instead uses the following heuristic redundancy criterion:
+\begin{equation}
+\text{accept}_{\text{relaxed}}(\ell) \iff n_{\text{pass}}(\ell) \ge \max\!\left(F,\; \lceil f \cdot N_{\text{valid}}(\ell) \rceil\right),
+\end{equation}
+where $n_{\text{pass}}(\ell)$ is the number of offsets that pass both $D$ and Monobit (at $\alpha = 0.01$, uncorrected); $(F, f)$ are two tuning parameters. This thesis takes $(F, f) = (3, 0.03)$: $F$ gives the minimum redundancy of joint confirmation across multiple offsets, and $f$ is about three times the $\alpha = 0.01$ noise floor. This rule is explicitly labelled in the thesis as a \emph{heuristic robustness check}, not a formal correction.
+
+\begin{algorithm}
+  \caption{All-offset acceptance check at level $\ell$}
+  \label{alg:gate}
+  \begin{algorithmic}[1]
+    \Require Tick prices $\{p_i\}$, level $\ell$, $\text{gate} \in \{\text{strict}, \text{relaxed}\}$, $\alpha = 0.01$
+    \Ensure $\text{accept}(\ell) \in \{\text{true}, \text{false}\}$; witness offset (if accepted)
+    \State $\mathcal{O}_{\text{valid}} \gets \emptyset$
+    \For{$o = 0$ \textbf{to} $\ell - 1$}
+      \State $b \gets$ Algorithm~\ref{alg:encode} with $(p, \ell, o)$
+      \If{$|b| \ge \texttt{MIN\_BIT\_COUNT}$ ($= 2000$)}
+        \State compute and store $p^{D}(o),\; p^{\text{Mono}}(o)$ on $b$ \Comment{reused by both gates below}
+        \State add $o$ to $\mathcal{O}_{\text{valid}}$
+      \EndIf
+    \EndFor
+    \State $N_{\text{valid}} \gets |\mathcal{O}_{\text{valid}}|$
+    \State $r_{\text{valid}} \gets N_{\text{valid}} / \ell$
+    \If{$\text{gate} = \text{strict}$}
+      \State $r_{\text{pass}}^{D} \gets |\{o \in \mathcal{O}_{\text{valid}} : p^{D}(o) \ge \alpha\}| / N_{\text{valid}}$
+      \State $r_{\text{pass}}^{\text{Mono}} \gets |\{o \in \mathcal{O}_{\text{valid}} : p^{\text{Mono}}(o) \ge \alpha\}| / N_{\text{valid}}$
+      \State \Return $r_{\text{valid}} \ge 0.80 \;\land\; r_{\text{pass}}^{D} \ge 0.80 \;\land\; r_{\text{pass}}^{\text{Mono}} \ge 0.80$
+    \EndIf
+    \If{$\text{gate} = \text{relaxed}$}
+      \State $n_{\text{pass}} \gets |\{o \in \mathcal{O}_{\text{valid}} : p^{D}(o) \ge \alpha \;\land\; p^{\text{Mono}}(o) \ge \alpha\}|$
+      \State \Return $n_{\text{pass}} \ge \max(F,\; \lceil f \cdot N_{\text{valid}} \rceil)$ \Comment{$(F, f) = (3, 0.03)$}
+    \EndIf
+  \end{algorithmic}
+\end{algorithm}
+
+\textbf{Selection rule for $\ell^*$.} The smallest $\ell$ for which Algorithm~\ref{alg:gate} returns true is recorded as the selected $\ell^*$. The specific $\ell$ grid (per-asset values, step, and bounds) is given in \cref{cha:experiments}.
+
+\section{Time-Based Aggregation Pipeline}
+\label{sec:time-based-pipeline}
+
+\textbf{New in this thesis.} For the 24/7 continuous nature of the cryptocurrency market, this thesis introduces 1-second bars as a second, physical-time aggregation axis, to contrast with the results on the transaction-time axis. On the transaction-time axis the throughput moves with the trading frequency, while on the physical-time axis the throughput $1/\ell^*$ is a fixed value in physical time. In terms of the password generator application: the production latency on the transaction-time axis varies with how active the market is, while the production latency on the physical-time axis can be written into an SLA.
+
+The 1-second bar pipeline (Algorithm~\ref{alg:1sbar}) buckets trades by UTC seconds, applies forward-fill on empty seconds, then runs the standard difference + sign + drop-zero encoding from \cref{sec:aggregation-encoding} on the resulting per-second close-price sequence. Forward-filled seconds have zero difference and are dropped, so empty seconds do not enter the bit stream; forward-fill itself does not inject artificial bits.
+
+\begin{algorithm}
+  \caption{1-second bar pipeline (physical-time axis)}
+  \label{alg:1sbar}
+  \begin{algorithmic}[1]
+    \Require Trade stream $\{(t_i, p_i)\}$, level $\ell$ (seconds)
+    \Ensure Bit streams $\{b^{(\ell, o)}\}$ for $o = 0, \ldots, \ell - 1$
+    \Statex \Comment{Step 1: bucket by UTC second + forward-fill empty seconds}
+    \Statex \Comment{(the first observed second always contains a trade, since data starts at the first trade)}
+    \State group trades by $\lfloor t_i \rfloor$ \Comment{to whole UTC seconds}
+    \For{each second $s$ in order}
+      \If{$s$ has trade(s)}
+        \State $c_s \gets$ price of last trade in $s$
+      \Else
+        \State $c_s \gets c_{s-1}$ \Comment{forward-fill}
+      \EndIf
+    \EndFor
+    \Statex \Comment{Step 2 + 3: encode each offset via Algorithm~\ref{alg:encode}}
+    \For{$o = 0$ \textbf{to} $\ell - 1$}
+      \State $b^{(\ell, o)} \gets$ Algorithm~\ref{alg:encode} with $(\{c_s\}, \ell, o)$
+    \EndFor
+    \State \Return $\{b^{(\ell, o)}\}$
+  \end{algorithmic}
+\end{algorithm}
+
+The $\ell$ grid is taken as $[10, 700]$ with step 2. This covers both the optimistic case where ``second-level aggregation is enough'' and a longer (minute-level) aggregation for comparison. The upper bound of 700 seconds ($\approx 11.7$ minutes) corresponds to a reasonable latency upper bound for password generation.
+
+\section{Throughput Metric}
+\label{sec:throughput-metric}
+
+To align the methodological results with the downstream application, we record the throughput $r_b$ at each accepted $\ell^*$, defined as the effective output rate (in bits/s) of the witness offset bit stream at that $\ell^*$. On the transaction-time axis, $r_b$ is proportional to the asset's real-time trades/s (more bits in a faster market). On the physical-time axis, $r_b = 1/\ell^*$ is a fixed value.
+
+%% TODO: enable after Experiment 3 produces concrete throughput numbers.
+%% Concretely, producing a 256-bit cryptographic seed at throughput $r_b$ takes about $256 / r_b$ seconds. For the selected $\ell^*$ values measured in \cref{cha:experiments}, this latency ranges from minutes to hours and bounds the per-seed latency of the password generator prototype.
+
+\section{Reproducibility}
+\label{sec:reproducibility}
+
+The implementation accompanying this thesis will be made available at \RED{\textsf{[repository URL]}}. The repository \texttt{README} lists the full file index together with the commands used to reproduce the reported results.
+
+The methods described above map onto source files as follows: \texttt{src/stats.py} provides the full test battery (\cref{sec:test-battery}); \texttt{src/bars.py} provides the 1-second bar pipeline (\cref{alg:1sbar}); the runner scripts under \texttt{scripts/} drive the all-offset acceptance loop (\cref{alg:gate}) on both the transaction-time and physical-time axes. Experiment-specific configurations and processed CSV outputs are documented alongside each experiment in \cref{cha:experiments}.
+
+%% TODO before submission:
+%%   1. Replace the placeholder above with the actual repo URL
+%%      (GitHub link, or Zenodo DOI if a permanent archive is preferred).
+%%   2. Confirm the repository visibility is public (or attached to DiVA).
+%%   3. Verify that README contains:
+%%        - a file/directory index matching the claims of this section,
+%%        - the exact commands needed to reproduce every reported table.
 
 %% =====================================================================
 %% Chapter 4 — Experiments
