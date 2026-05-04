@@ -55,24 +55,18 @@ PERIODS: list[list[str]] = [
     ["2025-01"],
     ["2025-02"],
     ["2025-03"],
-    # ["2025-04"],
-    # ["2025-05"],
-    # ["2025-06"],
-    # ["2025-07"],
-    # ["2025-08"],
-    # ["2025-09"],
-    # ["2025-10"],
-    # ["2025-11"],
-    # ["2025-12"],
-    # ["2026-01"],
-    # ["2026-02"],
-    # ["2026-03"],
-    # ["2025-01", "2025-02", "2025-03"],
-    # ["2025-04", "2025-05", "2025-06"],
-    # ["2025-07", "2025-08", "2025-09"],
-    # ["2025-10", "2025-11", "2025-12"],
-    # ["2026-01", "2026-02", "2026-03"],
-    # [f"2025-{m:02d}" for m in range(1, 13)],
+    ["2025-04"],
+    ["2025-05"],
+    ["2025-06"],
+    ["2025-07"],
+    ["2025-08"],
+    ["2025-09"],
+    ["2025-10"],
+    ["2025-11"],
+    ["2025-12"],
+    ["2026-01"],
+    ["2026-02"],
+    ["2026-03"],
 ]
 
 RELAXED_MIN_PASS_ABSOLUTE = 3
@@ -85,7 +79,7 @@ RELAXED_MIN_PASS_FRACTION = 0.03
 # Bonferroni/Sidak are reported as sensitivity only — they loosen the per-offset
 # pass threshold, which is the wrong direction for the "random by chance"
 # concern the correction is intended to guard against.
-GATE_MODE: str = "bonferroni"
+GATE_MODE: str = "heuristic"
 
 AGG_START = 10
 AGG_STOP = 2000

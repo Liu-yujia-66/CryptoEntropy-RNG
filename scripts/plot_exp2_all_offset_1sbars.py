@@ -47,7 +47,7 @@ TESTS = [
     ("predictability_k2_pass_rate", "Predictability (k=2)", False),
     ("shannon_bias_pass_rate", "Shannon Bias", False),
     ("monobit_pass_rate", "Monobit", True),
-    ("runs_pass_rate", "Runs", True),
+    ("runs_pass_rate", "Runs", False),
     ("approximate_entropy_pass_rate", "Approx. Entropy (m=5)", False),
 ]
 
