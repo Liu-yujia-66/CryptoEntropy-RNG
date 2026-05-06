@@ -9,10 +9,10 @@ No gate/reference distinction — every test is plotted equally.
 
 Usage:
     python scripts/plot_exp2_all_offset_1sbars.py \
-        --summary-dir "data/processed/experiment2/all-offset-per-month-1sbars(10,700,2)/1month-2025.01"
+        --summary-dir "data/processed/experiment2/all-offset-per-month-1sbars(10,600,1)/1month-2025.01"
     
     扫某个目录下所有的：
-    for d in "data/processed/experiment2/all-offset-per-month-1sbars(10,700,2)"/1month-*/; do
+    for d in "data/processed/experiment2/all-offset-per-month-1sbars(10,600,1)"/1month-*/; do
         echo "=== $d ==="
         python scripts/plot_exp2_all_offset_1sbars.py --summary-dir "$d"
     done

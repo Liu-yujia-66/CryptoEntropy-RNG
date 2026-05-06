@@ -88,7 +88,7 @@ AGG_STEP = 2
 # per - month
 ASSET_AGG_CONFIG: dict[str, tuple[int, int, int]] = {
     "ETHUSDT": (200, AGG_STOP, AGG_STEP),
-    "BTCUSDT": (700, 3000, AGG_STEP),
+    "BTCUSDT": (700, AGG_STOP, AGG_STEP),
 }
 
 # heuristic keeps the legacy naming (no "heuristic-" prefix) so existing

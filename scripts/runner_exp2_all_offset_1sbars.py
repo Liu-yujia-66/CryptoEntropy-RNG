@@ -60,8 +60,8 @@ PERIODS: list[list[str]] = [
 # 1s-bar grid: ell counts in seconds, not trades. Smaller range than the
 # transaction-time runner because each bar already aggregates ~trades/s.
 AGG_START = 10
-AGG_STOP = 700
-AGG_STEP = 2
+AGG_STOP = 600
+AGG_STEP = 1
 AGG_LEVELS: list[int] = list(range(AGG_START, AGG_STOP + 1, AGG_STEP))
 
 MAX_ROWS: int | None = None
@@ -77,7 +77,7 @@ VALID_OFFSET_RATIO_THRESHOLD = 0.80
 SAVE_BITSTREAMS = False
 SAVE_OFFSET_STATS = False
 
-MAX_WORKERS = 3
+MAX_WORKERS = 5
 
 INPUT_ROOT = Path(
     os.getenv("CRYPTOENTROPY_INPUT_ROOT", "data/raw/binance/spot/aggTrades")
