@@ -41,11 +41,48 @@ pip install -r requirements.txt
 
 ## Running Experiments
 
-### Experiment 1 — Baseline Randomness
+### Data Overview (thesis Table 4.1)
+
+Compute the per-asset trades/s summary across the full 15-month sample
+(2025-01 to 2026-03). Reads the same monthly `aggTrades` archives as
+Experiment 2 and recovers the raw `trades` count from each row's
+`last_trade_id - first_trade_id + 1` interval, so a separate `trades`
+endpoint download is not needed.
+
+```bash
+python scripts/data_overview.py
+```
+
+Outputs (under `data/processed/data_overview/`):
+
+- `by_asset_month.csv` — 75 rows = 5 assets × 15 months. Columns include
+  `agg_trades_count`, `raw_trades_count`, `duration_seconds`,
+  `agg_trades_per_second`, `raw_trades_per_second`, `raw_to_agg_ratio`.
+- `by_asset_summary.csv` — 5 rows = per-asset median and [p5, p95] across
+  the 15 months for both raw and aggTrades rates. **Data source for
+  thesis Table 4.1** (`tab:trades-per-second`).
+
+### Experiment 1 — Baseline Randomness (thesis Table 4.2 + Appendix Tables A.1, A.2)
+
+Daily-window baseline diagnostics on raw tick data; defaults to the five
+assets (`BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`) over
+2026-01-01 to 2026-01-05 with `--aggregation-k 1`.
 
 ```bash
 python scripts/exp1_baseline.py
 ```
+
+Outputs (under `data/processed/experiment1/`):
+
+- `summary_exp1_baseline_k1_full.csv` — 25 rows = 5 assets × 5 days; full
+  set of diagnostics (Shannon entropy, Monobit, Runs, lag-1
+  autocorrelation, longest run, etc.). **Data source for thesis Table
+  4.2 (per-asset summary) and Appendix Tables A.1 / A.2 (per-(asset,
+  day) marginal and structural indicators).**
+- `bitstreams/<ASSET>/<ASSET>_<date>_bitstream.csv` — per-day bitstream
+  with original timestamps.
+- `plots/<ASSET>/<ASSET>_<date>_plots.png` — five-panel diagnostic plots
+  (price, Δp distribution, bitstream preview, ACF, run-length).
 
 ### Experiment 2 — Temporal Aggregation
 
@@ -104,8 +141,9 @@ data/raw/binance/spot/aggTrades/<ASSET>/
 
 Two granularities are used:
 
-- **Experiment 1** — daily files (e.g. `BTCUSDT-aggTrades-2026-04-01.csv`)
-- **Experiment 2** — monthly files (e.g. `BTCUSDT-aggTrades-2025-01.csv`)
+- **Experiment 1** — daily files (e.g. `BTCUSDT-aggTrades-2026-01-01.csv`); the baseline window is 2026-01-01 to 2026-01-05 across all five assets, sitting in the first week of the last quarter (2026 Q1) of the Experiment 2 sample period. Processed outputs live under `data/processed/experiment1/`.
+- **Data overview** — reads the same monthly archives as Experiment 2; processed outputs live under `data/processed/data_overview/`.
+- **Experiment 2** — monthly files (e.g. `BTCUSDT-aggTrades-2025-01.csv`); processed outputs live under `data/processed/experiment2/`.
 
 Assets used: `BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`
 

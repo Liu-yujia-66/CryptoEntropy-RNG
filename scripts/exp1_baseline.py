@@ -36,6 +36,33 @@ from src.stats import (
     shannon_entropy_from_bits,
 )
 
+# ---------------------------------------------------------------------------
+# Configuration — edit defaults here, override on the CLI if needed.
+# ---------------------------------------------------------------------------
+
+ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
+
+# Days to include, format "YYYY-MM-DD". Used when raw files are daily archives.
+# Empty list = no day filter.
+DAYS: list[str] = [
+    "2026-01-01",
+    "2026-01-02",
+    "2026-01-03",
+    "2026-01-04",
+    "2026-01-05",
+]
+
+# Months to include, format "YYYY-MM". Used when raw files are monthly archives,
+# or as a fallback filter when DAYS is empty. Empty list = no month filter.
+MONTHS: list[str] = []
+
+DEFAULT_INPUT_ROOT = Path(
+    os.getenv("CRYPTOENTROPY_INPUT_ROOT", "data/raw/binance/spot/aggTrades")
+)
+DEFAULT_OUTPUT_ROOT = Path("data/processed/experiment1")
+
+# ---------------------------------------------------------------------------
+
 
 AGGTRADE_COLUMNS = [
     "aggregate_trade_id",
@@ -58,20 +85,35 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--input-root",
         type=Path,
-        default=Path("data/raw/binance/spot/aggTrades"),
-        help="Root directory containing asset subdirectories with aggTrades CSV files.",
+        default=DEFAULT_INPUT_ROOT,
+        help="Root directory containing asset subdirectories with aggTrades CSV files. "
+        "Defaults to $CRYPTOENTROPY_INPUT_ROOT or data/raw/binance/spot/aggTrades.",
     )
     parser.add_argument(
         "--output-root",
         type=Path,
-        default=Path("data/processed/experiment1"),
+        default=DEFAULT_OUTPUT_ROOT,
         help="Root directory for summary tables, bitstreams, and plots.",
     )
     parser.add_argument(
         "--assets",
         nargs="*",
-        default=["BTCUSDT", "ETHUSDT"],
-        help="Asset directories to process.",
+        default=ASSETS,
+        help="Asset directories to process. Defaults to the ASSETS config constant.",
+    )
+    parser.add_argument(
+        "--days",
+        nargs="*",
+        default=DAYS,
+        help="Day filters in 'YYYY-MM-DD' form (matched against file stem suffix). "
+        "Empty = no day filter. Defaults to the DAYS config constant.",
+    )
+    parser.add_argument(
+        "--months",
+        nargs="*",
+        default=MONTHS,
+        help="Month filters in 'YYYY-MM' form (matched against file stem suffix). "
+        "Used when --days is empty. Empty = no month filter. Defaults to MONTHS config.",
     )
     parser.add_argument(
         "--max-rows",
@@ -98,6 +140,18 @@ def parse_args() -> argparse.Namespace:
         help="Maximum lag used in the autocorrelation plot.",
     )
     return parser.parse_args()
+
+
+def filter_files(files: list[Path], days: list[str], months: list[str]) -> list[Path]:
+    """Keep files whose stem ends with one of the requested days, or — if days is
+    empty — one of the requested months. Empty filters return all files."""
+    if days:
+        suffixes = tuple(f"-{day}.csv" for day in days)
+        return [p for p in files if p.name.endswith(suffixes)]
+    if months:
+        suffixes = tuple(f"-{month}.csv" for month in months)
+        return [p for p in files if p.name.endswith(suffixes)]
+    return list(files)
 
 
 def detect_time_unit(series: pd.Series) -> TimeUnit:
@@ -298,7 +352,7 @@ def process_file(
     return {
         "asset": asset,
         "date": day,
-        "source_file": str(path),
+        # "source_file": str(path),
         "timestamp_unit": time_unit,
         "start_time": start_time.isoformat(),
         "end_time": end_time.isoformat(),
@@ -331,9 +385,12 @@ def main() -> None:
             print(f"[skip] asset directory not found: {asset_dir}")
             continue
 
-        files = sorted(asset_dir.glob("*.csv"))
+        files = filter_files(sorted(asset_dir.glob("*.csv")), args.days, args.months)
         if not files:
-            print(f"[skip] no csv files found under: {asset_dir}")
+            print(
+                f"[skip] no csv files matched filters under: {asset_dir} "
+                f"(days={args.days}, months={args.months})"
+            )
             continue
 
         for path in files:
