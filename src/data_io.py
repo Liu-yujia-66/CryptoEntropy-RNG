@@ -96,6 +96,23 @@ def load_aggtrades(path: Path, max_rows: int | None) -> pd.DataFrame:
     return df
 
 
+def parse_month_label(path: Path) -> str:
+    """Parse a clean 'YYYY-MM' or 'YYYY-MM-DD' label from an aggTrades archive.
+
+    Handles both filename shapes:
+      - monthly:  '<ASSET>-aggTrades-YYYY-MM.csv'    -> 'YYYY-MM'
+      - daily:    '<ASSET>-aggTrades-YYYY-MM-DD.csv' -> 'YYYY-MM-DD'
+
+    The earlier hardcoded `path.stem.split('-')[-3:]` accidentally absorbed the
+    'aggTrades' segment on monthly archives (producing 'aggTrades-YYYY-MM'),
+    which leaked into selected_ell_by_window.txt headers.
+    """
+    parts = path.stem.split("-")
+    if len(parts) == 4:
+        return "-".join(parts[-2:])
+    return "-".join(parts[-3:])
+
+
 def filter_month_files(files: list[Path], months: list[str] | None) -> list[Path]:
     """Filter a list of CSV paths to only those matching the given YYYY-MM months."""
     if not months:
@@ -113,7 +130,7 @@ def prepare_month_data(path: Path, max_rows: int | None) -> PreparedMonthData:
     preview_duplicate_timestamps = int(ordered["timestamp"].head(5).duplicated().sum())
     start_time = event_time.iloc[0]
     end_time = event_time.iloc[-1]
-    month_label = "-".join(path.stem.split("-")[-3:])
+    month_label = parse_month_label(path)
 
     context = FileAnalysisContext(
         source_file=str(path),

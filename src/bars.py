@@ -27,6 +27,7 @@ from src.data_io import (
     PreparedMonthData,
     detect_time_unit,
     load_aggtrades,
+    parse_month_label,
 )
 
 
@@ -88,7 +89,7 @@ def prepare_month_bars(
 
     start_dt = pd.Timestamp(start_s, unit="s", tz="UTC")
     end_dt = pd.Timestamp(end_s, unit="s", tz="UTC")
-    month_label = "-".join(path.stem.split("-")[-3:])
+    month_label = parse_month_label(path)
 
     print(
         f"[bars] {path.name}  seconds_total={n_seconds_total:,}  "
