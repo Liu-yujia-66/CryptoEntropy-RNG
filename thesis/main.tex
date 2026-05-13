@@ -394,7 +394,7 @@ The test battery of this thesis is as follows:
 
 \textbf{When TestU01 is enabled.} Following the cross-battery design of \citet{onofri2025emergence}, the methodology of this thesis further includes the Alphabit and Rabbit sub-batteries of TestU01 as cross-battery external validation. Experiment 2 does not enable them - its goal is a coarse $\ell^*$ selection on the $\ell$ grid, and the per-(asset, $\ell$, offset) bit stream is only an intermediate output on the selection grid; its length is usually below the range where the cross-battery sanity check applies, so it is not a suitable input for cross-battery validation. Experiments 3 and 4 concatenate across months, assets, and offsets at the selected $\ell^*$, so that the length meets the sanity-check range in Table~3 of \citet{onofri2025emergence}, and the corresponding subsets of the Alphabit and Rabbit sub-tests are then enabled.
 
-\textbf{Why both fixed $\boldsymbol{k = 2}$ and adaptive $\boldsymbol{k}$?} Adaptive $k = \lfloor 0.5 \log_2 n \rfloor$ is usually 5 to 6 on ultra-high-frequency monthly samples. The $D$ test then has $2^{k-1} \approx 16$ to $32$ contexts; first-order correlation -- whether the symbol reversal caused by the bid-ask bounce, or the same-direction persistence caused by sustained order flow - is diluted across more than ten or even tens of positions, and the statistical power drops quickly. \citet{shternshis2025predictability} provides empirical evidence consistent with this: on predictable days, with fixed $k = 2$, the ``too strong sign reversal'' pattern (i.e., $\hat{p}(00) + \hat{p}(11) < 0.5$) is significant; when $k$ is raised to about 5 to 6, this pattern is no longer significant. We therefore keep $D(k = 2)$ as a first-order diagnostic for pair-of-signs dependence, complementary to $D(\text{adaptive } k)$. The former captures short-range structure (in either direction), while the latter measures the overall predictability. Experiment~1 (\cref{sec:exp1-results}, R3) further shows that this first-order structure is driven by different microstructure mechanisms across activity regimes (the bid-ask bounce on SOL versus same-direction order flow on BTC and ETH); $D(k = 2)$ remains sensitive to both because it measures KL divergence on the joint distribution rather than the sign of the correlation.
+\textbf{Why both fixed $\boldsymbol{k = 2}$ and adaptive $\boldsymbol{k}$?} Adaptive $k = \lfloor 0.5 \log_2 n \rfloor$ is usually 5 to 6 on ultra-high-frequency monthly samples. The $D$ test then has $2^{k-1} \approx 16$ to $32$ contexts; first-order correlation -- whether the symbol reversal caused by the bid-ask bounce, or the same-direction persistence caused by sustained order flow - is diluted across more than ten or even tens of positions, and the statistical power drops quickly. \citet{shternshis2025predictability} provides empirical evidence consistent with this: on predictable days, with fixed $k = 2$, the ``too strong sign reversal'' pattern (i.e., $\hat{p}(00) + \hat{p}(11) < 0.5$) is significant; when $k$ is raised to about 5 to 6, this pattern is no longer significant. We therefore keep $D(k = 2)$ as a first-order diagnostic for pair-of-signs dependence, complementary to $D(\text{adaptive } k)$. The former captures short-range structure, while the latter measures the overall predictability. Experiment~1 (\cref{sec:exp1-results}) shows that on the cryptocurrency pairs studied here the first-order residual is positive on every asset - that is, the same-direction persistence side rather than the bid-ask reversal side - with magnitude scaling with activity, exactly the kind of pair-wise structure $D(k = 2)$ is designed to detect.
 
 \section{Acceptance Gates}
 \label{sec:acceptance-gates}
@@ -529,7 +529,7 @@ The methods described above map onto source files as follows: \texttt{src/stats.
 
 \textbf{Asset universe.} The five most liquid USDT spot pairs on Binance: \texttt{BTCUSDT}, \texttt{ETHUSDT}, \texttt{BNBUSDT}, \texttt{SOLUSDT}, and \texttt{DOGEUSDT}. These five assets span a wide range of liquidity and microstructure regimes (\cref{tab:trades-per-second}), which lets us check how the method behaves across the full trades/s spectrum.
 
-\textbf{Period.} The sample covers 15 months, from January 2025 to March 2026. Experiment~1 uses five consecutive trading days from 2026-01-01 to 2026-01-05, which fall in the first week of 2026 Q1 (the last quarter of the sample period). Experiment~2 uses one-month windows across all 15 months. \cref{tab:trades-per-second} below summarises the activity level of each asset across the full sample period. For each asset, we report the median and the [5th, 95th] percentiles of two rates: the raw trades per second (one record for each maker fill) and the aggTrades per second (the rate at which the encoding pipeline of \cref{sec:aggregation-encoding} actually emits an event).
+\textbf{Period.} The sample covers 15 months, from January 2025 to March 2026. Both Experiment~1 and Experiment~2 use one-month windows across all 15 months, so the analyses share a common (asset, month) cell. \cref{tab:trades-per-second} below summarises the activity level of each asset across this sample period. For each asset, we report the median and the [5th, 95th] percentiles of two rates: the raw trades per second (one record for each maker fill) and the aggTrades per second (the rate at which the encoding pipeline of \cref{sec:aggregation-encoding} actually emits an event).
 
 \begin{table}[!htbp]
   \caption{Per-asset trades/s for the five USDT spot pairs.}
@@ -549,19 +549,17 @@ The methods described above map onto source files as follows: \texttt{src/stats.
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize For each of the two rates (raw trades/s and aggTrades/s), the table reports the per-asset median and the [5th, 95th] percentiles across the 15 monthly archives covering the 2025-01 to 2026-03 sample period. Assets are sorted by the median raw trades/s in descending order.}
+  {\footnotesize Throughout this thesis ``/s'' is shorthand for ``per second''. For each of the two rates (raw trades/s and aggTrades/s), the table reports the per-asset median and the [5th, 95th] percentiles across the 15 monthly archives covering the 2025-01 to 2026-03 sample period. Assets are sorted by the median raw trades/s in descending order.}
 \end{table}
 
-\textbf{aggTrades vs raw trades.} The aggTrades/s figure is the rate of records in Binance's public aggregated stream, which merges raw fills that share timestamp, price, and direction into a single record. The raw trades/s figure is recovered from the \texttt{aggTrades} side by summing $(\texttt{last\_trade\_id} - \texttt{first\_trade\_id} + 1)$ over all rows, so we do not need to download from the raw \texttt{trades} endpoint. This raw count matches the granularity of the LOBSTER message-file counts used by \citet{shternshis2025predictability} and \citet{onofri2025emergence}. The raw/agg ratio is much higher on \texttt{SOLUSDT} and \texttt{DOGEUSDT} than on the other three assets, which suggests that on these two assets a single taker order tends to consume more maker fills before the price moves to the next level. This is consistent with their lower price levels and finer ticks compared to the typical trade size.
+\textbf{aggTrades vs raw trades.} The aggTrades/s rate counts records in Binance's public aggregated stream, which merges raw fills that share timestamp, price, and direction into a single record. The raw trades/s rate is recovered from the \texttt{aggTrades} side by summing $(\texttt{last\_trade\_id} - \texttt{first\_trade\_id} + 1)$ over all rows, so we do not need to download from the raw \texttt{trades} endpoint. This raw count matches the granularity of the LOBSTER message-file counts used by \citet{shternshis2025predictability} and \citet{onofri2025emergence}. The raw/agg ratio is much higher on \texttt{SOLUSDT} and \texttt{DOGEUSDT} than on the other three assets, which suggests that on these two assets a single taker order tends to consume more maker fills before the price moves to the next level. This is consistent with their lower price levels and finer ticks compared to the typical trade size.
 
 \textbf{Pre-processing.} On the transaction-time axis, we sort the monthly \texttt{aggTrades} by time and drop the rows where the price difference is zero. On the physical-time axis, we sort the trades, group them into UTC-second buckets, forward-fill any empty second with the previous price, and then drop the seconds where the price difference is zero. Dropping the zero-delta items is necessary on both axes, because mapping a zero to either bit (0 or 1) by any fixed rule would inject a clear bias (\cref{sec:aggregation-encoding}).
 
 \section{Experiment 1: Baseline}
 \label{sec:exp1-baseline}
 
-Experiment~1 answers the negative side of RQ1. We take the simplest possible baseline - treat the sign-encoded raw tick sequence directly as a random bit stream - and test whether it already passes standard randomness tests. If it does, then the aggregation in Experiment~2 is unnecessary. If it does not, then we have a quantitative reason for aggregation. This section reports the latter.
-
-We use the raw tick level rather than a coarser starting point because it is the cleanest case with no aggregation at all. A one-second bar (or any coarser bucket) is already a mild form of aggregation, so using it as the baseline would mix two different questions: ``is the data random already?'' and ``is light aggregation enough?''. The physical-time axis in Experiment~2 starts from one-second bars and treats this part as a methodological contribution. That role is separate from the baseline role of this section.
+Experiment~1 answers the negative side of RQ1. We take the simplest possible baseline - treat the sign-encoded raw tick sequence directly as a random bit stream - and test whether it already passes standard randomness tests. If it does, the aggregation studied in later sections is unnecessary; if it does not, we have a quantitative reason to aggregate. This section reports the latter.
 
 \subsection{Setup}
 \label{sec:exp1-setup}
@@ -569,13 +567,13 @@ We use the raw tick level rather than a coarser starting point because it is the
 \begin{itemize}
 \item \textbf{Configuration.} A special case of \cref{alg:encode} with $\ell = 1$ and $o = 0$: sort \texttt{aggTrades} by time, take the price difference, drop the zero-difference rows, and encode the sign of each remaining difference as one bit. There is no aggregation and no post-processing.
 
-\item \textbf{Asset universe.} The same five USDT spot pairs as Experiment~2 (\texttt{BTCUSDT}, \texttt{ETHUSDT}, \texttt{BNBUSDT}, \texttt{SOLUSDT}, \texttt{DOGEUSDT}), covering the full range of trades/s in \cref{tab:trades-per-second}. The aggregation grid in Experiment~2 starts at $\ell = 50$ and does not directly cover $\ell = 1$, so the baseline must directly test $\ell = 1$ on all five assets to fully close the argument that ``raw data cannot be used directly''. The five-asset sample also makes some non-trivial cross-asset differences visible - Monobit fails entirely on the lower-activity assets (R2), and the sign of the lag-1 autocorrelation flips with the asset's microstructure (R3) - and these two observations make the baseline diagnostic picture more complete.
+\item \textbf{Asset universe.} The five USDT spot pairs used throughout this thesis (\texttt{BTCUSDT}, \texttt{ETHUSDT}, \texttt{BNBUSDT}, \texttt{SOLUSDT}, \texttt{DOGEUSDT}), spanning the full range of trades/s in \cref{tab:trades-per-second}. The five-asset sample is what makes the cross-asset patterns reported below visible: a single-asset baseline cannot show the activity-dependent differences that the rest of this chapter builds on.
 
-\item \textbf{Window.} Five consecutive trading days, 2026-01-01 to 2026-01-05, in the first week of the last quarter (2026 Q1) of the full sample period. The granularity is daily (one diagnostic per day), which is different from the monthly granularity used in Experiment~2. Daily windows are enough for the baseline diagnostic role: the patterns we want to detect (lag-1 autocorrelation, long runs, Runs test rejection) are already stable within a single day. Going to monthly windows would not add much, and would actually hide the per-day extreme values, which matter most for the cryptographic-risk interpretation.
+\item \textbf{Window.} The full 15-month sample, 2025-01-01 to 2026-03-31. The diagnostic granularity is monthly: one bit stream per (asset, month) cell, $5 \times 15 = 75$ cells in total.
 
-\item \textbf{Diagnostics.} For each daily bit stream we record: bit count $n$, bits per second, $p(1)$, Shannon bias $|H - 1|$, Monobit p-value, Runs p-value, lag-1 autocorrelation $\rho_1$, and the longest 0-run and 1-run lengths $L_{\max}$. Of these, Shannon entropy, Monobit, and Runs come from NIST STS, with $p(1)$ as the Monobit base statistic and the Shannon bias $|H - 1|$ as a one-step derivation of the Shannon entropy. The bit count $n$ and bits per second are descriptive metadata about the bit stream itself. The lag-1 autocorrelation and the longest run are not part of NIST STS and are added as baseline diagnostic extensions: the first one directly measures short-range dependence, and the second one gives a clear cryptographic-risk intuition and an upper bound on the usable throughput. Findings R3 and R4 below come from these two extra metrics.
+\item \textbf{Diagnostics.} For each monthly bit stream we record: bit count $n$, bits per second, $p(1)$, Shannon bias $|H - 1|$, Monobit $p$-value, Runs $p$-value, lag-1 autocorrelation $\rho_1$, and the longest 0-run and 1-run lengths $L_{\max}$. Of these, Shannon entropy, Monobit, and Runs come from NIST STS, with $p(1)$ as the Monobit base statistic and the Shannon bias $|H - 1|$ as a one-step derivation of the Shannon entropy. The bit count $n$ and bits per second are descriptive metadata. The lag-1 autocorrelation and the longest run are not part of NIST STS and are added as baseline extensions: $\rho_1$ directly measures short-range dependence, and $L_{\max}$ gives a cryptographic-risk intuition and an upper bound on the usable throughput.
 
-\item \textbf{Reproduction.} Run \texttt{python scripts/exp1\_baseline.py} from the project root. The configuration block at the top of the script sets the defaults (the five assets, the five days 2026-01-01 to 2026-01-05, and \texttt{-{-}aggregation-k 1}). All summary statistics and diagnostic plots are written under \texttt{data/processed/experiment1/}; the repository \texttt{README} lists the exact filenames.
+\item \textbf{Instructions.} Run \texttt{python scripts/runner\_exp1\_baseline.py} from the project root. The configuration block at the top of the script sets the defaults (the five assets, the 15 monthly archives 2025-01 through 2026-03, $\ell = 1$, $o = 0$). The runner produces \texttt{all\_assets\_summary\_exp1\_baseline.csv} (one row per (asset, month) cell), then invokes \texttt{plot\_exp1\_baseline.py} as a subprocess to derive the per-asset summary in \cref{tab:exp1-summary} together with the distribution figure in \cref{fig:exp1-distributions}. All outputs land under \texttt{data/processed/experiment1/}; the repository \texttt{README} lists the exact filenames.
 \end{itemize}
 
 \subsection{Results}
@@ -590,45 +588,45 @@ We use the raw tick level rather than a coarser starting point because it is the
       Asset & bps    & $1-H$               & $\rho_1$  & Monobit & Runs   & $L_{\max}$ \\
             & median & max                 & median    & rejects & rejects & max \\
       \midrule
-      BTC  & $4.4$ & $8.5 \times 10^{-4}$ & $+0.40$ & $5/5$ & $5/5$ & $795$ \\
-      ETH  & $3.6$ & $6.0 \times 10^{-4}$ & $+0.70$ & $5/5$ & $5/5$ & $315$ \\
-      BNB  & $1.6$ & $1.8 \times 10^{-4}$ & $+0.11$ & $2/5$ & $5/5$ & $226$ \\
-      DOGE & $1.4$ & $2.4 \times 10^{-4}$ & $+0.30$ & $2/5$ & $5/5$ & $53$  \\
-      SOL  & $0.8$ & $2.2 \times 10^{-5}$ & $-0.22$ & $\boldsymbol{0/5}$ & $5/5$ & $28$  \\
+      BTC  & $10.68$ & $1.94 \times 10^{-3}$ & $+0.636$ & $15/15$ & $15/15$ & $12{,}039$ \\
+      ETH  & $9.56$  & $7.93 \times 10^{-3}$ & $+0.745$ & $13/15$ & $15/15$ & $15{,}899$ \\
+      BNB  & $2.49$  & $9.98 \times 10^{-5}$ & $+0.366$ & $13/15$ & $15/15$ & $2{,}069$ \\
+      DOGE & $2.02$  & $1.35 \times 10^{-5}$ & $+0.477$ & $8/15$  & $15/15$ & $5{,}071$ \\
+      SOL  & $1.74$  & $2.35 \times 10^{-6}$ & $+0.095$ & $4/15$  & $15/15$ & $792$ \\
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize Each row aggregates five (asset, day) cells from the daily windows 2026-01-01 to 2026-01-05: the median bit emission rate (bps), the worst-case Shannon bias (largest $1-H$), the median lag-1 autocorrelation, the number of days (out of five) on which Monobit and Runs reject at $\alpha = 0.01$, and the largest 0-run or 1-run length $L_{\max}$. The full per-(asset, day) tables are in \cref{tab:exp1-marginal,tab:exp1-structure} (\cref{cha:appendix}).}
+  {\footnotesize Each row aggregates 15 (asset, month) cells covering 2025-01 to 2026-03: the median bit emission rate (bps), the worst-case Shannon bias (largest $1 - H$), the median lag-1 autocorrelation, the number of months (out of fifteen) on which Monobit and Runs reject at $\alpha = 0.01$, and the largest 0-run or 1-run length $L_{\max}$ observed across all 15 cells. Rows are sorted by bps median in descending order. The per-(asset, month) distributions behind these summary statistics are shown in \cref{fig:exp1-distributions}.}
 \end{table}
 
-The five findings R1 to R5 below summarise \cref{tab:exp1-summary}, with the per-(asset, day) tables in \cref{cha:appendix} as supporting detail.
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[width=\textwidth]{figures/exp1_per_asset_distributions.png}
+  \caption{Experiment~1 baseline - per-(asset, month) distributions.}
+  \label{fig:exp1-distributions}
+  {\footnotesize One observation per (asset, month) cell across the 15-month sample. \emph{Top-left:} bits per second. \emph{Top-right:} lag-1 autocorrelation $\rho_1$, with the zero line marked. \emph{Bottom-left:} ECDF of $-\log_{10}(p_{\text{Monobit}})$, with the $\alpha = 0.01$ rejection threshold marked. \emph{Bottom-right:} $L_{\max} = \max(\text{0-run}, \text{1-run})$ histogram.}
+\end{figure}
 
-\textbf{(R1) The marginal entropy looks almost perfect, but the closer it gets to perfection, the deeper the blind spot.} All 25 cells satisfy $1 - H \le 8.5 \times 10^{-4}$ and $p(1) \in [0.500, 0.517]$; on the lower-activity assets (SOL and DOGE), $1 - H$ goes as low as ${\sim}\,10^{-8}$ on some cells. Looking only at the Shannon bias would suggest a near-perfect random sequence, but the Monobit failures in R2 and the lag-1 sign flips in R3 happen exactly on the cells with the smallest $1 - H$. This is the empirical version of the warning in \cref{sec:background-information}: high marginal entropy does not imply unpredictability, which is why the rest of this thesis treats the Shannon bias as a summary indicator only.
+The marginal distribution is nearly balanced across all 75 cells, with $1 - H$ at most $7.93 \times 10^{-3}$ and below $10^{-5}$ on the lowest-activity assets. As discussed in \cref{sec:background-information}, the Shannon bias is reported only as a summary indicator and not as a randomness criterion; the four observations below come from the conditional and structural diagnostics. We refer to them in the rest of the thesis using their lead phrases.
 
-\textbf{(R2) Monobit fails entirely on the lower-activity assets, but Runs catches every cell.} Of the 25 cells, 11 fail to reject under Monobit at $\alpha = 0.01$: BNB on 3 days, DOGE on 3 days, and SOL on all 5 days (\cref{tab:exp1-summary}, ``Monobit rejects'' column). DOGE 01-03 even gives $p = 0.949$, and the median Monobit $p$ for SOL across the five days is about $0.29$. The Runs test, by contrast, rejects all 25 cells at $p \ll 10^{-44}$. The sequences are clearly not random.
+\textbf{Monobit pass rate scales with activity.} Of the 75 cells, $14$ fail to reject under Monobit at $\alpha = 0.01$: $11$ on SOL, $7$ on DOGE, $2$ each on BNB and ETH, and $0$ on BTC. The Runs test, by contrast, rejects all 75 cells at $p \ll 10^{-300}$, so the bit streams are clearly not random. The Monobit pattern is monotonic in activity: the most active asset (BTC) is rejected on every month, while the least active (SOL) clears the threshold on roughly two thirds of months, where its $p(1)$ stays close to $0.5$ and Monobit cannot see any deviation. This is a concrete example of why no single test is sufficient: a marginal-frequency test such as Monobit has no signal when $p(1) \approx 0.5$, even when the bit stream is far from random in conditional or run-length terms.
 
-Monobit, as a marginal frequency test, has no signal on a quiet trading day with weak directional bias: $p(1)$ stays close to $0.5$, so the test cannot see any deviation. This shows directly that any single test has a structural blind spot. The Experiment~2 acceptance rule (\cref{sec:test-battery}) keeps $D$ and Monobit in parallel for the same reason: $D$ measures the conditional distribution and Monobit measures the marginal distribution, so the two failure modes do not overlap.
+\textbf{Lag-1 autocorrelation is positive on every asset, with magnitude tracking activity.} The five per-asset medians are ETH $+0.745$, BTC $+0.636$, DOGE $+0.477$, BNB $+0.366$, SOL $+0.095$ (\cref{tab:exp1-summary}). On a per-month basis (\cref{fig:exp1-distributions}, top-right) the distribution stays well above zero on BTC, ETH, DOGE, and BNB, and is close to zero with a small spread on SOL. This is consistent with persistent same-side order flow: when a large taker order walks the book, it produces several same-direction trades in a row, and the long-memory of trade-sign autocorrelation in liquid assets~\citep{lillo2004longmemory} adds further positive correlation. The bid-ask-bounce stylised fact reported by \citet{shternshis2025predictability} on the SNAP, F, and CCL stocks operates at the tick scale and produces the opposite-sign correlation; at month-level granularity that effect is not the dominant signature on any of the five cryptocurrency pairs studied here, although per-month inspection of SOL shows isolated months where $\rho_1$ briefly drops below zero.
 
-\textbf{(R3) The lag-1 autocorrelation flips sign with the asset's activity regime.} SOL is consistently negative on all five days ($\rho_1 \in [-0.45, -0.09]$, median $-0.22$), which reproduces the bid-ask-bounce stylised fact reported by \citet{shternshis2025predictability} on SNAP, F, and CCL: trade prices alternate between the buy side and the ask side, so consecutive non-zero signs tend to flip. BTC and ETH show the opposite pattern, with strong positive $\rho_1$ (BTC median $0.40$, ETH median $0.70$). This is the opposite direction from a bid-ask bounce, and is consistent with persistent same-side order flow: when a large taker order walks the book, it produces several same-direction trades in a row, and the long-memory of trade-sign autocorrelation in liquid assets~\citep{lillo2004longmemory} adds further positive correlation. BNB and DOGE sit between the two regimes: $\rho_1$ on BNB is small in magnitude and mixed in sign across the five days, and $\rho_1$ on DOGE is uniformly positive but smaller than on BTC and ETH.
+\textbf{The longest run is a structural cryptographic failure that scales with activity.} The $L_{\max}$ column of \cref{tab:exp1-summary} reports the largest run length observed across all 15 monthly cells per asset: BTC $12{,}039$, ETH $15{,}899$, DOGE $5{,}071$, BNB $2{,}069$, SOL $792$. The i.i.d. random expectation is $E[L_{\max}] \approx \log_2 n$, which for our monthly bit-stream lengths $n \sim 10^6$ to $4 \times 10^7$ ranges from $20$ to $25$. Every observed $L_{\max}$ is two to three orders of magnitude above this baseline, and ordering is monotonic in activity (excluding the BTC--ETH swap that comes from ETH's higher per-month $\rho_1$). If a window of $N$ output bits for a password were drawn from inside a BTC- or ETH-scale run, the result would be a string of all $0$s or all $1$s --- a direct cryptographic failure, even when the marginal entropy looks almost perfect.
 
-The Runs test rejects all 25 cells regardless of sign, and the same split shows up in the $L_{\max}$ values reported in R4 below. The first-order residual structure on the transaction-time axis is therefore driven by two distinct microstructure mechanisms across activity regimes rather than a single one; Experiment~2 checks whether the one-second-bar physical-time aggregation absorbs each mechanism separately.
+\textbf{The bit emission rate stays at or below 16 bps.} Per-cell bit rates range from $0.87$ bps (SOL, 2026-03) to $15.52$ bps (BTC, 2026-02); the per-asset medians are BTC $10.68$, ETH $9.56$, BNB $2.49$, DOGE $2.02$, SOL $1.74$ bps (\cref{tab:exp1-summary}). The top two match the raw trades/s ranking in \cref{tab:trades-per-second} (BTC, then ETH), but the bottom three do not: although SOL has a higher raw trades/s than BNB and DOGE, its zero-delta ratio is the largest of the five (median $0.59$ across the 15 months), so dropping the zero-difference events leaves SOL with fewer bits than BNB (zero-delta ratio $\approx 0.43$) and places it at the bottom of the bps ranking. The baseline throughput therefore depends on both the trades/s and the per-asset zero-delta ratio.
 
-\textbf{(R4) The longest run is a structural cryptographic failure, and its scale moves with trades/s.} The $L_{\max}$ column of \cref{tab:exp1-summary} reports the largest run across the five days for each asset: BTC $795$, ETH $315$, BNB $226$, DOGE $53$, SOL $28$. The first three are direct disasters in cryptographic terms. The last two are closer to the i.i.d. random expectation $E[L_{\max}] \approx \log_2 n \approx 16$ to $18$ for $n \approx 5 \times 10^4$ to $2 \times 10^5$, but still slightly higher and accompanied by strong Runs rejection. $L_{\max}$ here and the selected $\ell^*$ in Experiment~2 are two sides of the same phenomenon: higher trades/s produce longer same-direction runs, which require deeper aggregation to break apart. If a window of $N$ output bits for a password lands inside a BTC- or ETH-scale run, the result is a string of all $0$s or all $1$s - a direct cryptographic failure, even when the marginal entropy looks almost perfect (R1).
-
-\textbf{(R5) The bit emission rate of around $\boldsymbol{0.5}$ to $\boldsymbol{10}$ bps is the upper bound for the baseline.} Per-cell bit rates range from $0.49$ (SOL 01-01) to $9.69$ (BTC 01-05) bps; the per-asset medians are BTC $\approx 4.4$, ETH $\approx 3.6$, BNB $\approx 1.6$, DOGE $\approx 1.4$, and SOL $\approx 0.8$ bps. The first two match the raw trades/s ranking in \cref{tab:trades-per-second}, but the lower three do not: SOL has the highest zero-delta ratio (around $0.64$ across the five days), so dropping the zero-difference events leaves it with fewer bits than BNB (zero-delta ratio around $0.44$), which places SOL at the bottom of the bps ranking. The baseline throughput therefore depends on both the trades/s and the per-asset zero-delta ratio.
-
-A cross-check against the 15-month aggTrades/s percentiles in \cref{tab:trades-per-second} and the per-asset zero-delta ratios from the 5-day window gives an implied bps range of the same order of magnitude across the full sample period, with the highest extremes (BTC and ETH on their most active months) reaching about 13 bps. Aggregation in Experiment~2 trades this throughput for randomness, dropping the typical scale to about $10^{-2}$ bps.
-
-\FloatBarrier % keep Table 4.2 (per-asset summary) inside §4.2.2 Results (placeins[section] only barriers at \section, not \subsection)
+\FloatBarrier % keep Table 4.2 + Figure inside §4.2.2 Results
 
 \subsection{Implications}
 \label{sec:exp1-implications}
 
-Experiment~1 gives a negative but quantitative conclusion. The sign-encoded raw tick sequence cannot be used as an RNG: it fails structurally on Runs and on the lag-1 autocorrelation in all $25$ (asset, day) cells in a consistent way. Monobit on its own can even miss the failure on the lower-activity assets ($11$ of the $25$ cells fail to reject), and only Runs gives a universal rejection on this baseline. This conclusion provides three direct anchors for Experiment~2.
+Experiment~1 gives a negative but quantitative conclusion. The sign-encoded raw tick sequence cannot be used as an RNG: it fails Runs in all $75$ (asset, month) cells, has a positive median lag-1 autocorrelation on every asset, and produces longest-run lengths two to three orders of magnitude above the i.i.d. baseline. Monobit on its own can even miss the failure on the lower-activity assets ($14$ of the $75$ cells fail to reject), and only Runs delivers universal rejection on this baseline. This conclusion provides three direct anchors for Experiment~2.
 \begin{enumerate}
-\item \textbf{Aggregation is necessary.} R3 shows that Runs rejects every one of the $25$ baseline cells, and $\rho_1$ is far from zero on every asset. This is the empirical reason why Experiment~2 cannot move forward without aggregation.
-\item \textbf{Two distinct first-order residual mechanisms as diagnostic targets.} The two mechanisms identified in R3 (the bid-ask bounce on SOL and the persistent same-side order flow on BTC and ETH) are the explicit target when Experiment~2 compares the transaction-time axis with the one-second-bar physical-time axis. Whether the physical-time axis helps depends on whether aggregation absorbs each residual mechanism, and the two mechanisms need to be evaluated separately on assets in different activity regimes.
-\item \textbf{Upper bound on throughput.} The baseline bits/s scale in R5 is the ceiling for the throughput metric in \cref{sec:throughput-metric} and for any later entropy-rate discussion.
+\item \textbf{Aggregation is necessary.} Runs rejects every one of the $75$ baseline cells and $\rho_1$ is far from zero on every asset, so any acceptance rule for the raw tick stream is empty. This is the empirical reason why Experiment~2 cannot move forward without aggregation.
+\item \textbf{First-order residual structure as the diagnostic target.} The positive lag-1 autocorrelation observed on every asset, with magnitude scaling with activity, is the explicit target when Experiment~2 compares the transaction-time axis with the one-second-bar physical-time axis. Whether the physical-time axis helps depends on whether aggregation absorbs this short-range dependence, and the comparison must span the activity range covered by the five assets.
+\item \textbf{Upper bound on throughput.} The baseline bits/s scale identified above (1--16 bps across the 75 monthly cells) is the ceiling for the throughput metric in \cref{sec:throughput-metric} and for any later entropy-rate discussion.
 \end{enumerate}
 
 \section{TODO: Experiment 2}
@@ -703,87 +701,9 @@ Experiment~1 gives a negative but quantitative conclusion. The sign-encoded raw 
 \chapter{Supplementary Tables}
 \label[appendix]{cha:appendix}
 
-This appendix contains the per-(asset, day) diagnostic tables for the Experiment~1 baseline (\cref{sec:exp1-results}). The five-row per-asset summary in the main text (\cref{tab:exp1-summary}) is built from these tables.
-
-\begin{table}[H]
-  \caption{Experiment~1 baseline - marginal indicators (per-(asset, day) detail).}
-  \label{tab:exp1-marginal}
-  \begin{center}
-    \small
-    \begin{tabular}{llrrrr}
-      \toprule
-      Asset & Date & $n$ & bps & $p(1)$ & $1 - H$ \\
-      \midrule
-      BNB  & 01-01 & $92{,}470$  & $1.1$ & $0.500$ & $8.6 \times 10^{-8}$ \\
-      BNB  & 01-02 & $180{,}845$ & $2.1$ & $0.501$ & $6.1 \times 10^{-6}$ \\
-      BNB  & 01-03 & $102{,}087$ & $1.2$ & $0.500$ & $6.8 \times 10^{-7}$ \\
-      BNB  & 01-04 & $134{,}404$ & $1.6$ & $0.508$ & $1.8 \times 10^{-4}$ \\
-      BNB  & 01-05 & $193{,}921$ & $2.2$ & $0.507$ & $1.5 \times 10^{-4}$ \\
-      BTC  & 01-01 & $222{,}721$ & $2.6$ & $0.517$ & $8.5 \times 10^{-4}$ \\
-      BTC  & 01-02 & $754{,}368$ & $8.7$ & $0.508$ & $2.1 \times 10^{-4}$ \\
-      BTC  & 01-03 & $275{,}969$ & $3.2$ & $0.510$ & $2.7 \times 10^{-4}$ \\
-      BTC  & 01-04 & $377{,}064$ & $4.4$ & $0.511$ & $3.7 \times 10^{-4}$ \\
-      BTC  & 01-05 & $837{,}558$ & $9.7$ & $0.508$ & $1.7 \times 10^{-4}$ \\
-      DOGE & 01-01 & $52{,}977$  & $0.6$ & $0.509$ & $2.4 \times 10^{-4}$ \\
-      DOGE & 01-02 & $150{,}646$ & $1.7$ & $0.505$ & $7.4 \times 10^{-5}$ \\
-      DOGE & 01-03 & $71{,}841$  & $0.8$ & $0.500$ & $4.0 \times 10^{-8}$ \\
-      DOGE & 01-04 & $125{,}897$ & $1.5$ & $0.502$ & $1.8 \times 10^{-5}$ \\
-      DOGE & 01-05 & $122{,}216$ & $1.4$ & $0.501$ & $1.3 \times 10^{-6}$ \\
-      ETH  & 01-01 & $153{,}444$ & $1.8$ & $0.514$ & $6.0 \times 10^{-4}$ \\
-      ETH  & 01-02 & $726{,}176$ & $8.4$ & $0.512$ & $4.4 \times 10^{-4}$ \\
-      ETH  & 01-03 & $233{,}905$ & $2.7$ & $0.505$ & $8.1 \times 10^{-5}$ \\
-      ETH  & 01-04 & $311{,}450$ & $3.6$ & $0.506$ & $1.0 \times 10^{-4}$ \\
-      ETH  & 01-05 & $732{,}169$ & $8.5$ & $0.504$ & $4.4 \times 10^{-5}$ \\
-      SOL  & 01-01 & $42{,}366$  & $0.5$ & $0.503$ & $2.1 \times 10^{-5}$ \\
-      SOL  & 01-02 & $96{,}729$  & $1.1$ & $0.503$ & $2.2 \times 10^{-5}$ \\
-      SOL  & 01-03 & $56{,}779$  & $0.7$ & $0.501$ & $2.9 \times 10^{-6}$ \\
-      SOL  & 01-04 & $68{,}822$  & $0.8$ & $0.500$ & $2.2 \times 10^{-7}$ \\
-      SOL  & 01-05 & $118{,}003$ & $1.4$ & $0.502$ & $6.8 \times 10^{-6}$ \\
-      \bottomrule
-    \end{tabular}
-  \end{center}
-  {\footnotesize Daily windows 2026-01-01 to 2026-01-05 for the five assets. The marginal distribution stays very close to a perfect $50/50$ split on every cell, which makes the sequence look almost random at the marginal level. Findings R1 and R5 in \cref{sec:exp1-results} aggregate this table; the sequential-structure indicators are reported separately in \cref{tab:exp1-structure}.}
-\end{table}
-
-\begin{table}[H]
-  \caption{Experiment~1 baseline - sequential structure indicators (per-(asset, day) detail).}
-  \label{tab:exp1-structure}
-  \begin{center}
-    \small
-    \begin{tabular}{llrrrrr}
-      \toprule
-      Asset & Date & $\rho_1$ & Monobit $p$ & Runs $p$ & $L_{\max}(0)$ & $L_{\max}(1)$ \\
-      \midrule
-      BNB  & 01-01 & $-0.084$              & $\boldsymbol{0.916}$ & $1.4 \times 10^{-144}$ & $67$  & $226$ \\
-      BNB  & 01-02 & $0.202$               & $\boldsymbol{0.217}$ & $< 10^{-300}$          & $111$ & $98$  \\
-      BNB  & 01-03 & $-0.173$              & $\boldsymbol{0.757}$ & $< 10^{-300}$          & $88$  & $101$ \\
-      BNB  & 01-04 & $0.113$               & $6.5 \times 10^{-9}$ & $< 10^{-300}$          & $148$ & $99$  \\
-      BNB  & 01-05 & $0.272$               & $3.8 \times 10^{-10}$ & $< 10^{-300}$         & $94$  & $95$  \\
-      BTC  & 01-01 & $0.152$               & $5.1 \times 10^{-59}$ & $< 10^{-300}$         & $364$ & $\boldsymbol{795}$ \\
-      BTC  & 01-02 & $0.646$               & $2.5 \times 10^{-49}$ & $< 10^{-300}$         & $518$ & $359$ \\
-      BTC  & 01-03 & $0.231$               & $4.8 \times 10^{-24}$ & $< 10^{-300}$         & $497$ & $746$ \\
-      BTC  & 01-04 & $0.398$               & $5.7 \times 10^{-44}$ & $< 10^{-300}$         & $228$ & $429$ \\
-      BTC  & 01-05 & $0.594$               & $1.8 \times 10^{-44}$ & $< 10^{-300}$         & $290$ & $385$ \\
-      DOGE & 01-01 & $0.063$               & $2.8 \times 10^{-5}$  & $1.6 \times 10^{-47}$ & $39$  & $39$  \\
-      DOGE & 01-02 & $0.304$               & $8.4 \times 10^{-5}$  & $< 10^{-300}$         & $51$  & $53$  \\
-      DOGE & 01-03 & $0.166$               & $\boldsymbol{0.949}$  & $< 10^{-300}$         & $43$  & $25$  \\
-      DOGE & 01-04 & $0.331$               & $\boldsymbol{0.078}$  & $< 10^{-300}$         & $42$  & $42$  \\
-      DOGE & 01-05 & $0.377$               & $\boldsymbol{0.643}$  & $< 10^{-300}$         & $41$  & $45$  \\
-      ETH  & 01-01 & $0.547$               & $1.8 \times 10^{-29}$ & $< 10^{-300}$         & $315$ & $166$ \\
-      ETH  & 01-02 & $0.788$               & $2.1 \times 10^{-97}$ & $< 10^{-300}$         & $256$ & $271$ \\
-      ETH  & 01-03 & $0.654$               & $3.0 \times 10^{-7}$  & $< 10^{-300}$         & $168$ & $221$ \\
-      ETH  & 01-04 & $0.698$               & $5.4 \times 10^{-11}$ & $< 10^{-300}$         & $241$ & $180$ \\
-      ETH  & 01-05 & $0.788$               & $1.9 \times 10^{-11}$ & $< 10^{-300}$         & $307$ & $261$ \\
-      SOL  & 01-01 & $\boldsymbol{-0.449}$ & $\boldsymbol{0.272}$  & $< 10^{-300}$         & $18$  & $21$  \\
-      SOL  & 01-02 & $-0.174$              & $\boldsymbol{0.088}$  & $< 10^{-300}$         & $23$  & $25$  \\
-      SOL  & 01-03 & $-0.381$              & $\boldsymbol{0.635}$  & $< 10^{-300}$         & $27$  & $23$  \\
-      SOL  & 01-04 & $-0.220$              & $\boldsymbol{0.885}$  & $< 10^{-300}$         & $20$  & $23$  \\
-      SOL  & 01-05 & $-0.095$              & $\boldsymbol{0.291}$  & $4.1 \times 10^{-232}$ & $22$  & $28$  \\
-      \bottomrule
-    \end{tabular}
-  \end{center}
-  {\footnotesize Daily windows 2026-01-01 to 2026-01-05 for the five assets. Bold cells highlight three groups of diagnostics: the eleven cells where Monobit fails to reject at $\alpha = 0.01$ (R2 in \cref{sec:exp1-results}), the SOL 01-01 cell with the most negative lag-1 autocorrelation (R3), and BTC 01-01 with $1\text{-run} = 795$, the largest $L_{\max}$ in the window (R4). For most cells the Runs $p$-value is below the numpy double-precision floor ($< 2.2 \times 10^{-308}$) and is reported as ``$< 10^{-300}$''. Three cells (BNB 01-01, DOGE 01-01, SOL 01-05) give finite values that are still much smaller than $\alpha$. The marginal indicators are reported separately in \cref{tab:exp1-marginal}.}
-\end{table}
+%% TODO: this appendix shell is reserved for supplementary tables from
+%% Experiments 2--4 (per-(asset, month) selected $\ell^*$ tables, full
+%% TestU01 sub-test breakdowns, etc.). It is currently empty.
 
 %% =====================================================================
 %% Bibliography

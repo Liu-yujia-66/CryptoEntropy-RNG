@@ -1,56 +1,52 @@
 # Progress Report: Experiment 1 Baseline Analysis
 
-**Date:** 2026-05-07
+**Date:** 2026-05-09
 **Project:** Random Number Generator from Aggregated Cryptocurrency Prices with an Application to Secure Password Generation
-**Status:** Experiment 1 Baseline Completed(5 资产 × 5 天 = 25 个诊断单元)
+**Status:** Experiment 1 Baseline Completed(5 资产 × 15 个月 = 75 个 (asset, month) cell;诊断粒度月度)
 
 ## 1. Objective
 
-Experiment 1 的目标是为 raw high-frequency 加密货币 tick 数据建立统计 baseline,判定其符号编码序列是否能直接作为随机源使用。本轮 baseline 覆盖 Binance 现货市场流动性最高的 5 个 USDT 现货对——`BTCUSDT`、`ETHUSDT`、`BNBUSDT`、`SOLUSDT`、`DOGEUSDT`,跨度覆盖 trades/s ~13 到 ~51 的活跃度区间(per-asset median raw trades/s,详见 thesis Table 4.1)。
+Experiment 1 的目标是为 raw high-frequency 加密货币 tick 数据建立统计 baseline,判定其符号编码序列是否能直接作为随机源使用。本轮 baseline 覆盖 Binance 现货市场流动性最高的 5 个 USDT 现货对——`BTCUSDT`、`ETHUSDT`、`BNBUSDT`、`SOLUSDT`、`DOGEUSDT`,跨 raw trades/s ~13 到 ~51 的活跃度区间(per-asset median,thesis Table 4.1),时段与 Experiment 2 一致(2025-01 至 2026-03,共 15 个月)。
 
 ## 2. Methodology
 
-**Data source.** Binance `aggTrades`,5 资产 × 5 个连续交易日(2026-01-01 至 2026-01-05),共 25 个 (asset, day) 单元。窗口选在 Exp 2 样本期(2025-01 至 2026-03)最末季度 2026 Q1 的首周,作为 contemporaneous 切片。
+**Data source.** Binance `aggTrades`,5 资产 × 15 个月度归档(2025-01 至 2026-03),共 75 个 (asset, month) 诊断单元。每个 cell 一条月度比特流,bit 长度 ~10⁶ 至 4×10⁷。
 
 **Pre-processing.** 按 trade 时间排序,丢弃 Δp = 0 的 tick(drop-zero)。
 
 **Encoding.** 对剩余非零价格变化取符号:Δp > 0 → 1,Δp < 0 → 0。无聚合,无后处理(对应 thesis 算法 1 在 ℓ = 1, o = 0 的特例)。
 
-**Diagnostics.** 每个 (asset, day) 单元计算 8 项指标——其中 Shannon 熵、Monobit、Runs 来自 NIST STS;p(1)、Shannon-bias |H − 1| 是衍生量;bit 长度 *n* 与 bits/s 是描述性元数据;**lag-1 自相关与最长 0-run / 1-run 长度 L_max** 不属于 NIST STS,作为 baseline 扩展引入,前者刻画短程依赖、后者给长结构的密码学语义直觉。
+**Diagnostics.** 每个 (asset, month) 单元计算 8 项指标——其中 Shannon 熵、Monobit、Runs 来自 NIST STS;p(1)、Shannon-bias |H − 1| 是衍生量;bit 长度 *n* 与 bits/s 是描述性元数据;**lag-1 自相关 ρ₁ 与最长 0-run / 1-run 长度 L_max** 不属于 NIST STS,作为 baseline 扩展引入,前者刻画短程依赖、后者给长结构的密码学语义直觉。
+
+**Pipeline.** `scripts/runner_exp1_baseline.py` 读取月度归档、产出每个 (asset, month) 一行 summary;子进程 `scripts/plot_exp1_baseline.py` 把 75 行汇总为 5 行 per-asset summary(thesis Table 4.2)+ 4 panel 分布图(thesis Figure 4.1)。
 
 ## 3. Key Findings
 
-总结成五条(R1–R5,与 thesis §4.2 Results 同步):
+边际分布在 75 个 cell 上一致接近平衡(1 − H 全部 ≤ 7.93 × 10⁻³,低活跃资产可低至 ~10⁻⁵ 至 ~10⁻⁶ 量级)。但如 thesis §2.2 所警示,Shannon-bias 仅作汇总指标、不进入接受判据;以下四条来自条件分布与结构性诊断。
 
-**(R1) 边际熵看似几乎完美,但越接近完美,盲区越深。** 全部 25 个单元 1 − H ≤ 8.5 × 10⁻⁴,p(1) ∈ [0.500, 0.517];低活跃资产(SOL / DOGE)在某些 cell 上 1 − H 低至 ~10⁻⁸ 量级。仅看 Shannon-bias 会得出"序列接近完美随机"的错误结论——但下面 R2、R3 揭示的失效正是发生在这些 1 − H 最小的 cell 上。
+**Monobit 通过率随活跃度递减,Runs 在所有 cell 上一律拒绝。** 75 个 cell 中 14 个不拒绝 α = 0.01:SOL 11、DOGE 7、BNB 与 ETH 各 2、BTC 0。Runs 在全部 75 cell 一律以 p ≪ 10⁻³⁰⁰ 拒绝,序列显然非随机。Monobit 模式单调随活跃度递减:最活跃的 BTC 月月被拒,最不活跃的 SOL 约三分之二月份不拒——其 p(1) 紧贴 0.5,边际频率检验在这种条件下没有信号。这是"单一检验不充分"的具体例子。
 
-**(R2) Monobit 在低活跃资产上完全失效,而 Runs 一个不漏。** 25 个单元中 11 个 Monobit 在 α = 0.01 下不拒绝(BNB 3 天、DOGE 3 天、SOL 全部 5 天均不拒绝);DOGE 01-03 给出 p = 0.949。但 Runs 在这 25 个 cell 上一律以 p ≪ 10⁻⁴⁴ 拒绝。
+**lag-1 自相关在每个资产上都为正,量级随活跃度递增。** Per-asset median 分别是 ETH +0.745、BTC +0.636、DOGE +0.477、BNB +0.366、SOL +0.095。在 per-month 层面,BTC / ETH / DOGE / BNB 的分布稳定在零线之上,SOL 紧贴零线、跨度小。这与持续同向 order-flow 一致:大 taker 单 walk-the-book 时连续多档同向成交,高流动性资产中 trade-sign 自身的 long-memory(Lillo & Farmer, 2004)进一步累积出正自相关。Shternshis & Marmi (2025) 在 SNAP / F / CCL 上报告的 bid-ask bounce stylized fact 作用在 tick scale,产生反向相关;在月度粒度下该效应不是本论文研究的五个加密货币对的主导特征,虽然 SOL per-month 检视显示个别月份 ρ₁ 短暂跌至零下。
 
-这一观察直接证明任何单一检验都有结构性盲区——当低活跃日 + 弱方向性使 p(1) 紧贴 0.5 时,Monobit 这种边际频率检验对它们没有信号。**这是 Exp 2 接受规则把 *D*(条件分布)+ Monobit(边际分布)并联的实证依据。**
+**最长 run 是结构性密码学失败,量级随活跃度缩放。** 各资产 15 月观察到的最大 L_max:**BTC 12 039**、**ETH 15 899**、DOGE 5 071、BNB 2 069、SOL 792。i.i.d. 随机期望 E[L_max] ≈ log₂ n,本论文月度比特流 n ~ 10⁶ 至 4 × 10⁷,该期望约在 20 至 25 之间。每个观测到的 L_max 都比该 baseline 高 2–3 个数量级;排序大体随活跃度单调(BTC 与 ETH 因 ETH per-month ρ₁ 更强而有 swap)。任何 N-bit 密码 / seed 的产出窗口若落在 BTC / ETH 量级的 run 内,输出就是一段全 0 或全 1——直接的密码学失败,即便边际熵看似几近完美。
 
-**(R3) lag-1 自相关的符号因资产的活跃度区间而翻转——bid-ask bounce 与 order-flow 持续性是两种不同的机制。** SOL 五天一致为负(ρ₁ ∈ [−0.45, −0.09],median −0.22),复现 Shternshis & Marmi (2025) 在 SNAP / F / CCL 上报告的 bid-ask bounce stylized fact——成交价反复在 buy / ask 间跳动使相邻非零符号倾向反转。BTC 与 ETH 呈相反模式,具有强正 ρ₁(BTC median 0.40,ETH median 0.70),只能由持续同向 order-flow 解释——大 taker 单 walk-the-book 时连续多档同向成交,液态资产中 trade-sign 自身的 long-memory(Lillo & Farmer, 2004)进一步累积出正自相关。BNB 与 DOGE 介于两种 regime 之间,ρ₁ 量级较小。
-
-**transaction-time 上的 1 阶残留因此由两种各自不同的微观结构机制在不同活跃度区间驱动,而非单一机制**;这一区分会进入 Exp 2 的 transaction-time 与 1-second bar 对照分析,需要在不同活跃度资产上分开评估。
-
-**(R4) 最长 run 在密码学语义上结构性失败,且量级与 trades/s 同向缩放。** L_max 跨 25 cell 范围 18 至 795。各资产最大 L_max:**BTC 795**(01-01,1-run)、ETH 315、BNB 226、DOGE 53、SOL 28。前三者在密码学语义上是直接灾难——任何 N-bit 密码 / seed 的产出窗口若落在这种 run 内,输出就是一段全 0 或全 1。后两者(DOGE / SOL)更接近 i.i.d. 随机期望 E[L_max] ≈ log₂ n ≈ 16-18,但仍偏高,且伴随 Runs 强烈拒绝。L_max 与 Exp 2 selected ℓ\* 是同一现象的两面:trades/s 越高,需要更深的聚合才能打散同向 run。
-
-**(R5) 比特产出速率 0.5–10 bps 是 baseline 的吞吐上界。** 各 cell bits/s 落在 0.49 (SOL 01-01) 至 9.69 (BTC 01-05) 区间;按 per-asset median 排序为 BTC ≈ 4.4 > ETH ≈ 3.6 > BNB ≈ 1.6 > DOGE ≈ 1.4 > SOL ≈ 0.8 bps。**前两位与 Table 4.1 的 raw trades/s 顺序一致,但下三者反转**——这是因为 SOL 的 zero-delta ratio 最高(median ≈ 0.64),drop-zero 后实际产 bit 的事件比 BNB(zero-delta ratio ≈ 0.44)少,使 SOL 在 bps 排序中位列最末。Baseline 吞吐量因此不仅取决于 trades/s,还取决于 per-asset 的 zero-delta ratio 这一资产个性化的微观结构属性。
-
-用 Table 4.1 的 15 月 aggTrades/s p95 与 5 天窗口的 per-asset zero-delta ratio 做 cross-check,推算出的 15 月 bps 区间与 5 天数据数量级一致,最高极值(BTC / ETH 最活跃月)约 13 bps。Exp 2 通过聚合"漂白"会以这部分吞吐为代价,典型尺度降到约 10⁻² bps。
+**比特产出速率不超过 16 bps。** Per-cell bits/s 区间从 0.87(SOL,2026-03)到 15.52(BTC,2026-02);按 per-asset median 排序为 BTC 10.68 > ETH 9.56 > BNB 2.49 > DOGE 2.02 > SOL 1.74 bps。前两位与 Table 4.1 raw trades/s 顺序一致(BTC > ETH),下三者反转:SOL 虽 raw trades/s 高于 BNB / DOGE,其 zero-delta ratio 是五者中最高(15 月 median 约 0.59),drop-zero 之后剩余 bit 事件比 BNB(zero-delta ratio ≈ 0.43)更少,使 SOL 在 bps 排序中位列最末。Baseline 吞吐量因此不仅取决于 trades/s,也取决于 per-asset 的 zero-delta ratio。
 
 ## 4. Conclusion
 
-Experiment 1 给出一个**负向但定量**的结论:直接把 raw tick 的符号序列当 RNG,在 25/25 (asset, day) cell 上一致地、在 Runs 与 lag-1 自相关上结构性失败;Monobit 单独使用甚至会在低活跃资产上漏检(11/25 cell 不拒绝),只有 Runs 在 baseline 上达到通用的拒绝覆盖。这一结论为 Experiment 2 提供三个直接锚点:
+Experiment 1 给出一个**负向但定量**的结论:直接把 raw tick 的符号序列当 RNG,Runs 在 75/75 (asset, month) cell 上一致拒绝、每个资产 lag-1 自相关 median 为正、最长 run 比 i.i.d. baseline 高 2–3 个数量级。Monobit 单独使用甚至会在低活跃资产上漏检(14/75 cell 不拒绝),只有 Runs 在 baseline 上达到通用拒绝覆盖。这一结论为 Experiment 2 提供三个直接锚点:
 
-(i) **聚合的必要性**——R3 / R4 给出"必须聚合"的实证理由。
+(i) **聚合的必要性**——Runs 在全部 75 个 baseline cell 上一致拒绝、lag-1 在所有资产上偏离 0,任何针对 raw tick 流的接受规则都为空集。
 
-(ii) **两种各自不同的 1 阶残留机制作为诊断目标**——SOL 上的 bid-ask bounce + BTC / ETH 上的持续 order-flow 同向相关,需要在 transaction-time 与 1-second bar 两条聚合轴之间做对照,1-second bar 是否带来增益取决于聚合能否各自吸收这两种残留机制,且两种机制需要在不同活跃度资产上分开评估。
+(ii) **1 阶残留结构作为诊断目标**——每个资产上都为正、量级随活跃度缩放的 lag-1 自相关,是 Experiment 2 在 transaction-time 与 1-second bar 两条聚合轴之间做对照分析的 explicit target;1-second bar 是否带来增益,取决于聚合能否吸收这一短程依赖。
 
-(iii) **吞吐量上界**——R5 的 0.5–10 bps 是任何聚合后白化策略的天花板。
+(iii) **吞吐量上界**——75 个月度 cell 的 baseline bits/s 量级(1 至 16 bps)是 §3.6 throughput metric 与 Exp 3 entropy-rate 讨论的天花板。
 
 ## 5. Attachments
 
-- `scripts/exp1_baseline.py` —— Baseline pipeline:加载 tick 数据、符号编码、统计诊断
-- `data/processed/experiment1/summary_exp1_baseline_k1_full.csv` —— 25 行(5 资产 × 5 天)的完整诊断指标
-- `data/processed/experiment1/bitstreams/` —— 每个 (asset, day) 单元的 per-day bitstream CSV
-- `data/processed/experiment1/plots/` —— 每个单元 5 panel 诊断图(price evolution / Δp 分布 / bitstream preview / ACF / run-length)
+- `scripts/runner_exp1_baseline.py` —— Baseline runner:per-(asset, month) ThreadPoolExecutor pipeline
+- `scripts/plot_exp1_baseline.py` —— 子进程,把 75 行 summary 汇总为 5 行 per-asset table + 4 panel 分布图
+- `data/processed/experiment1/all_assets_summary_exp1_baseline.csv` —— 75 行 per-(asset, month) 完整诊断指标
+- `data/processed/experiment1/by_asset/<ASSET>/<ASSET>_summary_exp1_baseline.csv` —— 每个资产 15 行 per-month 诊断
+- `data/processed/experiment1/per_asset_summary.csv` / `per_asset_summary.md` —— thesis Table 4.2 的 5 行 summary(CSV / markdown 双格式)
+- `data/processed/experiment1/per_asset_distributions.png` —— thesis Figure 4.1 的 4 panel 分布图(bps box / ρ₁ box / Monobit −log₁₀(p) ECDF / L_max histogram)
