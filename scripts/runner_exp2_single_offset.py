@@ -28,7 +28,6 @@ from src.exp2_summary import format_selection_table
 from src.stats import summarize_bits_full
 from src.utils import fmt_elapsed, period_dir_name, run_plot_subprocess
 
-
 # Configuration
 
 ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
@@ -50,35 +49,11 @@ PERIODS: list[list[str]] = [
     ["2026-01"],
     ["2026-02"],
     ["2026-03"],
-    # Quarterly
-    # ["2025-01", "2025-02", "2025-03"],
-    # ["2025-04", "2025-05", "2025-06"],
-    # ["2025-07", "2025-08", "2025-09"],
-    # ["2025-10", "2025-11", "2025-12"],
-    # ["2026-01", "2026-02", "2026-03"],
-    # Half-year
-    # ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06"],
-    # ["2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"],
-    # Full year
-    # [
-    #     "2025-01",
-    #     "2025-02",
-    #     "2025-03",
-    #     "2025-04",
-    #     "2025-05",
-    #     "2025-06",
-    #     "2025-07",
-    #     "2025-08",
-    #     "2025-09",
-    #     "2025-10",
-    #     "2025-11",
-    #     "2025-12",
-    # ],
 ]
 
 AGG_START = 50
 AGG_STOP = 2000
-AGG_STEP = 10
+AGG_STEP = 25
 AGG_LEVELS: list[int] = list(range(AGG_START, AGG_STOP + 1, AGG_STEP))
 
 OFFSET = 0  # fixed single offset
