@@ -74,6 +74,15 @@ def _per_asset_summary(df: pd.DataFrame) -> pd.DataFrame:
                 "lag1_median": float(group["lag1_autocorrelation"].median()),
                 "monobit_rejects": int((group["monobit_pvalue"] < ALPHA).sum()),
                 "runs_rejects": int((group["runs_pvalue"] < ALPHA).sum()),
+                "apen_rejects": int(
+                    (group["approximate_entropy_pvalue"] < ALPHA).sum()
+                ),
+                "predictability_rejects": int(
+                    (group["predictability_pvalue"] < ALPHA).sum()
+                ),
+                "predictability_k2_rejects": int(
+                    (group["predictability_k2_pvalue"] < ALPHA).sum()
+                ),
                 "longest_run_max": l_max_max,
             }
         )
@@ -95,9 +104,12 @@ def _summary_to_markdown(summary: pd.DataFrame) -> str:
         "ρ₁ median",
         "Monobit rejects",
         "Runs rejects",
+        "ApEn rejects",
+        "D rejects",
+        "D(k=2) rejects",
         "L_max max",
     ]
-    align = ["l", "r", "r", "r", "c", "c", "r"]
+    align = ["l", "r", "r", "r", "c", "c", "c", "c", "c", "r"]
 
     def fmt_row(r: pd.Series) -> list[str]:
         return [
@@ -107,6 +119,9 @@ def _summary_to_markdown(summary: pd.DataFrame) -> str:
             f"{r['lag1_median']:+.3f}",
             f"{r['monobit_rejects']}/{r['n_months']}",
             f"{r['runs_rejects']}/{r['n_months']}",
+            f"{r['apen_rejects']}/{r['n_months']}",
+            f"{r['predictability_rejects']}/{r['n_months']}",
+            f"{r['predictability_k2_rejects']}/{r['n_months']}",
             f"{r['longest_run_max']}",
         ]
 
