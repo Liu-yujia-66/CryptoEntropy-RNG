@@ -62,7 +62,7 @@ Outputs (under `data/processed/data_overview/`):
   the 15 months for both raw and aggTrades rates. **Data source for
   thesis Table 4.1** (`tab:trades-per-second`).
 
-### Experiment 1 — Baseline Randomness (thesis Table 4.2 + Appendix Tables A.1, A.2)
+### Experiment 1 — Baseline Randomness (thesis Table 4.2)
 
 Daily-window baseline diagnostics on raw tick data; defaults to the five
 assets (`BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`) over
@@ -77,8 +77,7 @@ Outputs (under `data/processed/experiment1/`):
 - `summary_exp1_baseline_k1_full.csv` — 25 rows = 5 assets × 5 days; full
   set of diagnostics (Shannon entropy, Monobit, Runs, lag-1
   autocorrelation, longest run, etc.). **Data source for thesis Table
-  4.2 (per-asset summary) and Appendix Tables A.1 / A.2 (per-(asset,
-  day) marginal and structural indicators).**
+  4.2 (per-asset summary).**
 - `bitstreams/<ASSET>/<ASSET>_<date>_bitstream.csv` — per-day bitstream
   with original timestamps.
 - `plots/<ASSET>/<ASSET>_<date>_plots.png` — five-panel diagnostic plots
@@ -130,6 +129,23 @@ periods, and ℓ ranges. Design notes:
 - `Exp2 Limitations.md` — gate taxonomy and known limitations
 - `Exp2 Plan A - Relaxed Gate.md` — relaxed-gate heuristic
 - `Exp2 Plan B - Time-Based Aggregation.md` — 1-second bar physical-time axis
+
+#### Appendix table ↔ data file mapping
+
+The thesis appendix (Tables A.1 – A.6) prints only the per-(asset, month)
+`selected ℓ*` values. The raw CSVs sit under
+`data/processed/experiment2/` and map to the appendix tables as follows:
+
+| Thesis appendix       | Runner                                  | CSV file                                                                                                              |
+| --------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| Table A.1 (single offset)            | `runner_exp2_single_offset.py`         | `single-offset-per-month(50,2000,25)/selected_ell_by_window.txt`                                                       |
+| Table A.2 (strict gate, D + Monobit) | `runner_exp2_all_offset.py`            | `all-offset-per-month(50,2000,25)/selected_ell_by_window.txt` (+ per-month `all_assets_summary_exp2_selected_k.csv`)   |
+| Table A.3 (strict + Runs)            | `runner_exp2_all_offset.py`            | per-month `all_assets_summary_exp2_k_acceptance.csv` in the same directory as Table A.2                                |
+| Table A.4 (relaxed gate)             | `runner_exp2_all_offset_relaxed.py`    | `relaxed-all-offset-per-month(3,0.03)-(10,2000,2)/selected_ell_by_window.txt`                                          |
+| Table A.5 (Bonferroni 3-month)       | `runner_exp2_all_offset_relaxed.py`    | `relaxed-all-offset-per-month-bonferroni-(10,2000,2)/selected_ell_by_window.txt`                                       |
+| Table A.6 (1-second bar, three gates: base / +Runs / +Runs+ApEn) | `runner_exp2_all_offset_1sbars.py` + `select_ell_exp2_1sbars.py` | `all-offset-per-month-1sbars(10,600,1)/selected_ell_by_window.txt` |
+
+All paths are relative to `data/processed/experiment2/`.
 
 ## Data
 
