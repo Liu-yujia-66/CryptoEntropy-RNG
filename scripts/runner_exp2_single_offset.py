@@ -24,7 +24,7 @@ import pandas as pd
 
 from src.bitstream import build_offset_bitstream_from_arrays, save_bitstream
 from src.data_io import filter_month_files, prepare_month_data
-from src.exp2_summary import format_selection_table
+from src.summary import format_exp2_selection_table
 from src.stats import summarize_bits_full
 from src.utils import fmt_elapsed, period_dir_name, run_plot_subprocess
 
@@ -231,7 +231,7 @@ def _write_selected_ell_summary_txt(
         f"AGG_STOP = {AGG_STOP}",
         f"AGG_STEP = {AGG_STEP}",
     ]
-    text = format_selection_table(period_selected_frames, intro)
+    text = format_exp2_selection_table(period_selected_frames, intro)
     if not text:
         return
 

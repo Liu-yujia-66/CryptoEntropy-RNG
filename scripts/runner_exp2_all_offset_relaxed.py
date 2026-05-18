@@ -42,7 +42,7 @@ from src.stats import (
     monobit_test,
     summarize_bits_full,
 )
-from src.exp2_summary import format_selection_table
+from src.summary import format_exp2_selection_table
 from src.utils import fmt_elapsed, period_dir_name
 
 
@@ -422,7 +422,7 @@ def _write_selected_ell_summary_txt(
             for asset, (start, stop, step) in ASSET_AGG_CONFIG.items()
         ],
     ]
-    text = format_selection_table(period_selected_frames, intro)
+    text = format_exp2_selection_table(period_selected_frames, intro)
     if not text:
         return
 

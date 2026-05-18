@@ -30,7 +30,7 @@ import pandas as pd
 from src.bars import BarsCoverage, prepare_month_bars
 from src.bitstream import build_all_offset_bitstreams, save_bitstream
 from src.data_io import filter_month_files
-from src.exp2_summary import build_combined_row
+from src.summary import build_exp2_combined_row
 from src.utils import ASSET_ORDER, fmt_elapsed, period_dir_name, run_plot_subprocess
 
 
@@ -133,7 +133,7 @@ def process_asset(
                 continue
             combined_bits = np.concatenate(chunks)
             rows.append(
-                build_combined_row(
+                build_exp2_combined_row(
                     asset=asset,
                     agg_level=agg_level,
                     offset=offset,

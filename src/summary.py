@@ -1,15 +1,34 @@
 from __future__ import annotations
 
 """
-Shared helpers for Experiment 2 runner scripts.
+Shared summary helpers across Experiments 2/3/4.
 
-- `build_combined_row`: assemble the per-(asset, ell, offset) summary row
+Naming convention (v3.1 third pass): experiment-specific functions are prefixed
+`build_exp{N}_*` / `format_exp{N}_*`; generic helpers (e.g.
+`period_label_from_months`) carry no prefix.
+
+This module was renamed from `exp2_summary.py` to accommodate Exp 3 / Exp 4
+summary functions without spawning per-experiment files. Previous callers used
+`build_combined_row` / `format_selection_table`; those names are now
+`build_exp2_combined_row` / `format_exp2_selection_table`.
+
+Functions:
+- `build_exp2_combined_row`: assemble the per-(asset, ell, offset) summary row
   consumed by `summarize_bits_full`. Used by both transaction-time and
   1s-bar runners; varies only in `timestamp_unit` and `analysis_scope`.
 - `period_label_from_months`: format a list of "YYYY-MM" strings as a
-  compact window label ("2025.03", "2025.01-03", "2025").
-- `format_selection_table`: render the cross-period selected-ell table
+  compact window label ("2025.03", "2025.01-03", "2025"). Currently used
+  only by `format_exp2_selection_table`; Exp 3 / Exp 4 helpers may reuse
+  if they need similar text labels. (Note: distinct from
+  `utils.period_dir_name`, which returns directory-style names like
+  "1month-2025.01" for filesystem paths.)
+- `format_exp2_selection_table`: render the cross-period selected-ell table
   (Window x Asset) used in `selected_ell_by_window.txt`.
+
+Exp 3 / Exp 4 summary functions (to be added):
+- `build_exp3_per_asset_summary`
+- `build_exp4_per_month_verdict_row`
+- ...
 """
 
 from pathlib import Path
@@ -31,7 +50,7 @@ DISPLAY_NAMES: dict[str, str] = {
 }
 
 
-def build_combined_row(
+def build_exp2_combined_row(
     *,
     asset: str,
     agg_level: int,
@@ -42,7 +61,7 @@ def build_combined_row(
     timestamp_unit: str,
     analysis_scope: str,
 ) -> dict[str, object]:
-    """Build one summary row for an offset's concatenated bitstream."""
+    """Build one Exp 2 summary row for an offset's concatenated bitstream."""
     bits_per_second = (
         float(combined_bits.size / combined_duration_seconds)
         if combined_duration_seconds > 0
@@ -76,6 +95,12 @@ def build_combined_row(
 def period_label_from_months(months: list[str]) -> str:
     """Format a month list as a window label.
 
+    Currently called only by `format_exp2_selection_table` (this module).
+    Public-named without `_` prefix so Exp 3 / Exp 4 helpers can reuse if
+    they need similar human-readable labels in text reports. Distinct from
+    `utils.period_dir_name`, which returns directory-style "1month-YYYY.MM"
+    strings used by Exp 2 runners for filesystem paths.
+
     - 1 month  -> "YYYY.MM"
     - 12 months in same year -> "YYYY"
     - otherwise -> "YYYY.MM-MM" (single year) or first/last spanning label
@@ -90,12 +115,12 @@ def period_label_from_months(months: list[str]) -> str:
     return f"{first_year}.{first_month:02d}-{last_month:02d}"
 
 
-def format_selection_table(
+def format_exp2_selection_table(
     period_selected_frames: list[tuple[list[str], pd.DataFrame]],
     intro_lines: list[str],
     display_names: dict[str, str] | None = None,
 ) -> str:
-    """Render the Window x Asset selected-ell table.
+    """Render the Exp 2 Window x Asset selected-ell table.
 
     `intro_lines` is everything that appears above the table (title +
     parameter block); each entry is one line, no trailing newline.

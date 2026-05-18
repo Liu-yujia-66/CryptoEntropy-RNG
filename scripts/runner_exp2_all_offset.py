@@ -26,7 +26,7 @@ import pandas as pd
 
 from src.bitstream import build_all_offset_bitstreams, save_bitstream
 from src.data_io import filter_month_files, prepare_month_data
-from src.exp2_summary import build_combined_row, format_selection_table
+from src.summary import build_exp2_combined_row, format_exp2_selection_table
 from src.utils import fmt_elapsed, period_dir_name, run_plot_subprocess
 
 
@@ -123,7 +123,7 @@ def process_asset(
                 continue
             combined_bits = np.concatenate(chunks)
             rows.append(
-                build_combined_row(
+                build_exp2_combined_row(
                     asset=asset,
                     agg_level=agg_level,
                     offset=offset,
@@ -334,7 +334,7 @@ def _write_selected_ell_summary_txt(
         f"AGG_STOP = {AGG_STOP}",
         f"AGG_STEP = {AGG_STEP}",
     ]
-    text = format_selection_table(period_selected_frames, intro)
+    text = format_exp2_selection_table(period_selected_frames, intro)
     if not text:
         return
 

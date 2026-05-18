@@ -39,6 +39,11 @@ def period_dir_name(months: list[str]) -> str:
     """
     Auto-generate a directory name from a list of 'YYYY-MM' strings.
 
+    Used by Exp 2 runners to build filesystem paths under
+    data/processed/experiment2/. Distinct from
+    `summary.period_label_from_months`, which returns shorter
+    human-readable labels (e.g. "2025.01") for text reports.
+
     Examples:
         ["2025-01","2025-02","2025-03"]   → 3month-2025.01-03
         ["2025-07",..."2025-12"]          → 6month-2025.07-12
