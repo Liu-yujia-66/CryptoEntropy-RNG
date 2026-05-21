@@ -15,3 +15,9 @@ data/raw/*
 
 data/processed/
 notes/
+
+vendor/
+
+# TestU01 driver binaries (Mach-O); rebuild with `make -C tools`.
+tools/alphabit_probe
+tools/alphabit_driver
