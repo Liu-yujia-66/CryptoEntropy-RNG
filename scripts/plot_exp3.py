@@ -37,7 +37,7 @@ os.environ.setdefault("MPLCONFIGDIR", str(Path("data/interim/.mplconfig").resolv
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-from src.nist_extended import ALL_SUB_TESTS
+from src.battery import ALL_SUB_TESTS
 from src.utils import ASSET_COLORS
 
 

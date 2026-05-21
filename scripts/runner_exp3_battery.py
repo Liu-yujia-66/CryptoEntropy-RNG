@@ -76,7 +76,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.bars import prepare_month_bars
 from src.bitstream import build_all_offset_bitstreams
 from src.data_io import filter_month_files
-from src.nist_extended import (
+from src.battery import (
     ALL_SUB_TESTS,
     SANITY_BRACKETS,
     bracket_for_length,

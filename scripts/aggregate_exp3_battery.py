@@ -48,7 +48,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.nist_extended import ALL_SUB_TESTS, SANITY_BRACKETS
+from src.battery import ALL_SUB_TESTS, SANITY_BRACKETS
 
 # Configuration
 

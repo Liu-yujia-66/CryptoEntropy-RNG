@@ -14,7 +14,7 @@ For each fusion size n in {2, 3, 4, 5}:
        - Build the XOR-fused stream over the subset.
        - XOR-aggregate every offset 0..ell*_n-1 using
          src.calibration.xor_aggregate_offset.
-       - Run src.nist_extended.full_battery (12 sub-tests) on each
+       - Run src.battery.full_battery (up to 29 sub-tests) on each
          offset's aggregated output. Join the Exp 3 sanity matrix to
          flag per-(sub-test, length-bracket) invalid cells.
        - Compute cell-level verdict per sub-test: PASS if >=80% of
@@ -61,7 +61,7 @@ import pandas as pd
 
 from src.calibration import xor_aggregate_offset
 from src.fusion import build_fused_stream_from_signs, build_per_asset_signs
-from src.nist_extended import (
+from src.battery import (
     ALL_SUB_TESTS,
     bracket_for_length,
     full_battery,
