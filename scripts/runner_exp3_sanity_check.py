@@ -1,39 +1,66 @@
 from __future__ import annotations
 
 """
-Sanity check runner for Experiment 3.
+Sanity check runner for Experiment 3 (extended battery, incl. TestU01 Alphabit).
 
 Generates K random bit streams from /dev/urandom at each sanity bracket
-(5K / 10K / 25K / 50K / 100K), runs `full_battery()` on each, and tallies
-the per-(sub_test, bracket) type-I error rate at α = 0.01.
+(5K / 10K / 25K / 50K / 100K), runs full_battery() on each, and tallies the
+per-(sub_test, bracket) outcome into the sanity validity matrix.
 
-A (sub_test, bracket) cell is `passed_sanity = True` iff its measured
-type-I rate stays ≤ 2 % (threshold from plan §1.4, aligned with Onofri).
-This matrix is then joined by the Exp 3 main runner to mark verdicts as
-N/A on cells where the sub-test isn't trustworthy at that length.
+THREE-STATE OUTCOME (Phase 5 fix, plan v3.4). The previous runner only counted
+sub-tests that FAILED (p < alpha). That silently mishandled TestU01 Alphabit:
+TestU01 skips its longer-block sub-tests at short lengths (11 of the 17
+Alphabit sub-tests run at 5K bits, 16 at 10K-50K, 17 at 100K). A skipped
+sub-test never appeared in any trial's results, so its fail count stayed 0,
+its type-I rate computed to 0, and it was wrongly marked "passed sanity". The
+12 fixed sub-tests (stats.py + nistrng) always run, so they were unaffected;
+only Alphabit exposed the bug.
+
+Each (sub_test, bracket) cell now gets a `status`:
+    not_run  -- the sub-test ran in 0 trials at this bracket (TestU01 length
+                eligibility). This is NOT a sanity pass.
+    passed   -- ran in every trial; type-I rate <= TYPE_I_THRESHOLD.
+    failed   -- ran in every trial; type-I rate above the threshold.
+`passed_sanity` is kept as a bool column (for the downstream join in
+runner_exp3_battery.py) and is True iff status == "passed".
+
+PER-BRACKET CAVEAT. Each bracket is probed at its LOWER BOUND length (5000,
+10000, ...). Alphabit's eligibility steps fall *inside* brackets (e.g.
+MultinomialBitsOver L=16 switches on somewhere in (5000, 10000)). Probing the
+lower bound is the conservative choice: a real Exp 3 cell in the upper part of
+a bracket may run a sub-test this matrix marks "not_run", so that cell's data
+for the sub-test is discarded -- conservative, never the reverse. (plan v3.4,
+Phase 5 decision.)
+
+Alphabit is batched: each worker task runs run_alphabit_batch() once for its
+whole chunk of trials (a single alphabit_driver subprocess), then
+full_battery(..., alphabit_pvals=...) per stream. Requires tools/alphabit_driver
+(build: `bash tools/build_testu01.sh && make -C tools`); override its path with
+the ALPHABIT_DRIVER environment variable.
+
+PROCESS ISOLATION PER BRACKET (Phase 5). Running all 5 brackets in a single
+Python process accumulated something across brackets that reliably SIGKILLed
+on 100K (driver / TestU01 / Python wrapper state leak; root cause was not
+worth chasing for a one-time sanity-matrix product). The default entry-point
+fixes this by spawning ONE fresh Python subprocess per bracket and
+concatenating the per-bracket CSVs. Each subprocess gets a clean slate, so no
+inter-bracket carry-over is possible.
 
 Run from project root:
-    python scripts/runner_exp3_sanity_check.py
+    python scripts/runner_exp3_sanity_check.py                  # all brackets
+    python scripts/runner_exp3_sanity_check.py --bracket 100K   # one bracket
+    python scripts/runner_exp3_sanity_check.py --force          # ignore cache
 
-Configuration is the UPPERCASE constants at the top. To do a quick
-smoke pass (~1 minute), edit `K = 10` and re-run.
+Resume: a bracket whose per-bracket CSV already exists is SKIPPED, so a re-run
+after a partial failure only redoes the missing bracket(s) and then
+concatenates; --force recomputes every bracket. All outputs (the final matrix
+and the per-bracket partials) go to data/processed/experiment3/sanity_check/.
 
-Parallelism: trials within a bracket run on a ProcessPool of MAX_WORKERS
-processes. Brackets are processed sequentially so the 100K bracket can
-saturate all cores without contending with shorter brackets.
-
-Expected wall-clock for K = 1000, MAX_WORKERS = 5 (≈4.5x single-thread):
-    5K   ≈ 0.3 min
-    10K  ≈ 0.5 min
-    25K  ≈ 1.2 min
-    50K  ≈ 2.5 min
-    100K ≈ 5 min
-    ---- total ≈ 9.5 min
+Quick smoke pass (~1 min): SANITY_K=10 python scripts/runner_exp3_sanity_check.py
 """
 
-# BLAS thread limits must be set BEFORE numpy is imported, otherwise the
-# outer ProcessPool × inner BLAS threads oversubscribe the CPU and slow
-# everything down. Workers inherit these env vars.
+# BLAS thread limits must be set BEFORE numpy is imported, otherwise the outer
+# ProcessPool x inner BLAS threads oversubscribe the CPU. Workers inherit them.
 import os
 
 os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
@@ -41,9 +68,12 @@ os.environ.setdefault("MKL_NUM_THREADS", "1")
 os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("VECLIB_MAXIMUM_THREADS", "1")  # macOS Accelerate
 
+import argparse
 import secrets
+import subprocess
 import sys
 import time
+from collections import Counter
 from concurrent.futures import ProcessPoolExecutor
 from pathlib import Path
 
@@ -52,20 +82,31 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.nist_extended import (
-    ALL_SUB_TESTS,
-    SANITY_BRACKETS,
-    full_battery,
-)
+from src.battery import ALL_SUB_TESTS, SANITY_BRACKETS, full_battery
+from src.testu01_alphabit import run_alphabit_batch
 
-MAX_WORKERS = 5
-CHUNKSIZE = 50  # Tune for better progress reporting (smaller = more frequent updates, but more overhead)
+# Label -> bit count, used for argparse choices and bracket lookup.
+_BRACKET_BY_LABEL: dict[str, int] = {lab: n for n, lab in SANITY_BRACKETS}
 
 # Configuration
-K = 1000
+MAX_WORKERS = 5
+# K is the trials per bracket. Override with SANITY_K for a quick smoke pass;
+# the value is embedded in the output filename so a smoke run (e.g. K=10) does
+# not overwrite the full K=1000 matrix.
+K = int(os.environ.get("SANITY_K", "1000"))
 ALPHA = 0.01
 TYPE_I_THRESHOLD = 0.02
-OUTPUT_PATH = Path(f"data/processed/experiment3/sanity_check_validity_matrix-k{K}.csv")
+# Trials per worker task = streams per Alphabit driver subprocess. Batching
+# this many trials amortises driver process startup while keeping enough
+# tasks (K / TRIALS_PER_CHUNK) to spread across MAX_WORKERS.
+TRIALS_PER_CHUNK = 50
+OUTPUT_DIR = Path("data/processed/experiment3/sanity_check")
+FINAL_OUTPUT_PATH = OUTPUT_DIR / f"sanity_validity_matrix-k{K}.csv"
+
+
+def _per_bracket_path(label: str) -> Path:
+    """Per-bracket partial CSV; concatenated at the end into FINAL_OUTPUT_PATH."""
+    return OUTPUT_DIR / f"sanity_validity_matrix-k{K}_{label}.csv"
 
 
 def sample_urandom_bits(n: int) -> np.ndarray:
@@ -74,78 +115,223 @@ def sample_urandom_bits(n: int) -> np.ndarray:
     return np.unpackbits(np.frombuffer(raw, dtype=np.uint8))[:n].astype(np.uint8)
 
 
-def _run_one_trial(n_bits: int) -> list[str]:
-    """Worker: one trial. Returns names of sub-tests whose p < ALPHA."""
-    bits = sample_urandom_bits(n_bits)
-    result = full_battery(bits)
-    return [name for name, (p, _) in result.items() if p < ALPHA]
+def _run_chunk(args: tuple[int, int]) -> tuple[dict[str, int], dict[str, int]]:
+    """Worker: run `n_trials` sanity trials at `n_bits`.
+
+    Alphabit is run once for the whole chunk (one driver subprocess) via
+    run_alphabit_batch(); the 12 fixed sub-tests run per stream.
+
+    Returns (ran_counts, fail_counts): for each sub_test, how many of the
+    chunk's trials it ran in, and how many of those it failed (p < ALPHA).
+    A sub-test absent from a trial's full_battery() result (TestU01 did not
+    run it) is simply not counted in `ran` -- that is how "not_run" is
+    detected at the bracket level.
+    """
+    n_bits, n_trials = args
+    streams = {f"t{i}": sample_urandom_bits(n_bits) for i in range(n_trials)}
+    alpha_batch = run_alphabit_batch(streams)  # single driver subprocess
+
+    ran: Counter = Counter()
+    fail: Counter = Counter()
+    for tid, bits in streams.items():
+        result = full_battery(bits, alphabit_pvals=alpha_batch[tid])
+        for name, (p, _valid) in result.items():
+            ran[name] += 1
+            if p < ALPHA:
+                fail[name] += 1
+    return dict(ran), dict(fail)
 
 
-def main() -> None:
+def _split_into_chunks(total: int, size: int) -> list[int]:
+    """Split `total` trials into chunk sizes of at most `size`."""
+    n_full, rem = divmod(total, size)
+    return [size] * n_full + ([rem] if rem else [])
+
+
+def _preflight_driver() -> None:
+    """Fail fast with a clear message if alphabit_driver is missing."""
+    print("[preflight] checking alphabit_driver ...", end=" ", flush=True)
+    try:
+        run_alphabit_batch({"_preflight": sample_urandom_bits(2000)})
+    except FileNotFoundError as exc:
+        print("FAILED")
+        print(f"\n{exc}", file=sys.stderr)
+        sys.exit(1)
+    print("OK")
+
+
+def run_one_bracket(label: str) -> Path:
+    """Run K trials at the given bracket and write the per-bracket CSV.
+
+    Always invoked in its own fresh Python process (either directly via
+    `--bracket`, or as a subprocess from the top-level dispatcher).
+    """
     project_root = Path(__file__).resolve().parent.parent
-    output_path = project_root / OUTPUT_PATH
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    if label not in _BRACKET_BY_LABEL:
+        sys.exit(f"unknown bracket {label!r}; valid: {list(_BRACKET_BY_LABEL)}")
+    n_bits = _BRACKET_BY_LABEL[label]
+    out_path = project_root / _per_bracket_path(label)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"[config] K={K}, α={ALPHA}, type-I threshold={TYPE_I_THRESHOLD}")
-    print(f"[config] workers={MAX_WORKERS}, chunksize={CHUNKSIZE}")
-    print(f"[config] brackets: {[label for _, label in SANITY_BRACKETS]}")
-    print(f"[config] sub-tests ({len(ALL_SUB_TESTS)}): {ALL_SUB_TESTS}")
-    print(f"[config] output: {output_path}")
+    print(
+        f"[config] K={K}  alpha={ALPHA}  type-I<={TYPE_I_THRESHOLD}  "
+        f"workers={MAX_WORKERS}  chunk={TRIALS_PER_CHUNK}\n"
+        f"[config] bracket={label} (n={n_bits})  "
+        f"sub-tests={len(ALL_SUB_TESTS)}\n"
+        f"[config] -> {out_path}"
+    )
+
+    _preflight_driver()
+
+    chunk_sizes = _split_into_chunks(K, TRIALS_PER_CHUNK)
+    tasks = [(n_bits, c) for c in chunk_sizes]
+    print(f"\n[{label}] K={K} trials at n={n_bits}, {len(tasks)} chunk(s)")
+    bracket_start = time.perf_counter()
+
+    ran_total: Counter = Counter()
+    fail_total: Counter = Counter()
+    done_trials = 0
+    with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
+        for chunk_size, (ran, fail) in zip(
+            chunk_sizes, executor.map(_run_chunk, tasks)
+        ):
+            ran_total.update(ran)
+            fail_total.update(fail)
+            done_trials += chunk_size
+            elapsed = time.perf_counter() - bracket_start
+            rate = done_trials / elapsed if elapsed > 0 else 0.0
+            eta = (K - done_trials) / rate if rate > 0 else 0.0
+            print(
+                f"  [{label}] {done_trials}/{K}  "
+                f"({elapsed/60:.1f}min elapsed, ~{eta/60:.1f}min remaining)"
+            )
+
+    bracket_elapsed = time.perf_counter() - bracket_start
+    print(f"[{label}] done in {bracket_elapsed/60:.1f}min")
 
     rows: list[dict] = []
+    for st in ALL_SUB_TESTS:
+        n_ran = ran_total.get(st, 0)
+        n_fail = fail_total.get(st, 0)
+        if n_ran == 0:
+            status, type_I = "not_run", float("nan")
+        else:
+            type_I = n_fail / n_ran
+            status = "passed" if type_I <= TYPE_I_THRESHOLD else "failed"
+            # Eligibility is deterministic in n_bits, so a sub-test should
+            # run in all K trials or none. Anything else is unexpected.
+            if n_ran != K:
+                print(
+                    f"  [WARN] {st} @ {label}: ran in {n_ran}/{K} trials "
+                    f"(expected 0 or {K}); type-I computed over {n_ran}."
+                )
+        rows.append(
+            {
+                "sub_test": st,
+                "bracket": label,
+                "status": status,
+                "n_ran": n_ran,
+                "n_fail": n_fail,
+                "type_I_rate": type_I,
+                "passed_sanity": status == "passed",
+            }
+        )
+    counts = Counter(r["status"] for r in rows)
+    print(
+        f"[{label}] passed={counts['passed']}  failed={counts['failed']}  "
+        f"not_run={counts['not_run']}"
+    )
+
+    pd.DataFrame(rows).to_csv(out_path, index=False)
+    print(f"[saved] {out_path}")
+    return out_path
+
+
+def run_all_brackets(force: bool = False) -> None:
+    """Spawn one fresh Python subprocess per bracket, then concat results.
+
+    Fresh-process-per-bracket is the Phase 5 workaround for the (unidentified)
+    cumulative-state SIGKILL at 100K when 5 brackets ran in one process. Each
+    subprocess gets a clean slate.
+
+    Resume: a bracket whose per-bracket CSV already exists is SKIPPED and its
+    earlier result reused. So after a partial failure, just re-run -- only the
+    missing bracket(s) are recomputed, then everything is concatenated. Pass
+    `force=True` (--force) to ignore existing CSVs and recompute every bracket.
+    """
+    project_root = Path(__file__).resolve().parent.parent
+    final_path = project_root / FINAL_OUTPUT_PATH
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+
+    bracket_labels = [label for _, label in SANITY_BRACKETS]
+    print(
+        f"[dispatch] {len(bracket_labels)} brackets, one subprocess each: "
+        f"{bracket_labels}  (force={force})"
+    )
+    print(f"[dispatch] final concat -> {final_path}\n")
+
     total_start = time.perf_counter()
-
-    for n_bits, label in SANITY_BRACKETS:
-        print(f"\n[{label}] starting K={K} trials at n={n_bits}")
-        fail_counts = {sub_test: 0 for sub_test in ALL_SUB_TESTS}
-        bracket_start = time.perf_counter()
-
-        with ProcessPoolExecutor(max_workers=MAX_WORKERS) as executor:
-            iterator = executor.map(
-                _run_one_trial,
-                [n_bits] * K,
-                chunksize=CHUNKSIZE,
+    per_bracket_paths: list[Path] = []
+    for label in bracket_labels:
+        bracket_csv = project_root / _per_bracket_path(label)
+        if bracket_csv.exists() and not force:
+            print(
+                f"========== bracket {label}: SKIP "
+                f"(per-bracket CSV exists; --force to redo) ==========\n"
             )
-            for k, failed in enumerate(iterator):
-                for sub_test in failed:
-                    fail_counts[sub_test] += 1
-
-                if (k + 1) % 100 == 0:
-                    elapsed = time.perf_counter() - bracket_start
-                    rate = (k + 1) / elapsed
-                    eta = (K - k - 1) / rate if rate > 0 else 0.0
-                    print(
-                        f"  [{label}] {k+1}/{K}  "
-                        f"({elapsed/60:.1f}min elapsed, ~{eta/60:.1f}min remaining)"
-                    )
-
-        bracket_elapsed = time.perf_counter() - bracket_start
-        print(f"[{label}] done in {bracket_elapsed/60:.1f}min")
-
-        for sub_test in ALL_SUB_TESTS:
-            type_I_rate = fail_counts[sub_test] / K
-            rows.append(
-                {
-                    "sub_test": sub_test,
-                    "bracket": label,
-                    "type_I_rate": type_I_rate,
-                    "passed_sanity": type_I_rate <= TYPE_I_THRESHOLD,
-                }
+            per_bracket_paths.append(bracket_csv)
+            continue
+        print(f"========== bracket {label} ==========")
+        cmd = [sys.executable, str(Path(__file__).resolve()), "--bracket", label]
+        # child inherits the environment (SANITY_K, ALPHABIT_DRIVER, ...)
+        proc = subprocess.run(cmd, env={**os.environ})
+        if proc.returncode != 0:
+            sys.exit(
+                f"[FATAL] subprocess for bracket {label} exited "
+                f"with code {proc.returncode}"
             )
+        per_bracket_paths.append(bracket_csv)
+        print()
 
-    df = pd.DataFrame(rows)
-    df.to_csv(output_path, index=False)
-    print(f"\n[saved] {output_path}")
+    # Concat per-bracket CSVs into FINAL_OUTPUT_PATH.
+    dfs = [pd.read_csv(p) for p in per_bracket_paths]
+    df = pd.concat(dfs, ignore_index=True)
+    df.to_csv(final_path, index=False)
+    print(f"[saved] {final_path}  ({len(df)} rows)")
 
     total_elapsed = time.perf_counter() - total_start
     print(f"[time] total: {total_elapsed/60:.1f}min")
 
-    # Pivot for visual inspection
-    print("\nPassed sanity (sub-test × bracket):")
-    pivot = df.pivot(
-        index="sub_test", columns="bracket", values="passed_sanity"
-    ).reindex(ALL_SUB_TESTS)[[label for _, label in SANITY_BRACKETS]]
+    print("\nStatus (sub-test x bracket):")
+    pivot = df.pivot(index="sub_test", columns="bracket", values="status").reindex(
+        ALL_SUB_TESTS
+    )[bracket_labels]
     print(pivot.to_string())
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Run /dev/urandom sanity trials at each bracket; produce "
+        "the three-state (sub_test x bracket) validity matrix."
+    )
+    parser.add_argument(
+        "--bracket",
+        choices=list(_BRACKET_BY_LABEL),
+        help="run only this bracket; writes a per-bracket CSV. Without this "
+        "flag the runner dispatches one subprocess per bracket and "
+        "concatenates the partial CSVs into the final matrix.",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="recompute every bracket even if its per-bracket CSV already "
+        "exists (default: reuse existing per-bracket CSVs).",
+    )
+    args = parser.parse_args()
+    if args.bracket is not None:
+        run_one_bracket(args.bracket)
+    else:
+        run_all_brackets(force=args.force)
 
 
 if __name__ == "__main__":
