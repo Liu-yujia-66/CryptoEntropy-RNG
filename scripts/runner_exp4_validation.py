@@ -14,12 +14,20 @@ For each fusion size n in {2, 3, 4, 5}:
        - Build the XOR-fused stream over the subset.
        - XOR-aggregate every offset 0..ell*_n-1 using
          src.calibration.xor_aggregate_offset.
-       - Run src.battery.full_battery (up to 29 sub-tests) on each
-         offset's aggregated output. Join the Exp 3 sanity matrix to
+       - Run src.battery.full_battery (up to 29 sub-tests: 5 stats.py +
+         7 nistrng + up to 17 TestU01 Alphabit; Alphabit is batched per
+         cell via run_alphabit_batch so the alphabit_driver subprocess
+         only starts once per cell). Join the Exp 3 sanity matrix to
          flag per-(sub-test, length-bracket) invalid cells.
-       - Compute cell-level verdict per sub-test: PASS if >=80% of
-         admissible offsets have p >= alpha; FAIL otherwise; INVALID
-         if all offsets are sanity-invalid for that sub-test.
+       - Compute four-state cell verdict per sub-test:
+           PASS / FAIL — at least one sanity-valid offset; PASS if
+                         >=80% of valid offsets have p >= alpha.
+           INVALID     — ran on >=1 offset but every offset is
+                         sanity-invalid for this (sub_test, bracket).
+           NOT_RUN     — no offset produced a p-value (TestU01
+                         length-skipped this sub-test, or every offset
+                         < MIN_BIT_COUNT).
+         INVALID and NOT_RUN both stay out of the admissible denominator.
        - Save the witness-offset stream as fused_stream.bin
          (deployment artefact for the Prototype).
 
@@ -30,9 +38,9 @@ Outputs land under data/processed/experiment4/validation/:
     {month}/
       fused_stream.bin                   # witness-offset uint8 stream
       fused_stream.meta.json             # length, survival, ell*, witness, throughput
-      verdict_row.csv                    # 1 row x 12 sub-test (cell-level)
-      per_offset_pvalues.csv             # ell*_n rows x 12 sub-test (debug)
-    per_month_verdict_matrix.csv         # 6 rows x 12 sub-test (paper §4.5 table)
+      verdict_row.csv                    # 1 row x 29 sub-tests (cell-level)
+      per_offset_pvalues.csv             # ell*_n rows x 29 sub-tests (debug)
+    per_month_verdict_matrix.csv         # 6 rows x 29 sub-tests (paper §4.5 table)
     per_month_throughput.csv             # 6 rows: bits, bps, 256-bit latency
   validation_summary.json                # subsets / ell_n / witness per n + verdict counts
 
@@ -66,6 +74,7 @@ from src.battery import (
     bracket_for_length,
     full_battery,
 )
+from src.testu01_alphabit import run_alphabit_batch
 
 
 DEFAULT_VALIDATION_MONTHS = [
@@ -82,7 +91,7 @@ DEFAULT_INPUT_ROOT = Path(
 )
 DEFAULT_CALIB_ROOT = Path("data/processed/experiment4/calibration_all_subsets")
 DEFAULT_SANITY_PATH = Path(
-    "data/processed/experiment3/sanity_check_validity_matrix-k1000.csv"
+    "data/processed/experiment3/sanity_check/sanity_validity_matrix-k1000.csv"
 )
 DEFAULT_OUTPUT_ROOT = Path("data/processed/experiment4/validation")
 
@@ -170,29 +179,65 @@ def _evaluate_cell(
     signs_cache: dict,
     sanity_matrix: dict[tuple[str, str], bool],
 ) -> dict:
-    """Build fused, XOR-aggregate, run battery on every offset, compute
-    cell verdict + return per-offset detail + deployment stream."""
+    """Build fused, XOR-aggregate, run battery on every offset (Alphabit
+    batched per cell), compute four-state cell verdict + return per-offset
+    detail + deployment stream.
+
+    Four-state verdict per sub-test (mirrors src/aggregate_exp3_battery.py):
+        NOT_RUN  -- no offset produced a p-value (TestU01 length-skip OR
+                    every offset < MIN_BIT_COUNT). Does NOT enter the
+                    admissible denominator.
+        INVALID  -- at least one offset ran, but every such offset is
+                    sanity-invalid for this (sub_test, bracket). Same:
+                    does NOT enter the admissible denominator.
+        PASS/FAIL — at least one sanity-valid offset; threshold over those.
+
+    Alphabit is batched per cell: a single run_alphabit_batch() call covers
+    every qualifying offset (one alphabit_driver subprocess per cell rather
+    than per offset). Slashes per-stream startup from ~ell_star_n times to 1.
+    """
     per_asset = [signs_cache[a] for a in subset]
     fused = build_fused_stream_from_signs(subset, month, per_asset)
 
-    # Build per-offset aggregated streams + run battery
-    per_offset_rows: list[dict] = []
+    # Build all offsets first; capture the witness stream for the Prototype
+    # and decide which offsets qualify for the battery.
+    all_offsets: list[tuple[int, np.ndarray]] = []
     witness_stream: np.ndarray | None = None
     for offset in range(ell_star_n):
         agg = xor_aggregate_offset(fused.fused_bits, ell_star_n, offset)
         if witness_offset is not None and offset == witness_offset:
             witness_stream = agg
+        all_offsets.append((offset, agg))
+
+    # Batch Alphabit across all qualifying offsets — one driver subprocess
+    # per cell, not per offset. Internal keys "o{offset}" are tab/comma-free.
+    qualifying = {
+        f"o{offset}": agg
+        for offset, agg in all_offsets
+        if agg.size >= MIN_BIT_COUNT
+    }
+    alphabit_batch = run_alphabit_batch(qualifying) if qualifying else {}
+
+    # Per-offset rows. Pre-fill NaN / False for every ALL_SUB_TESTS entry so
+    # the resulting DataFrame is column-complete even if TestU01 length-
+    # skipped a sub-test on every offset (otherwise per_offset_df[<col>]
+    # would KeyError below).
+    per_offset_rows: list[dict] = []
+    for offset, agg in all_offsets:
         row: dict = {
             "offset": offset,
             "bit_count": int(agg.size),
             "bracket": bracket_for_length(int(agg.size)),
         }
-        if agg.size < 2:
-            for sub_test in ALL_SUB_TESTS:
-                row[f"{sub_test}_pvalue"] = float("nan")
-                row[f"{sub_test}_sanity_valid"] = False
-        else:
-            results = full_battery(agg, sanity_matrix)
+        for sub_test in ALL_SUB_TESTS:
+            row[f"{sub_test}_pvalue"] = float("nan")
+            row[f"{sub_test}_sanity_valid"] = False
+        if agg.size >= MIN_BIT_COUNT:
+            results = full_battery(
+                agg,
+                sanity_matrix=sanity_matrix,
+                alphabit_pvals=alphabit_batch[f"o{offset}"],
+            )
             for sub_test, (p_value, sanity_valid) in results.items():
                 row[f"{sub_test}_pvalue"] = float(p_value)
                 row[f"{sub_test}_sanity_valid"] = bool(sanity_valid)
@@ -200,7 +245,7 @@ def _evaluate_cell(
 
     per_offset_df = pd.DataFrame(per_offset_rows)
 
-    # Cell-level verdict per sub-test
+    # Cell-level four-state verdict per sub-test
     verdict_row: dict = {
         "n": n,
         "subset": "-".join(subset),
@@ -220,9 +265,13 @@ def _evaluate_cell(
     for sub_test in ALL_SUB_TESTS:
         p_col = f"{sub_test}_pvalue"
         sv_col = f"{sub_test}_sanity_valid"
-        valid_mask = per_offset_df[sv_col]
+        n_observed = int((~per_offset_df[p_col].isna()).sum())
+        valid_mask = per_offset_df[sv_col].astype(bool)
         n_valid = int(valid_mask.sum())
-        if n_valid == 0:
+        if n_observed == 0:
+            verdict = "NOT_RUN"
+            pass_rate = float("nan")
+        elif n_valid == 0:
             verdict = "INVALID"
             pass_rate = float("nan")
         else:
@@ -364,6 +413,7 @@ def _write_per_n_outputs(
             "PASS": int((verdict_df[col] == "PASS").sum()),
             "FAIL": int((verdict_df[col] == "FAIL").sum()),
             "INVALID": int((verdict_df[col] == "INVALID").sum()),
+            "NOT_RUN": int((verdict_df[col] == "NOT_RUN").sum()),
         }
 
     output_bits_median = float(throughput_df["output_bits"].median())
@@ -547,9 +597,15 @@ def main() -> int:
                 for st in ALL_SUB_TESTS
                 if cell_result["verdict_row"][f"{st}_verdict"] == "INVALID"
             )
+            n_not_run = sum(
+                1
+                for st in ALL_SUB_TESTS
+                if cell_result["verdict_row"][f"{st}_verdict"] == "NOT_RUN"
+            )
             print(
                 f"  n={n} {pick['subset_label']}: "
-                f"verdict PASS={n_pass}/FAIL={n_fail}/INVALID={n_invalid}  "
+                f"verdict PASS={n_pass}/FAIL={n_fail}/INVALID={n_invalid}/"
+                f"NOT_RUN={n_not_run}  "
                 f"bits={cell_result['throughput']['output_bits']:,}  "
                 f"({elapsed_cell:.1f}s)"
             )
@@ -629,7 +685,8 @@ def main() -> int:
         for st in ALL_SUB_TESTS:
             counts = summary["sub_test_pass_counts"][st]
             verdict_summary.append(
-                f"{counts['PASS']}/{counts['FAIL']}/{counts['INVALID']}"
+                f"{counts['PASS']}/{counts['FAIL']}/"
+                f"{counts['INVALID']}/{counts['NOT_RUN']}"
             )
         verdict_str = " | ".join(f"{vs:>7}" for vs in verdict_summary)
         print(
@@ -638,9 +695,15 @@ def main() -> int:
             f"{summary['hours_per_256_bits_median']:>6.2f} h"
         )
     print()
-    print("verdict counts per sub-test: PASS/FAIL/INVALID across "
+    print("verdict counts per sub-test: PASS/FAIL/INVALID/NOT_RUN across "
           f"{len(months)} validation months")
     print(f"top-level summary: {output_root / 'validation_summary.json'}")
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from summarize_exp4_validation import write_summary
+    txt_path = write_summary(output_root)
+    print(f"text summary     : {txt_path}")
+
     print(f"elapsed: {time.time() - started:.1f}s")
     return 0
 

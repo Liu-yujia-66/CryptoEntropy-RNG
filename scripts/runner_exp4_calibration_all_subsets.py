@@ -1,30 +1,15 @@
 """
-Experiment 4 — all-subsets calibration runner (*[time-permitting]*
-extension from plan v3 §4.2).
+Experiment 4 — all-subsets calibration runner.
 
 Sweeps every C(5, n) asset subset for n in {2, 3, 4, 5}, total 26
 subsets x 9 calibration months = 234 cells. For each (subset, month):
 build the XOR-fused stream, sweep ell on the +Runs all-offset gate,
-record ell_star (or None if no ell passes). Per-subset outputs
-mirror the single-subset calibration runner; an additional top-level
-all_subsets_summary.csv aggregates the 26 subsets so the comparison
-figure can be drawn directly.
+record ell_star (or None if no ell passes). Per-subset outputs land in
+their own directory; an additional top-level all_subsets_summary.csv
+aggregates the 26 subsets so the comparison figure can be drawn
+directly.
 
-Why this exists, given runner_exp4_calibration.py already produces
-the four MI-best subsets:
-  - Validate that the calibration runner's odd/even-n marginal-bias
-    observation (n=3, 5: fused_p1 ~0.5 -> small ell*; n=2, 4: biased
-    -> larger ell*) holds across all subsets, or only on the
-    MI-recommended ones.
-  - Give thesis §4.5 the full subset x fusion-size trade-off curve
-    (throughput, ell*, fused_p1, survival rate) instead of one
-    "best path" through the design space.
-  - Retire plan v3.2 §2.2's ordering / best-per-n framing in favour
-    of "we exhaustively searched all 26 subsets and report the
-    Pareto front".
-
-Output structure (separate from the single-subset calibration tree
-to avoid collision):
+Output structure:
 
     data/processed/experiment4/calibration_all_subsets/
     |-- all_subsets_summary.csv          # one row per (n, subset)
@@ -38,12 +23,10 @@ to avoid collision):
     |-- n2_BNBUSDT-DOGEUSDT/...
     |-- ... (26 directories total)
 
-Reuses the per-cell helper (_calibrate_one_cell), gate constants, and
-output writer from runner_exp4_calibration.py to keep the two runners
-in lock-step. Witness offset selection is per-subset on the witness
-month (default 2025-09), same convention as the single-subset runner.
+Witness offset selection is per-subset on the witness month
+(default 2025-09).
 
-Run from the project root after the MI matrix runner has finished:
+Run from the project root:
     python scripts/runner_exp4_calibration_all_subsets.py
 
 Override examples:
@@ -58,7 +41,6 @@ Override examples:
 from __future__ import annotations
 
 import argparse
-import importlib.util
 import json
 import os
 import sys
@@ -70,36 +52,37 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import pandas as pd
 
-from src.calibration import p80, select_witness_offset
+from src.calibration import (
+    p80,
+    select_ell_star_from_grid,
+    select_witness_offset,
+)
 from src.fusion import build_fused_stream_from_signs, build_per_asset_signs
 
-# Pull the single-subset runner module for shared per-cell / per-output
-# helpers — keeps the two runners' semantics identical.
-_single_subset_path = Path(__file__).resolve().parent / "runner_exp4_calibration.py"
-_single_subset_spec = importlib.util.spec_from_file_location(
-    "runner_exp4_calibration",
-    _single_subset_path,
-)
-if _single_subset_spec is None or _single_subset_spec.loader is None:
-    raise ImportError(f"could not load sibling module: {_single_subset_path}")
-_single_subset = importlib.util.module_from_spec(_single_subset_spec)
-_single_subset_spec.loader.exec_module(_single_subset)
 
-_calibrate_one_cell = _single_subset._calibrate_one_cell
-_write_outputs_for_n = _single_subset._write_outputs_for_n
-DEFAULT_CALIBRATION_MONTHS = _single_subset.DEFAULT_CALIBRATION_MONTHS
-DEFAULT_WITNESS_MONTH = _single_subset.DEFAULT_WITNESS_MONTH
-ALPHA = _single_subset.ALPHA
-PASS_RATE_THRESHOLD = _single_subset.PASS_RATE_THRESHOLD
-VALID_OFFSET_RATIO_THRESHOLD = _single_subset.VALID_OFFSET_RATIO_THRESHOLD
-MIN_BIT_COUNT = _single_subset.MIN_BIT_COUNT
-ELL_MIN = _single_subset.ELL_MIN
-ELL_MAX = _single_subset.ELL_MAX
-ELL_STEP = _single_subset.ELL_STEP
-
-
+DEFAULT_CALIBRATION_MONTHS = [
+    "2025-01", "2025-02", "2025-03", "2025-04", "2025-05",
+    "2025-06", "2025-07", "2025-08", "2025-09",
+]
+DEFAULT_WITNESS_MONTH = "2025-09"
 DEFAULT_ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
 DEFAULT_N_VALUES = [2, 3, 4, 5]
+
+# ell grid: piling-up convergence (see src/calibration.py unit tests) means
+# real fused streams should hit a passing ell well before 400.
+ELL_MIN = 2
+ELL_MAX = 400
+ELL_STEP = 1
+
+ALPHA = 0.01
+PASS_RATE_THRESHOLD = 0.80
+VALID_OFFSET_RATIO_THRESHOLD = 0.80
+MIN_BIT_COUNT = 2000
+
+DEFAULT_INPUT_ROOT = Path(
+    os.getenv("CRYPTOENTROPY_INPUT_ROOT", "data/raw/binance/spot/aggTrades")
+)
+DEFAULT_OUTPUT_ROOT = Path("data/processed/experiment4/calibration_all_subsets")
 
 # Short labels for log output (full names still used for filesystem / data).
 _ASSET_SHORT = {
@@ -115,12 +98,6 @@ def _short_subset(subset: list[str] | tuple[str, ...]) -> str:
     return ",".join(_ASSET_SHORT.get(a, a) for a in subset)
 
 
-DEFAULT_INPUT_ROOT = Path(
-    os.getenv("CRYPTOENTROPY_INPUT_ROOT", "data/raw/binance/spot/aggTrades")
-)
-DEFAULT_OUTPUT_ROOT = Path("data/processed/experiment4/calibration_all_subsets")
-
-
 def _parse_csv_list(value: str) -> list[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
@@ -128,6 +105,177 @@ def _parse_csv_list(value: str) -> list[str]:
 def _subset_dir_name(n: int, subset: list[str]) -> str:
     """Stable filesystem-safe name for a subset directory."""
     return f"n{n}_" + "-".join(sorted(subset))
+
+
+def _calibrate_one_cell(
+    subset: list[str],
+    month: str,
+    signs_cache: dict,
+    ell_grid: list[int],
+) -> dict:
+    """Build fused, sweep ell, return diagnostic dict for one (n, month) cell."""
+    per_asset = [signs_cache[a] for a in subset]
+    fused = build_fused_stream_from_signs(subset, month, per_asset)
+
+    if fused.kept_seconds < MIN_BIT_COUNT:
+        return {
+            "month": month,
+            "ell_star": None,
+            "ell_star_reason": "fused_stream_below_min_bit_count",
+            "raw_seconds": fused.raw_seconds,
+            "kept_seconds": fused.kept_seconds,
+            "survival_rate": fused.survival_rate,
+            "naive_baseline": fused.naive_baseline,
+            "empirical_independent_baseline": fused.empirical_independent_baseline,
+            "survival_vs_naive_ratio": fused.survival_vs_naive_ratio,
+            "survival_vs_empirical_ratio": fused.survival_vs_empirical_ratio,
+            "fused_p1": float(fused.fused_bits.mean()) if fused.kept_seconds > 0 else 0.0,
+            "swept_ell_count": 0,
+        }
+
+    swept_count = 0
+
+    def progress(_ev) -> None:
+        nonlocal swept_count
+        swept_count += 1
+
+    ell_star, history = select_ell_star_from_grid(
+        fused_bits=fused.fused_bits,
+        ell_grid=ell_grid,
+        alpha=ALPHA,
+        pass_rate_threshold=PASS_RATE_THRESHOLD,
+        valid_offset_ratio_threshold=VALID_OFFSET_RATIO_THRESHOLD,
+        min_bit_count=MIN_BIT_COUNT,
+        on_progress=progress,
+    )
+
+    return {
+        "month": month,
+        "ell_star": ell_star,
+        "ell_star_reason": "passed_gate" if ell_star is not None else "no_ell_passed",
+        "raw_seconds": fused.raw_seconds,
+        "kept_seconds": fused.kept_seconds,
+        "survival_rate": fused.survival_rate,
+        "naive_baseline": fused.naive_baseline,
+        "empirical_independent_baseline": fused.empirical_independent_baseline,
+        "survival_vs_naive_ratio": fused.survival_vs_naive_ratio,
+        "survival_vs_empirical_ratio": fused.survival_vs_empirical_ratio,
+        "fused_p1": float(fused.fused_bits.mean()),
+        "swept_ell_count": swept_count,
+        "final_ell_d_pass_rate": history[-1].d_pass_rate if history else float("nan"),
+        "final_ell_monobit_pass_rate": history[-1].monobit_pass_rate if history else float("nan"),
+        "final_ell_runs_pass_rate": history[-1].runs_pass_rate if history else float("nan"),
+    }
+
+
+def _write_outputs_for_subset(
+    n: int,
+    subset: list[str],
+    cell_results: list[dict],
+    ell_star_n: int | None,
+    witness_info: dict | None,
+    output_root: Path,
+    subdir_name: str,
+) -> None:
+    """Write one (n, subset) calibration result tree."""
+    n_dir = output_root / subdir_name
+    n_dir.mkdir(parents=True, exist_ok=True)
+
+    (n_dir / "subset.json").write_text(
+        json.dumps(
+            {
+                "n": n,
+                "subset": subset,
+                "source": "all_subsets_enumeration",
+            },
+            indent=2,
+        )
+    )
+
+    per_month_df = pd.DataFrame(cell_results)
+    per_month_df.to_csv(n_dir / "per_month_ell_star.csv", index=False)
+
+    passed_months = [r["month"] for r in cell_results if r["ell_star"] is not None]
+    passed_ells = [r["ell_star"] for r in cell_results if r["ell_star"] is not None]
+    (n_dir / "ell_n_choice.json").write_text(
+        json.dumps(
+            {
+                "n": n,
+                "ell_star_n": ell_star_n,
+                "method": "P80(per_month_ell_star, ignoring None)",
+                "n_calibration_months": len(cell_results),
+                "n_months_passed": len(passed_months),
+                "passed_months": passed_months,
+                "passed_ell_stars": passed_ells,
+                "ell_stars_raw_per_month": [
+                    {"month": r["month"], "ell_star": r["ell_star"]}
+                    for r in cell_results
+                ],
+                "gate_config": {
+                    "alpha": ALPHA,
+                    "pass_rate_threshold": PASS_RATE_THRESHOLD,
+                    "valid_offset_ratio_threshold": VALID_OFFSET_RATIO_THRESHOLD,
+                    "min_bit_count": MIN_BIT_COUNT,
+                    "ell_grid": f"[{ELL_MIN}, {ELL_MAX}] step {ELL_STEP}",
+                    "aggregation_operator": "XOR-aggregation (see src/calibration.py)",
+                },
+            },
+            indent=2,
+        )
+    )
+
+    if witness_info is None:
+        (n_dir / "witness_offset.json").write_text(
+            json.dumps(
+                {
+                    "n": n,
+                    "witness_offset": None,
+                    "reason": "no ell_star_n (gate failed on too many months)",
+                },
+                indent=2,
+            )
+        )
+    else:
+        (n_dir / "witness_offset.json").write_text(
+            json.dumps(witness_info, indent=2)
+        )
+
+    survival_rows = [
+        {
+            "month": r["month"],
+            "raw_seconds": r["raw_seconds"],
+            "kept_seconds": r["kept_seconds"],
+            "survival_rate": r["survival_rate"],
+            "naive_baseline_0p85_pow_n": r["naive_baseline"],
+            "empirical_independent_baseline": r["empirical_independent_baseline"],
+            "survival_vs_naive_ratio": r["survival_vs_naive_ratio"],
+            "survival_vs_empirical_ratio": r["survival_vs_empirical_ratio"],
+            "fused_p1": r["fused_p1"],
+        }
+        for r in cell_results
+    ]
+    (n_dir / "stream_utilization.json").write_text(
+        json.dumps(
+            {
+                "n": n,
+                "per_month": survival_rows,
+                "summary": {
+                    "survival_rate_median": float(
+                        pd.Series([r["survival_rate"] for r in cell_results]).median()
+                    ),
+                    "survival_vs_empirical_median": float(
+                        pd.Series(
+                            [r["survival_vs_empirical_ratio"] for r in cell_results]
+                        ).median()
+                    ),
+                    "fused_p1_median": float(
+                        pd.Series([r["fused_p1"] for r in cell_results]).median()
+                    ),
+                },
+            },
+            indent=2,
+        )
+    )
 
 
 def main() -> int:
@@ -323,7 +471,7 @@ def main() -> int:
                 }
 
         subset_dir_name = _subset_dir_name(n, list(subset))
-        _write_outputs_for_n(
+        _write_outputs_for_subset(
             n=n,
             subset=list(subset),
             cell_results=cell_results,

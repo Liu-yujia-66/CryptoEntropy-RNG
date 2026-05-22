@@ -57,34 +57,49 @@ DEFAULT_CALIB_SUMMARY = Path(
 )
 DEFAULT_FIGURES_DIR = Path("data/processed/experiment4/validation/figures")
 
-SUB_TESTS = [
-    "D_adaptive",
-    "D_k2",
-    "Monobit",
-    "Runs",
-    "ApEn",
-    "BlockFrequency",
-    "CumSum_forward",
-    "CumSum_backward",
-    "LongestRun",
-    "DFT",
-    "Serial_m",
-    "Serial_m_minus_1",
-]
-SUB_TEST_LABELS = [
-    "D_adp",
-    "D_k=2",
-    "Mono",
-    "Runs",
-    "ApEn",
-    "BlockF",
-    "CSum_F",
-    "CSum_B",
-    "LRun",
-    "DFT",
-    "Ser_m",
-    "Ser_m-1",
-]
+# 29 sub-tests = 5 stats.py + 7 nistrng + 17 Alphabit. Pulled from the
+# battery module so plot_exp4_validation stays in sync with whatever
+# full_battery() returns (and with plot_exp3 / aggregate_exp3_battery,
+# which use the same convention).
+from src.battery import ALL_SUB_TESTS as _ALL_SUB_TESTS
+
+SUB_TESTS: list[str] = list(_ALL_SUB_TESTS)
+
+# Per-sub-test compact label (matches the `short` dict in
+# scripts/aggregate_exp3_battery.py so heatmaps read consistently
+# across Exp 3 and Exp 4). 12 fixed + 17 Alphabit = 29.
+_SUB_TEST_LABEL = {
+    "D_adaptive": "D_adp",
+    "D_k2": "D_k=2",
+    "Monobit": "Mono",
+    "Runs": "Runs",
+    "ApEn": "ApEn",
+    "BlockFrequency": "BlockF",
+    "CumSum_forward": "CSum_F",
+    "CumSum_backward": "CSum_B",
+    "LongestRun": "LRun",
+    "DFT": "DFT",
+    "Serial_m": "Ser_m",
+    "Serial_m_minus_1": "Ser_m-1",
+    "Alphabit_MultinomialBitsOver_L2":  "MnB2",
+    "Alphabit_MultinomialBitsOver_L4":  "MnB4",
+    "Alphabit_MultinomialBitsOver_L8":  "MnB8",
+    "Alphabit_MultinomialBitsOver_L16": "MnB16",
+    "Alphabit_HammingIndep_L16": "HmI16",
+    "Alphabit_HammingIndep_L32": "HmI32",
+    "Alphabit_HammingCorr_L32":  "HmC32",
+    "Alphabit_RandomWalk1_L64_H":  "RW64H",
+    "Alphabit_RandomWalk1_L64_M":  "RW64M",
+    "Alphabit_RandomWalk1_L64_J":  "RW64J",
+    "Alphabit_RandomWalk1_L64_R":  "RW64R",
+    "Alphabit_RandomWalk1_L64_C":  "RW64C",
+    "Alphabit_RandomWalk1_L320_H": "R320H",
+    "Alphabit_RandomWalk1_L320_M": "R320M",
+    "Alphabit_RandomWalk1_L320_J": "R320J",
+    "Alphabit_RandomWalk1_L320_R": "R320R",
+    "Alphabit_RandomWalk1_L320_C": "R320C",
+}
+SUB_TEST_LABELS: list[str] = [_SUB_TEST_LABEL.get(s, s) for s in SUB_TESTS]
 
 DISPLAY_ASSET_NAME = {
     "BTCUSDT": "BTC",
@@ -94,9 +109,15 @@ DISPLAY_ASSET_NAME = {
     "DOGEUSDT": "DOGE",
 }
 
-# Verdict colour mapping: 0=PASS, 1=FAIL, 2=INVALID
-VERDICT_COLOURS = ListedColormap(["#2ca02c", "#d62728", "#cccccc"])
-VERDICT_LABELS = {"PASS": 0, "FAIL": 1, "INVALID": 2}
+# Verdict colour mapping: 0=PASS, 1=FAIL, 2=INVALID, 3=NOT_RUN.
+# INVALID (ran, all-offset sanity-failed) keeps its mid-grey from the 12-test
+# era; NOT_RUN (TestU01 length-skipped on every offset of this cell — a
+# common state for MultinomialBitsOver_L16 / RandomWalk1_L320 on short
+# fused streams) is paler so it visually reads as "no data" rather than
+# "ran and failed sanity". Any unknown verdict string is binned into
+# NOT_RUN by the .get() default — keeps the runner / plot drift-safe.
+VERDICT_COLOURS = ListedColormap(["#2ca02c", "#d62728", "#cccccc", "#f4f4f4"])
+VERDICT_LABELS = {"PASS": 0, "FAIL": 1, "INVALID": 2, "NOT_RUN": 3}
 
 
 def _short_subset(subset: list[str]) -> str:
@@ -104,15 +125,21 @@ def _short_subset(subset: list[str]) -> str:
 
 
 def _load_verdict_matrix(n_dir: Path) -> tuple[pd.DataFrame, list[str]]:
-    """Return (verdict matrix months × sub_tests with 0/1/2 codes,
+    """Return (verdict matrix months × sub_tests with 0/1/2/3 codes,
     month labels)."""
     df = pd.read_csv(n_dir / "per_month_verdict_matrix.csv").sort_values("month")
     months = df["month"].tolist()
     matrix = np.zeros((len(months), len(SUB_TESTS)), dtype=np.int8)
     for i, sub in enumerate(SUB_TESTS):
         col = f"{sub}_verdict"
+        # If the verdict column itself is missing (older 12-sub-test
+        # outputs being re-plotted against the 29-sub-test SUB_TESTS
+        # list), mark every month NOT_RUN for that sub-test.
+        if col not in df.columns:
+            matrix[:, i] = VERDICT_LABELS["NOT_RUN"]
+            continue
         for j, verdict in enumerate(df[col].tolist()):
-            matrix[j, i] = VERDICT_LABELS.get(verdict, 2)
+            matrix[j, i] = VERDICT_LABELS.get(verdict, VERDICT_LABELS["NOT_RUN"])
     return matrix, months
 
 
@@ -122,7 +149,9 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
     n_values = summary["n_values"]
     subset_picks = summary["subset_picks"]
 
-    fig, axes = plt.subplots(2, 2, figsize=(13, 9), constrained_layout=True)
+    # 29 sub-tests per panel; widen from the 12-test era's (13, 9) so the
+    # x-axis labels stay legible.
+    fig, axes = plt.subplots(2, 2, figsize=(24, 11), constrained_layout=True)
     axes = axes.flatten()
 
     for idx, n in enumerate(n_values):
@@ -134,7 +163,7 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
             matrix,
             cmap=VERDICT_COLOURS,
             vmin=0,
-            vmax=2,
+            vmax=3,
             aspect="auto",
             interpolation="nearest",
         )
@@ -178,17 +207,23 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
         Patch(facecolor="#2ca02c", edgecolor="none", label="PASS (>=80% offsets)"),
         Patch(facecolor="#d62728", edgecolor="none", label="FAIL"),
         Patch(facecolor="#cccccc", edgecolor="none", label="INVALID (sanity)"),
+        Patch(
+            facecolor="#f4f4f4",
+            edgecolor="#888888",
+            linewidth=0.5,
+            label="NOT_RUN (TestU01 length-skip)",
+        ),
     ]
     fig.legend(
         handles=handles,
         loc="lower center",
-        ncol=3,
+        ncol=4,
         frameon=False,
         bbox_to_anchor=(0.5, -0.02),
     )
     fig.suptitle(
         "Experiment 4 validation — cell-level verdict per sub-test "
-        "(6 months × 12 sub-tests, throughput-best subset per n)",
+        f"(6 months × {len(SUB_TESTS)} sub-tests, throughput-best subset per n)",
         fontsize=12,
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)
