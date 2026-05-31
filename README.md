@@ -1,446 +1,351 @@
 # CryptoEntropy-RNG
 
-A high-fidelity Random Number Generator (RNG) leveraging temporal
-aggregation and multi-asset XOR combination of cryptocurrency market
-dynamics. The pipeline runs Experiments 1–4 (raw baseline → temporal
-aggregation → extended NIST + TestU01 Alphabit battery → multi-asset
-XOR combination) and feeds the resulting fused streams through an
-HKDF-SHA256 prototype that generates 16-character strong passwords.
+CryptoEntropy-RNG is the codebase for a master's thesis on whether public
+cryptocurrency market data can be turned into statistically usable entropy
+input for password generation.
 
-Status (2026-05): all four experiments and the prototype are
-complete. Pipeline outputs land under `data/processed/{data_overview,
-experiment{1..4}, prototype}/`. The thesis manuscript draft lives at
-[`thesis/main.tex`](thesis/main.tex).
+The project studies a four-stage experimental chain:
 
-## Environment Setup
+1. raw tick-sign baseline;
+2. temporal aggregation on transaction-time and 1-second physical-time axes;
+3. extended randomness auditing with NIST SP800-22 and TestU01 Alphabit;
+4. multi-asset XOR combination with a calibration/validation split.
 
-Create and activate a local virtual environment:
+The selected streams are then passed through an HKDF-SHA256 password prototype.
+The thesis manuscript is in [`thesis/main.tex`](thesis/main.tex).
+
+## Status
+
+The four experiments and the prototype are complete. Main outputs are written to:
+
+```text
+data/processed/
+├── data_overview/
+├── experiment1/
+├── experiment2/
+├── experiment3/
+├── experiment4/
+└── prototype/
+```
+
+Raw market data and most processed outputs are not tracked by git. Thesis
+figures copied into `thesis/figures/` are tracked.
+
+## Environment
+
+Create a virtual environment and install the Python dependencies:
 
 ```bash
 python3.11 -m venv .venv
 source .venv/bin/activate
-```
-
-Install the base dependencies:
-
-```bash
 pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-## Project Structure
+The extended battery also needs TestU01 for the Alphabit tests. See
+[TestU01](#testu01-prerequisite).
+
+## Data
+
+Download Binance spot `aggTrades` data from
+[data.binance.vision](https://data.binance.vision) and place it under:
+
+```text
+data/raw/binance/spot/aggTrades/<ASSET>/
+```
+
+The project uses five USDT spot pairs:
+
+```text
+BTCUSDT  ETHUSDT  BNBUSDT  SOLUSDT  DOGEUSDT
+```
+
+The thesis sample period is 2025-01 to 2026-03. The code expects monthly files
+such as:
+
+```text
+data/raw/binance/spot/aggTrades/BTCUSDT/BTCUSDT-aggTrades-2025-01.csv
+```
+
+## Repository Layout
 
 ```text
 .
 ├── data/
-│   ├── raw/                  # original downloaded aggTrades CSV files
-│   ├── interim/              # intermediate files (e.g. matplotlib config cache)
-│   └── processed/            # experiment outputs (not tracked by git)
-├── scripts/                  # experiment runners, plot scripts, ℓ* selectors,
-│                             #   aggregators
-├── src/                      # shared library modules
-│   ├── data_io.py            # data loading, timestamp detection, PreparedMonthData
-│   ├── bars.py               # 1-second bar pipeline (UTC bucketing + forward-fill)
-│   ├── bitstream.py          # offset-based bitstream construction
-│   ├── stats.py              # in-house tests (Monobit, Runs, ApEn m=5, Shannon
-│   │                         #   bias, Predictability D adaptive-k + k=2)
-│   ├── nist_extended.py      # nistrng wrapper (SP800-22 R1A: BlockFrequency,
-│   │                         #   CumSum F/B, LongestRun, DFT, Serial m/m-1)
-│   ├── testu01_alphabit.py   # Python wrapper for the TestU01 Alphabit driver
-│   ├── battery.py            # 3-battery orchestrator (stats + nistrng + Alphabit)
-│   │                         #   + sanity-bracket schema for Exp 3 / Exp 4
-│   ├── fusion.py             # Exp 4: per-asset sign streams + drop-any-zero XOR
-│   │                         #   combination at the 1-second tick
-│   ├── calibration.py        # Exp 4: XOR ℓ-aggregation + +Runs gate +
-│   │                         #   select_ell_star_from_grid + select_witness_offset + p80
-│   ├── mutual_info.py        # Exp 4: pairwise 1-bit MI / Pearson ρ utilities
-│   ├── min_entropy.py        # Exp 4: NIST SP 800-90B MCV + Markov estimators
-│   ├── prototype.py          # Prototype: HKDF-SHA256 (RFC 5869) + charset
-│   │                         #   rejection sampling + B1/B2 baselines (salt-seeded)
-│   ├── summary.py            # shared summary helpers (used by Exp 2 runners)
-│   └── utils.py              # small utilities
-├── tools/                    # TestU01 C build artefacts (binaries git-ignored)
-│   ├── build_testu01.sh      # builds vendored TestU01 1.2.3 into a no-space
-│   │                         #   path under ~/.cache/cryptoentropy-rng/testu01/
-│   ├── Makefile              # links the two C binaries against that install
-│   ├── alphabit_probe.c      # Phase 0 single-stream probe (debug)
-│   └── alphabit_driver.c     # batch driver used by the Exp 3 / Exp 4 pipeline
-├── vendor/                   # TestU01 1.2.3 source tree (git-ignored,
-│                             #   fetched per Experiment 3 prerequisites)
-└── thesis/                   # LaTeX thesis source
-    ├── main.tex              # primary thesis manuscript
-    ├── references.bib        # bibliography
-    └── figures/              # figures included in the manuscript
+│   ├── raw/                  # downloaded Binance aggTrades files
+│   ├── interim/              # temporary caches
+│   └── processed/            # generated experiment outputs
+├── scripts/                  # runners, aggregators, and plotting scripts
+├── src/                      # shared pipeline and test-battery code
+├── tools/                    # TestU01 build wrapper and C drivers
+├── thesis/                   # LaTeX thesis source and figures
+└── README.md
 ```
 
-## Running Experiments
+Key source modules:
 
-### Data Overview (thesis Table 4.1)
+| Module | Role |
+|---|---|
+| `src/data_io.py` | Binance CSV loading and monthly data preparation |
+| `src/bars.py` | 1-second bar construction and forward-fill pipeline |
+| `src/bitstream.py` | all-offset bitstream construction |
+| `src/stats.py` | in-house tests: Monobit, Runs, ApEn, Shannon bias, predictability `D` |
+| `src/nist_extended.py` | NIST SP800-22 wrapper through `nistrng` |
+| `src/testu01_alphabit.py` | Python wrapper for the TestU01 Alphabit driver |
+| `src/battery.py` | shared 29-sub-test battery orchestration |
+| `src/fusion.py` | multi-asset 1-second sign-bit XOR combination |
+| `src/calibration.py` | Exp 4 subset search, `ell*` selection, witness offset selection |
+| `src/min_entropy.py` | MCV and Markov min-entropy estimators |
+| `src/prototype.py` | HKDF-SHA256 password prototype and baselines |
 
-Compute the per-asset trades/s summary across the full 15-month sample
-(2025-01 to 2026-03). Reads the same monthly `aggTrades` archives as
-Experiment 2 and recovers the raw `trades` count from each row's
-`last_trade_id - first_trade_id + 1` interval, so a separate `trades`
-endpoint download is not needed.
+## Reproducing the Pipeline
+
+The runners are configured through constants near the top of each script. The
+default settings match the thesis runs unless noted.
+
+### 0. Data Overview
+
+Produces the trades/s summary used by thesis Table 4.1.
 
 ```bash
 python scripts/data_overview.py
 ```
 
-Outputs (under `data/processed/data_overview/`):
+Main outputs:
 
-- `by_asset_month.csv` — 75 rows = 5 assets × 15 months. Columns include
-  `agg_trades_count`, `raw_trades_count`, `duration_seconds`,
-  `agg_trades_per_second`, `raw_trades_per_second`, `raw_to_agg_ratio`.
-- `by_asset_summary.csv` — 5 rows = per-asset median and [p5, p95] across
-  the 15 months for both raw and aggTrades rates. **Data source for
-  thesis Table 4.1** (`tab:trades-per-second`).
-
-### Experiment 1 — Baseline Randomness (thesis Table 4.2)
-
-Daily-window baseline diagnostics on raw tick data; defaults to the five
-assets (`BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`) over
-2026-01-01 to 2026-01-05 with `--aggregation-k 1`.
-
-```bash
-python scripts/exp1_baseline.py
+```text
+data/processed/data_overview/by_asset_month.csv
+data/processed/data_overview/by_asset_summary.csv
 ```
 
-Outputs (under `data/processed/experiment1/`):
+### 1. Experiment 1: Raw Baseline
 
-- `summary_exp1_baseline_k1_full.csv` — 25 rows = 5 assets × 5 days; full
-  set of diagnostics (Shannon entropy, Monobit, Runs, lag-1
-  autocorrelation, longest run, etc.). **Data source for thesis Table
-  4.2 (per-asset summary).**
-- `bitstreams/<ASSET>/<ASSET>_<date>_bitstream.csv` — per-day bitstream
-  with original timestamps.
-- `plots/<ASSET>/<ASSET>_<date>_plots.png` — five-panel diagnostic plots
-  (price, Δp distribution, bitstream preview, ACF, run-length).
-
-### Experiment 2 — Temporal Aggregation
-
-Experiment 2 has four runner variants that share the same pipeline shape
-(raw aggTrades → per-asset summary CSV → plots). They differ in the aggregation
-axis (transaction-time vs 1-second bars) and in the acceptance gate.
-
-**Single-offset analysis** (offset=0, generates -log(p-value) vs ℓ curves; diagnostic):
+Runs the raw tick-sign baseline at `(asset, month)` granularity for all five
+assets and all 15 months. This is the source for thesis Table 4.2 and Figure
+4.1.
 
 ```bash
+python scripts/runner_exp1_baseline.py
+```
+
+Main outputs:
+
+```text
+data/processed/experiment1/
+├── all_assets_summary_exp1_baseline.csv
+├── per_asset_summary.csv
+├── per_asset_summary.md
+├── per_asset_distributions.png
+└── by_asset/<ASSET>/<ASSET>_summary_exp1_baseline.csv
+```
+
+### 2. Experiment 2: Temporal Aggregation
+
+Experiment 2 compares transaction-time aggregation and 1-second-bar
+physical-time aggregation. It also compares single-offset, strict all-offset,
+relaxed all-offset, and 1-second-bar gates.
+
+```bash
+# Single-offset diagnostic
 python scripts/runner_exp2_single_offset.py
-python scripts/plot_exp2_single_offset.py --summary-dir <path>
-```
+python scripts/plot_exp2_single_offset.py --summary-dir <summary-dir>
 
-**All-offset, strict gate** (≥80% of offsets must pass predictability + monobit):
-
-```bash
+# Strict all-offset gate
 python scripts/runner_exp2_all_offset.py
-python scripts/plot_exp2_all_offset_optimized.py --summary-dir <path>
-```
+python scripts/plot_exp2_all_offset_optimized.py --summary-dir <summary-dir>
 
-**All-offset, relaxed gate** (Plan A heuristic: ≥max(3, ⌈0.03·N⌉) offsets pass, α=0.01 per offset):
-
-```bash
+# Relaxed all-offset gate
 python scripts/runner_exp2_all_offset_relaxed.py
-```
 
-**Time-based (1-second bars)**:
-
-```bash
+# 1-second-bar all-offset gate
 python scripts/runner_exp2_all_offset_1sbars.py
-python scripts/plot_exp2_all_offset_1sbars.py --summary-dir <path>
+python scripts/plot_exp2_all_offset_1sbars.py --summary-dir <summary-dir>
+
+# Select ell* under base / +Runs / +Runs+ApEn gates
+python scripts/select_ell_exp2_1sbars.py --summary-dir <summary-dir>
 ```
 
-After the 1sbars runner produces per-month k_acceptance CSVs, pick the
-smallest acceptable ℓ under three gates (base, +runs, +runs+apen):
+The appendix tables in the thesis are generated from the selected-`ell*`
+outputs under `data/processed/experiment2/`.
+
+### TestU01 Prerequisite
+
+Experiments 3 and 4 use TestU01 Alphabit through a C driver. Fetch TestU01
+1.2.3 into `vendor/TestU01-1.2.3/`, then build the local drivers:
 
 ```bash
-python scripts/select_ell_exp2_1sbars.py --summary-dir <root>
+bash tools/build_testu01.sh
+make -C tools
 ```
 
-Edit the configuration block at the top of each runner to set assets,
-periods, and ℓ ranges. Design notes:
+The build script installs TestU01 under `~/.cache/cryptoentropy-rng/testu01/`.
+This avoids path issues caused by spaces in local directory names.
 
-- `Exp2 Limitations.md` — gate taxonomy and known limitations
-- `Exp2 Plan A - Relaxed Gate.md` — relaxed-gate heuristic
-- `Exp2 Plan B - Time-Based Aggregation.md` — 1-second bar physical-time axis
+### 3. Experiment 3: Extended Battery
 
-#### Appendix table ↔ data file mapping
+Experiment 3 audits the Exp 2 selected 1-second-bar streams with a 29-sub-test
+universe:
 
-The thesis appendix (Tables A.1 – A.6) prints only the per-(asset, month)
-`selected ℓ*` values. The raw CSVs sit under
-`data/processed/experiment2/` and map to the appendix tables as follows:
+- 5 in-house core tests from `src/stats.py`;
+- 7 NIST SP800-22 tests through `nistrng`;
+- 17 TestU01 Alphabit statistics.
 
-| Thesis appendix       | Runner                                  | CSV file                                                                                                              |
-| --------------------- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| Table A.1 (single offset)            | `runner_exp2_single_offset.py`         | `single-offset-per-month(50,2000,25)/selected_ell_by_window.txt`                                                       |
-| Table A.2 (strict gate, D + Monobit) | `runner_exp2_all_offset.py`            | `all-offset-per-month(50,2000,25)/selected_ell_by_window.txt` (+ per-month `all_assets_summary_exp2_selected_k.csv`)   |
-| Table A.3 (strict + Runs)            | `runner_exp2_all_offset.py`            | per-month `all_assets_summary_exp2_k_acceptance.csv` in the same directory as Table A.2                                |
-| Table A.4 (relaxed gate)             | `runner_exp2_all_offset_relaxed.py`    | `relaxed-all-offset-per-month(3,0.03)-(10,2000,2)/selected_ell_by_window.txt`                                          |
-| Table A.5 (Bonferroni 3-month)       | `runner_exp2_all_offset_relaxed.py`    | `relaxed-all-offset-per-month-bonferroni-(10,2000,2)/selected_ell_by_window.txt`                                       |
-| Table A.6 (1-second bar, three gates: base / +Runs / +Runs+ApEn) | `runner_exp2_all_offset_1sbars.py` + `select_ell_exp2_1sbars.py` | `all-offset-per-month-1sbars(10,600,1)/selected_ell_by_window.txt` |
-
-All paths are relative to `data/processed/experiment2/`.
-
-### Experiment 3 — Extended Battery (NIST + TestU01 Alphabit)
-
-Exp 3 takes the (asset, month, ℓ\*) cells selected by Exp 2's 1-second-bar
-gates and runs an extended 29-sub-test battery on each cell's all-offset
-streams:
-
-- **5 from `src/stats.py`** (re-used from Exp 1/2 — D adaptive-k, D k=2,
-  Monobit, Runs, ApEn m=5)
-- **7 from nistrng SP800-22 R1A** — BlockFrequency, CumSum forward + backward,
-  LongestRun, DFT, Serial m + m-1
-- **17 from TestU01 Alphabit** — 4 MultinomialBitsOver, 2 HammingIndep, 1
-  HammingCorr, plus RandomWalk1 H/M/J/R/C at L=64 and L=320. TestU01 itself
-  skips its longer-block sub-tests on short streams (11 / 16 / 17 results at
-  ≤5K / 10K–50K / ≥100K bits respectively), so per-offset output is 23–29
-  rows depending on bit count.
-
-#### Prerequisite: build TestU01
-
-The Alphabit sub-tests run via a small C driver linked against the official
-TestU01 1.2.3 library. Fetch the source into `vendor/TestU01-1.2.3/`
-(download from <http://simul.iro.umontreal.ca/testu01/tu01.html>), then:
+First run the sanity check:
 
 ```bash
-bash tools/build_testu01.sh    # configures + builds + installs to
-                               #   ~/.cache/cryptoentropy-rng/testu01/
-                               #   (a no-space path; TestU01 libtool can't
-                               #    cope with the space in "Master Thesis")
-make -C tools                  # compiles alphabit_probe + alphabit_driver
+python scripts/runner_exp3_sanity_check.py
 ```
 
-macOS arm64 (Apple clang) is the supported platform. Both compiled binaries
-are git-ignored — rebuild whenever `tools/*.c` or the TestU01 install change.
-
-#### Sanity check (one-off, before the main runner)
-
-Calibrates each sub-test's type-I rate on `/dev/urandom` across six length
-brackets (5K / 10K / 25K / 50K / 100K / 200K). One subprocess per bracket
-runs in fresh-Python isolation (works around a cumulative-state SIGKILL on
-the 100K bracket); resume-friendly via per-bracket partial CSVs.
+For a quick smoke test:
 
 ```bash
-python scripts/runner_exp3_sanity_check.py             # all 6 brackets, K=1000
-python scripts/runner_exp3_sanity_check.py --bracket 100K   # one bracket
-SANITY_K=10 python scripts/runner_exp3_sanity_check.py      # quick smoke (~1 min)
+SANITY_K=10 python scripts/runner_exp3_sanity_check.py
 ```
 
-Output: `data/processed/experiment3/sanity_check/sanity_validity_matrix-k1000.csv`
-(174 rows = 29 sub-tests × 6 brackets, three-state status:
-`passed` / `failed` / `not_run`). The main runner reads this file once.
-
-#### Main battery (chained: battery → aggregate → plot)
-
-`runner_exp3_battery.py` runs one self-contained pipeline per gate listed
-in `GATES`. Edit the constant at the top of the runner to add/remove gates;
-the default is `["base", "runs"]` and runs both back-to-back (~70–100 min
-total at MAX_WORKERS=5).
+Then run the main battery:
 
 ```bash
 python scripts/runner_exp3_battery.py
 ```
 
-For each gate the runner:
-
-1. Re-reads Exp 2's per-month `is_acceptable*` CSV column to pick that gate's
-   (asset, month, ℓ\*) cells (with a cross-check against
-   `selected_ell_by_window.txt`),
-2. Runs the 29-sub-test battery on all-offset streams (one
-   `alphabit_driver` subprocess per cell, batched over all qualifying offsets),
-3. Auto-chains `aggregate_exp3_battery.py --gate <gate>` →
-   `plot_exp3.py --gate <gate>`.
-
-The two downstream scripts also work standalone (`--gate base|runs|apen`).
-Per-gate failures are isolated: a cell-level exception in one gate skips
-that gate's aggregate/plot but does not abort subsequent gates.
-
-#### Output layout (per gate)
+Main outputs:
 
 ```text
 data/processed/experiment3/
-├── sanity_check/                            # gate-independent
-│   └── sanity_validity_matrix-k1000.csv
-└── {gate}-gate/                             # one such tree per entry in GATES
-    ├── per_cell_pvalues.csv                 # runner output: long-format,
-    │                                        #   sorted by (asset, month,
-    │                                        #   offset, sub_test)
-    ├── per_cell_verdict.csv                 # aggregate output: N cells ×
-    │                                        #   29 sub-tests, three-state
-    │                                        #   verdict PASS/FAIL/INVALID/NOT_RUN
-    ├── per_asset_summary.csv                # aggregate output: 5 assets ×
-    │                                        #   29 sub-tests, the main result
-    │                                        #   (plan §1.6 schema)
+├── sanity_check/sanity_validity_matrix-k1000.csv
+└── {base-gate,runs-gate}/
+    ├── per_cell_pvalues.csv
+    ├── per_cell_verdict.csv
+    ├── per_asset_summary.csv
     └── figures/
-        ├── pass_rate_per_asset.png          # plot output
-        └── length_vs_pvalue.png             # plot output
+        ├── pass_rate_per_asset.png
+        └── length_vs_pvalue.png
 ```
 
-`INVALID` (sub-test ran but every offset landed in a sanity-failed bracket)
-and `NOT_RUN` (TestU01 length-skipped the sub-test) are reported separately
-so the cell verdict preserves the Phase 5 three-state record; both stay out
-of the admissible denominator.
+The default `GATES` setting in `runner_exp3_battery.py` is `["base", "runs"]`.
 
-### Experiment 4 — Multi-Asset XOR Combination
+### 4. Experiment 4: Multi-Asset XOR Combination
 
-Exp 4 combines the per-asset 1-second sign bits across `n ∈ {2, 3, 4, 5}`
-assets via XOR, then runs the same 29-sub-test battery as Exp 3 on the
-combined stream's ℓ-XOR-aggregated outputs. A 9/6 calibration/validation
-split fixes the asset subset, the aggregation level ℓ\*\_n, and the
-witness offset on the first 9 months (2025-01..2025-09) and holds out
-the next 6 (2025-10..2026-03) for unconditional evaluation.
+Experiment 4 combines 1-second sign-bit streams across asset subsets of size
+`n ∈ {2,3,4,5}`. Calibration uses 2025-01 to 2025-09; validation uses
+2025-10 to 2026-03.
 
 ```bash
-# Step 1 — MI matrix on the calibration window (subset-selection diagnostic)
+# Pairwise dependence diagnostic on the calibration window
 python scripts/runner_exp4_mi_matrix.py
 python scripts/plot_exp4_mi_matrix.py
 
-# Step 2 — exhaust all C(5,n) subsets (26 total) over the 9 calibration months
-#   ~13 min on M-series; first-hit ℓ scan with +Runs gate, P80 across months
+# Exhaustive calibration over C(5,2)+C(5,3)+C(5,4)+C(5,5)=26 subsets
 python scripts/runner_exp4_calibration_all_subsets.py
 
-# Step 3 — validation on the held-out 6 months using the calibration picks
-#   ~10 min; runs the 29-sub-test battery on each (n, month) cell and
-#   auto-emits validation_summary.txt at the end
+# Held-out validation with fixed calibration picks
 python scripts/runner_exp4_validation.py
 python scripts/plot_exp4_validation.py
 
-# Step 4 — NIST SP 800-90B min-entropy estimation on the validation streams
+# Min-entropy estimate on validation streams
 python scripts/runner_exp4_min_entropy.py
 ```
 
-Output layout:
+The calibration scan uses the `ell = 1,...,400` grid with step 1.
+
+Main outputs:
 
 ```text
 data/processed/experiment4/
-├── mi/                            # Step 1 — pairwise MI matrix
+├── mi/
 │   ├── mi_pool_matrix.csv
-│   ├── mi_pool_summary.json       # subset_recommendations_by_max_pairwise_mi
+│   ├── rho_pool_matrix.csv
 │   └── figures/exp4_mi_matrix.png
-├── calibration_all_subsets/       # Step 2 — 26 subsets x 9 months
-│   ├── all_subsets_summary.csv    # one row per (n, subset) — throughput
-│   │                              #   estimate, ℓ\*_n, witness, p(combined=1)
-│   ├── all_subsets_summary.json
-│   └── n{N}_<sorted-assets>/      # per-subset detail (ell_n_choice.json,
-│                                  #   witness_offset.json, etc.)
-├── validation/                    # Step 3 — 4 n x 6 months
-│   ├── validation_summary.json    # ell\*_n / witness / output_bits / per-
-│   │                              #   sub-test pass counts per n
-│   ├── validation_summary.txt     # human-readable summary (auto-regenerated
-│   │                              #   by summarize_exp4_validation.py)
+├── calibration_all_subsets/
+│   ├── all_subsets_summary.csv
+│   └── all_subsets_summary.json
+├── validation/
+│   ├── validation_summary.json
+│   ├── validation_summary.txt
 │   ├── n{N}/per_month_verdict_matrix.csv
 │   ├── n{N}/per_month_throughput.csv
-│   ├── n{N}/{YYYY-MM}/fused_stream.bin       # combined stream (one bit per
-│   │                                         #   byte; consumed by the
-│   │                                         #   prototype as IKM)
-│   ├── n{N}/{YYYY-MM}/per_offset_pvalues.csv
+│   ├── n{N}/{YYYY-MM}/fused_stream.bin
 │   └── figures/exp4_validation_{verdict,tradeoff}.png
-└── min_entropy/                   # Step 4 — SP 800-90B MCV + Markov
+└── min_entropy/
     ├── min_entropy_per_cell.csv
-    └── min_entropy_summary.json   # per-n median + worst-month H∞ + IKM bytes
+    └── min_entropy_summary.json
 ```
 
-The calibration scan uses the ℓ grid `[1, 400]` with step 1. In the
-production run, ℓ=1 is rejected by Monobit on every calibration cell, so
-including it does not change the selected subsets or the reported ℓ\*_n
-values; it only makes the scan grid match the thesis description exactly.
+`fused_stream.bin` stores one combined bit per byte. The filename is historical;
+the thesis calls these outputs combined streams.
 
-### Prototype — Password Generation
+### 5. Password Prototype
 
-The prototype reads Exp 4's `fused_stream.bin` files, which store one
-combined bit per byte. It first packs these 0/1 bytes with `np.packbits`,
-then consumes disjoint 33-byte IKM blocks through HKDF-Extract →
-HKDF-Expand → charset rejection sampling, and emits 16-character strong
-passwords. Two salt-seeded baselines (B1 = direct uniform sampling, B2 =
-salt-seeded ideal random IKM through the same HKDF pipeline) are generated
-alongside for indistinguishability comparison.
+The prototype consumes the deployable Exp 4 validation streams for
+`n ∈ {2,3,5}`. It packs the byte-per-bit streams into IKM bytes, uses
+HKDF-SHA256, and maps output bytes into 16-character passwords over a
+70-character alphabet.
 
 ```bash
-# Step 1 — generate 3,000 passwords (market n in {2,3,5} + B1 + B2)
-#   30 cells x 100 = 3,000 passwords; a few seconds; reads Exp 4
-#   validation/n{2,3,5}/{month}/fused_stream.bin
 python scripts/runner_prototype.py
-
-# Step 2 — evaluation: pooled chi-square uniformity + Shannon entropy +
-#   selected-cell position-frequency heatmap + 5-group side-by-side figure
 python scripts/eval_prototype.py
 ```
 
-Output layout:
+Main outputs:
 
 ```text
 data/processed/prototype/
-├── salt.bin                            # 32-byte HKDF salt (persisted for
-│                                       #   demo reproducibility; production
-│                                       #   would rotate per deployment)
-├── config.json                         # full HKDF / charset parameters
+├── salt.bin
+├── config.json
 ├── market/n{2,3,5}/{YYYY-MM}/
-│   ├── passwords.txt                   # 100 passwords per cell
+│   ├── passwords.txt
 │   └── metadata.json
-├── baseline_b1/{YYYY-MM}/...            # secrets-style direct sampling
-├── baseline_b2/{YYYY-MM}/...            # salt-seeded ideal random IKM
-│                                        #   through the same pipeline
+├── baseline_b1/{YYYY-MM}/
+├── baseline_b2/{YYYY-MM}/
 └── evaluation/
-    ├── prototype_summary.txt           # data summary (regenerated each run)
-    ├── prototype_analysis.txt          # interpretation + security model
-    │                                   #   (hand-maintained companion)
-    ├── per_cell_eval.csv               # 30 rows = 5 groups x 6 months
+    ├── prototype_summary.txt
+    ├── prototype_analysis.txt
+    ├── per_cell_eval.csv
     ├── summary.json
     └── figures/
         ├── position_heatmap_n3_2026-03.png
         └── sidebyside_chi2_entropy.png
 ```
 
-The two text files are intentionally split: `prototype_summary.txt`
-holds **numbers only** and is regenerated by `eval_prototype.py` on
-every run; `prototype_analysis.txt` holds the **interpretation and
-security model** (target tier, Miller-Madow caveat, public-source vs
-secret-salt framing, out-of-scope extensions for key generation and
-public beacons) and is hand-maintained.
+`prototype_summary.txt` is regenerated by `eval_prototype.py`.
+`prototype_analysis.txt` is hand-maintained and contains the interpretation and
+security-scope notes.
 
-## Data
+## Thesis Figures
 
-Raw data is not included in this repository. Download aggTrades data from [https://data.binance.vision](https://data.binance.vision) and place it under:
+The manuscript uses copied figure files under `thesis/figures/`. Regenerate
+the upstream plots first, then copy the relevant PNGs into that directory if a
+figure changes.
+
+Common figure sources:
+
+| Thesis figure | Source script | Figure file |
+|---|---|---|
+| Figure 4.1 | `scripts/plot_exp1_baseline.py` | `exp1_per_asset_distributions.png` |
+| Figure 4.10 | `scripts/plot_exp4_mi_matrix.py` | `exp4_mi_matrix.png` |
+| Figure 4.11 | `scripts/plot_exp4_validation.py` | `exp4_validation_tradeoff.png` |
+| Figure 4.12 | `scripts/plot_exp4_validation.py` | `exp4_validation_verdict.png` |
+| Figure 5.1 | `scripts/plot_prototype_pipeline.py` | `prototype_pipeline.png` |
+| Figure 5.2 | `scripts/eval_prototype.py` | `prototype_eval_chi2_entropy.png` |
+
+## Thesis Build
+
+The thesis source is:
 
 ```text
-data/raw/binance/spot/aggTrades/<ASSET>/
+thesis/main.tex
+thesis/references.bib
 ```
 
-Two granularities are used:
+The current workflow builds the PDF in Overleaf. The repository also keeps the
+Chinese working draft in `thesis-draft-chinese.md`; the submitted manuscript is
+the English LaTeX version.
 
-- **Experiment 1** — daily files (e.g. `BTCUSDT-aggTrades-2026-01-01.csv`); the baseline window is 2026-01-01 to 2026-01-05 across all five assets, sitting in the first week of the last quarter (2026 Q1) of the Experiment 2 sample period. Processed outputs live under `data/processed/experiment1/`.
-- **Data overview** — reads the same monthly archives as Experiment 2; processed outputs live under `data/processed/data_overview/`.
-- **Experiment 2** — monthly files (e.g. `BTCUSDT-aggTrades-2025-01.csv`); processed outputs live under `data/processed/experiment2/`.
-- **Experiment 3** — re-uses the same monthly archives as Experiment 2 (driven by Exp 2's selected ℓ\* per (asset, month)); processed outputs live under `data/processed/experiment3/`.
-- **Experiment 4** — re-uses the same monthly archives; combines per-asset
-  1-second sign bits across `n ∈ {2,3,4,5}` assets via XOR with a 9/6
-  calibration/validation split (2025-01..2025-09 / 2025-10..2026-03);
-  processed outputs live under `data/processed/experiment4/`.
-- **Prototype** — reads Exp 4's validation `fused_stream.bin` files,
-  packs their 0/1 byte-per-bit streams into IKM bytes, and emits
-  16-character strong passwords plus matched B1/B2 baselines; processed
-  outputs live under `data/processed/prototype/`.
+## Notes
 
-Assets used: `BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`
-
-## Thesis
-
-The accompanying thesis manuscript lives under `thesis/` and is built from
-`thesis/main.tex` against `thesis/references.bib`. Source-file mapping by
-chapter:
-
-- **Ch.~3 (Methods).** `src/bars.py` is the 1-second-bar pipeline,
-  `src/bitstream.py` is the all-offset encoding, `src/stats.py` /
-  `src/nist_extended.py` / `src/testu01_alphabit.py` are the three
-  independent batteries, and `src/battery.py` is the battery-neutral
-  orchestrator that backs `full_battery()`.
-- **Ch.~4 (Experiments).** The runners under `scripts/` drive each
-  experiment's acceptance loop on both the transaction-time and
-  physical-time axes (§4.2 Exp 1 / §4.3 Exp 2), then the 29-sub-test
-  extended battery on Exp 2's selected ℓ\* (§4.4 Exp 3, see above), then
-  the multi-asset XOR combination with the 9/6 split (§4.5 Exp 4), and
-  finally the HKDF-SHA256 password generator (Ch.~5 Prototype). Data
-  source for each thesis figure / table is mapped in the per-experiment
-  sections above; raw output trees sit under
-  `data/processed/experiment{1..4}/` and `data/processed/prototype/`.
+- Randomness batteries are descriptive statistical audits, not a proof of
+  cryptographic security.
+- The password prototype is evaluated in a passive statistical setting. A real
+  secret-producing deployment still needs non-public deployment-secret material.
+- The repository-persisted prototype salt is for reproducibility, not production
+  secrecy.
