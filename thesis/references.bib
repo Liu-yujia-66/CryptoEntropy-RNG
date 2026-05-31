@@ -1,8 +1,13 @@
 %% =====================================================================
 %%  CryptoEntropy-RNG — bibliography
-%%  All 9 entries verified against the corresponding PDFs in the project
-%%  root folder. Citation keys follow the convention `<lastname><year><topic>`.
-%%  Last cross-check: 2026-04-28.
+%%  39 entries total: 14 originally verified against the corresponding
+%%  PDFs in the project root folder (last cross-check 2026-04-28) plus
+%%  25 entries added on 2026-05-31 covering test-battery standards,
+%%  HKDF and SHA specifications, statistical and information-theory
+%%  foundations, cryptographic extraction / piling-up / rejection
+%%  sampling, password security, market microstructure, and the
+%%  Lempel--Ziv original for the compression-based Future Work item.
+%%  Citation keys follow the convention `<lastname><year><topic>`.
 %% =====================================================================
 
 %% --- Financial-data-as-randomness-source ----------------------------
@@ -183,4 +188,377 @@
   number  = {1},
   pages   = {211--233},
   doi     = {10.1007/s12095-017-0264-3}
+}
+
+%% =====================================================================
+%%  Test batteries & cryptographic standards
+%%  Added 2026-05-31 for Ch3 §3.3 / §3.7 / §3.8 + Ch4 §4.4--§4.5 + Ch5
+%% =====================================================================
+
+%% NIST Statistical Test Suite (SP 800-22 Rev.1a) -- cited from
+%% Ch3 §3.3, Ch4 §4.4 (NIST SP800-22 extended sub-tests), §4.5 validation
+%% battery, Ch6 §6.4 limitation #3, Ch7 §7.2 contribution (1).
+@techreport{bassham2010sp80022,
+  author      = {Bassham, Lawrence E. and Rukhin, Andrew L. and Soto, Juan
+                 and Nechvatal, James R. and Smid, Miles E. and Barker,
+                 Elaine B. and Leigh, Stefan D. and Levenson, Mark and
+                 Vangel, Mark and Banks, David L. and Heckert, N. Alan
+                 and Dray, James F. and Vo, San},
+  title       = {A Statistical Test Suite for Random and Pseudorandom
+                 Number Generators for Cryptographic Applications},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-22 Rev.\,1a},
+  year        = {2010},
+  doi         = {10.6028/NIST.SP.800-22r1a}
+}
+
+%% TestU01 library -- cited from Ch3 §3.3 (Alphabit sub-set choice)
+%% and Ch4 §4.4--§4.5 (MultinomialBitsOver L4, RandomWalk1, etc.).
+@article{lecuyer2007testu01,
+  author  = {L'Ecuyer, Pierre and Simard, Richard},
+  title   = {{TestU01}: A {C} Library for Empirical Testing of Random
+             Number Generators},
+  journal = {ACM Transactions on Mathematical Software},
+  year    = {2007},
+  volume  = {33},
+  number  = {4},
+  pages   = {22:1--22:40},
+  doi     = {10.1145/1268776.1268777}
+}
+
+%% NIST SP 800-90B -- entropy source recommendation; cited from
+%% Ch3 §3.8 (min-entropy budget, MCV and Markov estimators) and
+%% Ch4 §4.5 (Table 4.11 min-entropy summary), Ch7 §7.2.
+@techreport{turan2018sp80090b,
+  author      = {Turan, Meltem S{\"o}nmez and Barker, Elaine and Kelsey,
+                 John and McKay, Kerry A. and Baish, Mary L. and Boyle,
+                 Mike},
+  title       = {Recommendation for the Entropy Sources Used for Random
+                 Bit Generation},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-90B},
+  year        = {2018},
+  doi         = {10.6028/NIST.SP.800-90B}
+}
+
+%% NIST SP 800-90A Rev.1 -- DRBG construction; used in Ch3 §3.8
+%% only as background context, NOT as compliance claim.
+@techreport{barker2015sp80090a,
+  author      = {Barker, Elaine and Kelsey, John},
+  title       = {Recommendation for Random Number Generation Using
+                 Deterministic Random Bit Generators},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-90A Rev.\,1},
+  year        = {2015},
+  doi         = {10.6028/NIST.SP.800-90Ar1}
+}
+
+%% RFC 5869 -- HKDF specification; cited from Ch3 §3.7
+%% (Extract-then-Expand notation) and Ch5 §5.1 (HKDF-SHA256 pipeline,
+%% RFC 5869 Appendix A Test Case 1 self-test), Ch7 §7.2.
+@techreport{krawczyk2010rfc5869,
+  author      = {Krawczyk, Hugo and Eronen, Pasi},
+  title       = {{HMAC}-based Extract-and-Expand Key Derivation Function
+                 ({HKDF})},
+  institution = {Internet Engineering Task Force},
+  type        = {Request for Comments},
+  number      = {5869},
+  year        = {2010},
+  doi         = {10.17487/RFC5869}
+}
+
+%% RFC 4086 -- randomness requirements; lightweight cite for Ch3 §3.7
+%% salt discussion and Ch5 salt-secrecy paragraph.
+@techreport{eastlake2005rfc4086,
+  author      = {Eastlake, Donald E. and Schiller, Jeffrey I. and Crocker,
+                 Steven D.},
+  title       = {Randomness Requirements for Security},
+  institution = {Internet Engineering Task Force},
+  type        = {Request for Comments},
+  number      = {4086},
+  year        = {2005},
+  doi         = {10.17487/RFC4086}
+}
+
+%% NIST FIPS 180-4 -- SHA-256 standard; cited from Ch5 §5.1
+%% (HKDF-SHA256 hash function basis).
+@techreport{nist2015fips180,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {Secure Hash Standard ({SHS})},
+  institution = {National Institute of Standards and Technology},
+  type        = {Federal Information Processing Standards Publication},
+  number      = {FIPS PUB 180-4},
+  year        = {2015},
+  doi         = {10.6028/NIST.FIPS.180-4}
+}
+
+%% NIST SP 800-63B-4 (Final, 2025-07-31) -- Digital Identity Guidelines;
+%% cited from Ch5 §5.2 (strong-password threshold and verifier-side
+%% policy framing for the ~30 / >=80 / ~98 bit password ladder).
+@techreport{nist2025sp80063b,
+  author      = {{National Institute of Standards and Technology}},
+  title       = {Digital Identity Guidelines: Authentication and
+                 Authenticator Management},
+  institution = {National Institute of Standards and Technology},
+  type        = {NIST Special Publication},
+  number      = {800-63B-4},
+  year        = {2025},
+  month       = jul,
+  doi         = {10.6028/NIST.SP.800-63B-4},
+  note        = {Final, published 31 July 2025.}
+}
+
+%% =====================================================================
+%%  Statistical methodology and information theory
+%%  Added 2026-05-31 for Ch3 metrics + Ch4 §4.4 footnote + Ch5 §5.2
+%% =====================================================================
+
+%% Shannon entropy -- foundational citation for Ch3 §3.8 and Ch5 §5.2.
+@article{shannon1948communication,
+  author  = {Shannon, Claude E.},
+  title   = {A Mathematical Theory of Communication},
+  journal = {Bell System Technical Journal},
+  year    = {1948},
+  volume  = {27},
+  number  = {3},
+  pages   = {379--423},
+  doi     = {10.1002/j.1538-7305.1948.tb01338.x}
+}
+
+%% Pearson chi-square goodness-of-fit -- Ch5 §5.2 pooled chi-square
+%% (1600 characters across 70 classes, alpha = 0.01).
+@article{pearson1900chisquared,
+  author  = {Pearson, Karl},
+  title   = {On the criterion that a given system of deviations from the
+             probable in the case of a correlated system of variables is
+             such that it can be reasonably supposed to have arisen from
+             random sampling},
+  journal = {Philosophical Magazine Series 5},
+  year    = {1900},
+  volume  = {50},
+  number  = {302},
+  pages   = {157--175},
+  doi     = {10.1080/14786440009463897}
+}
+
+%% Miller-Madow estimator bias -- original source for the bias-correction
+%% term named in Ch5 §5.2 line 1038 (the ~0.03 bits/char observed gap
+%% explained by (m-1)/(2N ln 2)).
+@incollection{miller1955entropy,
+  author    = {Miller, George A.},
+  title     = {Note on the Bias of Information Estimates},
+  booktitle = {Information Theory in Psychology: Problems and Methods},
+  editor    = {Quastler, Henry},
+  year      = {1955},
+  pages     = {95--100},
+  publisher = {Free Press},
+  address   = {Glencoe, IL}
+}
+
+%% Modern treatment of plug-in entropy estimator bias -- companion to
+%% Miller (1955) for the same anchor in Ch5 §5.2 line 1038, Ch6 §6.2
+%% RQ3, Ch7 §7.2.
+@article{paninski2003entropy,
+  author  = {Paninski, Liam},
+  title   = {Estimation of Entropy and Mutual Information},
+  journal = {Neural Computation},
+  year    = {2003},
+  volume  = {15},
+  number  = {6},
+  pages   = {1191--1253},
+  doi     = {10.1162/089976603321780272}
+}
+
+%% General information-theory textbook -- Ch3 §3.8 (mutual information
+%% and min-entropy concepts) and Ch4 §4.5 MI diagnostic.
+@book{cover2006information,
+  author    = {Cover, Thomas M. and Thomas, Joy A.},
+  title     = {Elements of Information Theory},
+  edition   = {2nd},
+  year      = {2006},
+  publisher = {Wiley-Interscience},
+  address   = {Hoboken, NJ},
+  isbn      = {9780471241959}
+}
+
+%% Approximate Entropy (ApEn) -- original source; cited from Ch3 §3.3
+%% (ApEn definition) and Ch4 §4.4--§4.5 (ApEn failure pattern).
+@article{pincus1991apen,
+  author  = {Pincus, Steven M.},
+  title   = {Approximate entropy as a measure of system complexity},
+  journal = {Proceedings of the National Academy of Sciences},
+  year    = {1991},
+  volume  = {88},
+  number  = {6},
+  pages   = {2297--2301},
+  doi     = {10.1073/pnas.88.6.2297}
+}
+
+%% Clopper--Pearson exact binomial CI -- Ch4 §4.4 footnote line 627
+%% (binomial 99% CI upper bound ~0.018 for K = 1000 null trials).
+@article{clopper1934binomial,
+  author  = {Clopper, C. J. and Pearson, E. S.},
+  title   = {The Use of Confidence or Fiducial Limits Illustrated in the
+             Case of the Binomial},
+  journal = {Biometrika},
+  year    = {1934},
+  volume  = {26},
+  number  = {4},
+  pages   = {404--413},
+  doi     = {10.1093/biomet/26.4.404}
+}
+
+%% Bonferroni correction -- Ch3 §3.4 (acceptance gate design) and
+%% Ch4 §4.3.4 (Bonferroni / Sidak directional comparison).
+@article{bonferroni1936teoria,
+  author  = {Bonferroni, Carlo E.},
+  title   = {Teoria statistica delle classi e calcolo delle
+             probabilit{\`a}},
+  journal = {Pubblicazioni del R Istituto Superiore di Scienze
+             Economiche e Commerciali di Firenze},
+  year    = {1936},
+  volume  = {8},
+  pages   = {3--62}
+}
+
+%% Sidak correction -- companion to Bonferroni; same anchor points.
+@article{sidak1967rectangular,
+  author  = {{\v{S}}id{\'a}k, Zbyn{\v{e}}k},
+  title   = {Rectangular Confidence Regions for the Means of Multivariate
+             Normal Distributions},
+  journal = {Journal of the American Statistical Association},
+  year    = {1967},
+  volume  = {62},
+  number  = {318},
+  pages   = {626--633},
+  doi     = {10.1080/01621459.1967.10482935}
+}
+
+%% Benjamini-Hochberg FDR -- Ch6 §6.4 limitation #2 (multiple-selection
+%% formal correction not performed).
+@article{benjamini1995fdr,
+  author  = {Benjamini, Yoav and Hochberg, Yosef},
+  title   = {Controlling the False Discovery Rate: A Practical and
+             Powerful Approach to Multiple Testing},
+  journal = {Journal of the Royal Statistical Society, Series B},
+  year    = {1995},
+  volume  = {57},
+  number  = {1},
+  pages   = {289--300},
+  doi     = {10.1111/j.2517-6161.1995.tb02031.x}
+}
+
+%% =====================================================================
+%%  Cryptographic extraction, piling-up, rejection sampling
+%%  Added 2026-05-31 for Ch3 §3.6--§3.7 + Ch4 §4.5 + Ch5 §5.1
+%% =====================================================================
+
+%% HKDF academic companion -- security analysis paper for RFC 5869;
+%% cited from Ch3 §3.7 (HKDF notation introduction) and Ch5 §5.1.
+@inproceedings{krawczyk2010extraction,
+  author    = {Krawczyk, Hugo},
+  title     = {Cryptographic Extraction and Key Derivation: The {HKDF}
+               Scheme},
+  booktitle = {Advances in Cryptology -- CRYPTO 2010},
+  series    = {Lecture Notes in Computer Science},
+  year      = {2010},
+  volume    = {6223},
+  pages     = {631--648},
+  publisher = {Springer},
+  doi       = {10.1007/978-3-642-14623-7\_34}
+}
+
+%% Matsui's piling-up lemma -- Ch4 §4.5 line 663 (intuition for
+%% multi-asset XOR combination); cited as intuition only, NOT as a
+%% security proof of independent-source extraction.
+@inproceedings{matsui1994linear,
+  author    = {Matsui, Mitsuru},
+  title     = {Linear Cryptanalysis Method for {DES} Cipher},
+  booktitle = {Advances in Cryptology -- EUROCRYPT '93},
+  series    = {Lecture Notes in Computer Science},
+  year      = {1994},
+  volume    = {765},
+  pages     = {386--397},
+  publisher = {Springer},
+  doi       = {10.1007/3-540-48285-7\_33}
+}
+
+%% Lemire bounded-integer rejection sampling -- Ch5 §5.1 (charset
+%% mapping via rejection sampling, accept byte b < 210 to avoid
+%% modulo bias).
+@article{lemire2019random,
+  author  = {Lemire, Daniel},
+  title   = {Fast Random Integer Generation in an Interval},
+  journal = {ACM Transactions on Modeling and Computer Simulation},
+  year    = {2019},
+  volume  = {29},
+  number  = {1},
+  pages   = {3:1--3:12},
+  doi     = {10.1145/3230636}
+}
+
+%% Ziv--Lempel original -- Ch6 §6.4 Future Work (compression-based
+%% complexity estimation explicitly names Lempel--Ziv class methods,
+%% so the original source is cited alongside Benedetto et al. 2002).
+@article{ziv1977lempelziv,
+  author  = {Ziv, Jacob and Lempel, Abraham},
+  title   = {A Universal Algorithm for Sequential Data Compression},
+  journal = {IEEE Transactions on Information Theory},
+  year    = {1977},
+  volume  = {23},
+  number  = {3},
+  pages   = {337--343},
+  doi     = {10.1109/TIT.1977.1055714}
+}
+
+%% =====================================================================
+%%  Password security
+%%  Added 2026-05-31 for Ch5 §5.2 strong-password ladder
+%% =====================================================================
+
+%% Bonneau guessing-corpus -- Ch5 §5.2 line 1040 (~30 bits human-chosen
+%% password baseline; supports the lower rung of the entropy ladder).
+@inproceedings{bonneau2012guessing,
+  author    = {Bonneau, Joseph},
+  title     = {The Science of Guessing: Analyzing an Anonymized Corpus of
+               70 Million Passwords},
+  booktitle = {2012 IEEE Symposium on Security and Privacy},
+  year      = {2012},
+  pages     = {538--552},
+  publisher = {IEEE},
+  doi       = {10.1109/SP.2012.49}
+}
+
+%% Florencio-Herley large-scale habits -- Ch1 motivation and Ch5 §5.2
+%% (real-world password habits supporting the human-chosen baseline).
+@inproceedings{florencio2007webpassword,
+  author    = {Flor{\^e}ncio, Dinei and Herley, Cormac},
+  title     = {A Large-Scale Study of Web Password Habits},
+  booktitle = {Proceedings of the 16th International Conference on the
+               World Wide Web (WWW)},
+  year      = {2007},
+  pages     = {657--666},
+  publisher = {ACM},
+  doi       = {10.1145/1242572.1242661}
+}
+
+%% =====================================================================
+%%  Market microstructure (selected, for Ch6 secondary observations)
+%% =====================================================================
+
+%% Almgren-Chriss optimal execution -- Ch6 §6.3 Secondary Observations
+%% (1): order splitting / execution scheduling as one candidate
+%% mechanism for the local non-monotonicity in selected ell-star.
+@article{almgren2001execution,
+  author  = {Almgren, Robert and Chriss, Neil},
+  title   = {Optimal execution of portfolio transactions},
+  journal = {Journal of Risk},
+  year    = {2001},
+  volume  = {3},
+  number  = {2},
+  pages   = {5--40},
+  doi     = {10.21314/JOR.2001.041}
 }
