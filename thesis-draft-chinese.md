@@ -52,11 +52,11 @@
 
 近年来一个具有研究价值的折中方向是:能否从已经存在、且公开可访问的高熵自然数据源中提炼随机性?文献中讨论过的候选包括区块链数据(例如 Bitcoin 区块哈希,Bonneau et al., 2015; Pierrot & Wesolowski, 2018)与金融市场数据;本论文聚焦后者。金融市场数据由海量参与者在极高频率下产生,带有难以建模的微观结构噪声,且其复杂性超出基础统计结构后难以被进一步压缩。已有工作把这一思路具体化为"financial randomness beacon"(金融随机灯塔),试图把市场公开数据转化为可信的随机源(Clark & Hengartner, 2010; Chiba & Ichikawa, 2024; Landis & Bonneau, 2025)。
 
-然而,直接把价格变动符号当作随机比特流并不可行:多数研究指出,高频交易序列虽然在边际意义上看似平衡(例如涨跌频次接近 1:1),但其相邻符号之间存在强烈的短程依赖,典型机理是 bid-ask bounce 等微观结构噪声(Cont, 2001; Shternshis & Marmi, 2025)。要把这种"看起来随机但条件可预测"的数据转化为合格的随机比特流,关键问题是:**能否通过适当的时间聚合绕开这种短程依赖,从而使序列足以通过标准的随机性检验?如果可以,这种聚合应该在哪条"时间"轴上进行,聚合到什么粒度才合适?**
+然而,直接把价格变动符号当作随机比特流并不可行:多数研究指出,高频交易序列虽然在边际意义上看似平衡(例如涨跌频次接近 1:1),但其相邻符号之间存在强烈的短程依赖,典型机理是 bid-ask bounce 等微观结构噪声(Cont, 2001; Shternshis & Marmi, 2025)。要把这种"看起来随机但条件可预测"的数据转化为可用随机比特,需要一条清楚的处理流水线:先取市场价格,把价格变化符号编码为比特,再通过聚合降低短程依赖,随后对聚合后的比特流做随机性检验,最后才把通过筛选的序列送入标准 cryptographic conditioning。
+
+这条流水线原则上并不绑定某一个市场,可应用于多种金融数据源。本论文选择加密货币现货市场,是出于实际数据条件:相比股票市场,加密货币市场全天 24 小时连续运行、无交易所休市断点,且公共 API(如 Binance)可直接拉取逐笔交易数据,中间没有传统券商的批处理或路由层介入,市场活动对终端用户直接可见。因此,加密货币数据适合作为本论文检验该流水线的对象。随之而来的方法问题是:**聚合应该在哪条时间轴上进行,聚合到什么粒度才合适?**
 
 应用层目标方面,本论文把这条 randomness 通路落点在**强密码生成(strong password generation)**。已有文献为这一选择提供了可定位的背景:早期大规模 web 密码习惯研究(Florêncio & Herley, 2007)与后续 guessing-corpus 分析(Bonneau, 2012)报告用户自选密码常集中在 ~20–30 bits entropy 区间,随机生成是文献中讨论的一类对策。把市场衍生 randomness 通过标准 cryptographic conditioning 接到密码生成,因此构成一个 scope 明确、可在本论文内端到端验证的 application target。
-
-本论文以加密货币现货市场为研究对象。相比股票市场,加密货币市场全天 24 小时连续运行、无交易所休市断点、且公共 API(如 Binance)可直接拉取逐笔交易数据——中间没有传统券商的批处理或路由层介入,市场活动对终端用户直接可见——在工程意义上对一个面向公众的随机服务更友好。本文以这些数据为输入,系统研究"聚合 ⇒ 编码 ⇒ 检验 ⇒ 应用"的端到端可行性。
 
 ### Brief Literature Review
 
@@ -71,7 +71,7 @@
 - **(i) 跨市场方法迁移。** 基于 *D* + 全 offset 的随机性检验框架已在美股上验证,但在 24/7 连续交易的加密货币市场上是否同样适用、需要何种聚合轴与层级,尚未被系统性研究。
 - **(ii) 端到端工程通路。** 协议层金融灯塔(Clark & Hengartner, 2010; Chiba & Ichikawa, 2024; Landis & Bonneau, 2025)与底层统计验证(Shternshis & Marmi, 2025; Onofri et al., 2025)在加密货币数据上尚未被以一条从"聚合参数选择"贯通到"密码生成器"的端到端流水线连起来。
 
-本论文针对 (i) (ii) 两点缺口展开:Experiment 2 回应 (i)(transaction-time 与 1-second bar 两条聚合轴对照);Experiment 3、Experiment 4 与 Chapter 5 Password Generator Prototype 共同回应 (ii)。承接以上 gap,§1.3 给出本工作回答的三个研究问题。
+本论文通过一个分阶段的 empirical design 回应 (i) 与 (ii)。Chapter 4 包含四个实验:第一个实验检验 raw baseline,第二个实验选择聚合轴与聚合层级,第三个实验用更大的 test battery 审计被选中的 streams,第四个实验进行多资产 combination 并在 held-out months 上验证。Chapter 5 再把可部署 streams 接入 password generator prototype。承接以上 gap,§1.3 给出本工作回答的三个研究问题。
 
 ### Research Questions
 
@@ -89,7 +89,7 @@
 
 ### Literature Review
 
-本节涉及 several related papers,承接 Brief Lit Review 的"两类文献"划分:**统计验证线**(Cont, 2001; Shternshis & Marmi, 2025; Onofri et al., 2025; Shternshis et al., 2022)关注金融时间序列本身的随机性结构;**应用 / 协议线**(Clark & Hengartner, 2010; Bonneau et al., 2015; Pierrot & Wesolowski, 2018; Chiba & Ichikawa, 2024; Landis & Bonneau, 2025)关注把它转化为密码学组件。下文按主题分 4 个 block 展开。
+本节回顾与金融时间序列统计性质和随机性相关的文献,承接 Brief Literature Review 的"两类文献"划分:**统计验证线**(Cont, 2001; Shternshis & Marmi, 2025; Onofri et al., 2025; Shternshis et al., 2022)关注金融时间序列本身的随机性结构;**应用 / 协议线**(Clark & Hengartner, 2010; Bonneau et al., 2015; Pierrot & Wesolowski, 2018; Chiba & Ichikawa, 2024; Landis & Bonneau, 2025)关注把它转化为密码学组件。下文按主题分 4 个 block 展开。
 
 **Stylized facts and microstructure noise.** 关于高频金融时间序列的统计性质,Cont (2001) 从 returns 视角归纳了一组"stylized facts":重尾分布、波动率聚集、绝对收益的幂律自相关缓慢衰减,以及——本论文最关心的——**超短滞后(微观结构尺度)下因 bid-ask bounce 引起的负自相关**:成交价在买一卖一之间频繁切换,使以 Δp 符号编码的比特序列在相邻位上呈强负相关。Bouchaud et al. (2002) 从 order-book 视角描述同一类问题:价格变化由限价订单簿结构塑造,并非独立抽样。Shternshis & Marmi (2025) 把这一负自相关形式化为可检验的 1 阶残留诊断,并在 SNAP / F / CCL 三只低价股上给出经验证据。
 
@@ -271,7 +271,7 @@ if gate = relaxed:
 
 ### Time-Based Aggregation Pipeline
 
-**针对加密货币市场的方法学增量。** 为利用加密货币市场 24/7 连续运行这一特性,本论文在 transaction-time 轴之外引入一条基于 1-second bar 的 physical-time 聚合轴。在 transaction-time 轴上,吞吐随交易频率变动,因此每出一个 bit 所需的时间也随市场冷热变化;在 physical-time 轴上,1/ℓ\* 给出固定 sampling rate 与 per-bit latency 的 SLA 口径,但它不是最终有效 bit/s。由于 drop-zero 会剔除零差分秒,实际有效 bit/s 会略低于 1/ℓ\*。
+**针对加密货币市场的方法学增量。** 为利用加密货币市场 24/7 连续运行这一特性,本论文在 transaction-time 轴之外引入一条基于 1-second bar 的 physical-time 聚合轴。在 transaction-time 轴上,吞吐随交易频率变动,因此每出一个 bit 所需的时间也随市场冷热变化;在 physical-time 轴上,1/ℓ\* 给出固定 sampling rate 与直观的 wall-clock waiting-time 口径,但它不是最终有效 bit/s。由于 drop-zero 会剔除零差分秒,实际有效 bit/s 会略低于 1/ℓ\*。
 
 1-second bar 流水线(算法 3)把 trades 按 UTC 整秒(Coordinated Universal Time,Binance 使用的全球时间戳标准)分桶。对每个不含 trade 的秒,该秒的 bucket 用最近一次成交的价格填充(forward-fill)。然后在得到的每秒收盘价序列上执行与 §3.1 相同的差分 + 符号编码 + drop-zero 流程。前向填充过的秒与其前一秒的差分为 0,会在 drop-zero 中被剔除,因此不向比特序列贡献任何 bit;最终的比特序列只包含来自实际交易秒之间真实价格变化的 bit。
 
@@ -356,9 +356,9 @@ return y
 
 ### Output Metrics
 
-本节给出两个对 output bit stream 的统一评价口径:**Throughput**(单位时间产出的 bit 数,关心 latency / SLA)与 **Min-entropy budget**(单 bit 的 min-entropy 下界,关心 entropy input 是否足以驱动下游 cryptographic conditioning component)。
+本节给出两个对 output bit stream 的统一评价口径:**Throughput**(单位时间产出的 bit 数,关心 bit-production rate 与 waiting time)与 **Min-entropy budget**(单 bit 的 min-entropy 下界,关心 entropy input 是否足以驱动下游 cryptographic conditioning component)。
 
-**Throughput.** 为了把方法学结果与下游应用对齐,本文记录每个被接受的 ℓ\* 上的吞吐量 r_b,定义为该 ℓ\* 下 witness offset 比特流的有效产出速率(bits/s)。在 transaction-time 轴上,r_b 是由市场活动实际驱动的 realized rate,会随资产和月份的 trades/s 变化。在 physical-time 轴上,1/ℓ\* 是固定 sampling-rate / per-bit latency 口径,适合描述 SLA;实际有效 r_b 还要扣除 drop-zero 后没有产出 bit 的秒,因此通常略低于 1/ℓ\*。
+**Throughput.** 为了把方法学结果与下游应用对齐,本文记录每个被接受的 ℓ\* 上的吞吐量 r_b,定义为该 ℓ\* 下 witness offset 比特流的有效产出速率(bits/s)。在 transaction-time 轴上,r_b 是由市场活动实际驱动的 realized rate,会随资产和月份的 trades/s 变化。在 physical-time 轴上,1/ℓ\* 给出固定 sampling-rate 与每个 candidate bit 的近似等待时间;实际有效 r_b 还要扣除 drop-zero 后没有产出 bit 的秒,因此通常略低于 1/ℓ\*。
 
 **Min-entropy budget.** 本论文采用一个简化的 min-entropy 估计口径,用于判断产出的 bit stream 是否携带足够 randomness 以驱动下游 cryptographic conditioning component。对每条 stream,估计值取 NIST SP800-90B (Turan et al., 2018) non-IID 流程中**两个最常用的 estimator** 中较小者:Most Common Value(MCV)度量 0/1 比例的不均衡,Markov estimator 度量相邻 bit 之间的依赖。选这两个 estimator 的理由是它们覆盖 binary stream 中两类最常见的偏置来源——单 bit 偏置与邻位相关。结果以 per-symbol 下界 h∞ 形式给出,用于确定下游 cryptographic conditioning component 所需的 IKM 字节数。对 binary stream,h∞ 的理论上限是 1 bit/symbol(只有完全独立且均衡的理想流才达到);本论文以 "h∞ 越接近 1 越好" 作为 stream 质量的判断方向。若 deployment 需要 T bits 的 target entropy,则所需输入字节数为 ⌈T / (h∞ × 8)⌉——h∞ = 1 给出下限 ⌈T / 8⌉ 字节,h∞ 离 1 越远所需字节越多。这不构成完整 SP800-90B non-IID 认证(完整流程包含更多 estimator),是本论文 scope 下的简化版本。
 
@@ -455,10 +455,10 @@ Experiment 2 直接回应 RQ1 的正向部分:Exp 1 已经证明 raw tick 不可
 
 本节按下面四步推进;每一步的"问题 / 不足"是下一步的引子。
 
-1. **Transaction-time single offset**：作为定位实验,固定起始 offset o = 0,先估计可通过的 ℓ\* 量级,并暴露单一 offset 判据的稳健性问题(§4.3.2)。
+1. **Transaction-time single offset**：固定起始 offset o = 0,作为 pilot step 先估计可通过的 ℓ\* 量级,但不作为最终接受判据(§4.3.2)。
 2. **Transaction-time all-offset strict gate**：进入完整 all-offset 构造,检验多个 offset 上的稳健性(§4.3.3)。
-3. **Transaction-time all-offset relaxed gate**：在保留少量 offset 冗余的前提下,缓解 strict gate 过严带来的覆盖率与吞吐量代价(§4.3.4)。
-4. **Physical-time 1-second bars**：切换到 physical-time 轴,同时检验短程依赖是否随采样轴改变,以及 fixed-time SLA 口径是否更适合部署描述(§4.3.5)。
+3. **Transaction-time all-offset relaxed gate**：放松 offset 覆盖规则,检验 strict gate 是否排除了过多仍可用的 cell(§4.3.4)。
+4. **Physical-time 1-second bars**：切换到 physical-time 轴,检验按秒采样时短程依赖是否改变(§4.3.5)。
 
 §4.3.6 把两条轴的结论汇总,给出后续实验配置的依据。
 
@@ -469,13 +469,13 @@ Experiment 2 直接回应 RQ1 的正向部分:Exp 1 已经证明 raw tick 不可
 - **Asset universe.** 与 Exp 1 一致的 5 个 USDT 现货对(BTCUSDT、ETHUSDT、BNBUSDT、SOLUSDT、DOGEUSDT,详 §4.1)。
 - **Window.** 与 Exp 1 一致的 15 月样本(2025-01 至 2026-03),诊断粒度为 (asset, month) cell,共 5 × 15 = 75 个 cell。
 - **Encoding.** 算法 1(§3.1):在 transaction-time 轴上以"成交笔数"为 ℓ 的单位;在 physical-time 轴上先通过 §3.5 的 1-second bar pipeline 将价格序列转换为 per-second close-price,ℓ 的单位变为"秒数"。drop-zero 处理在两条轴上保持一致。
-- **All-offset construction.** §3.2:对每个 ℓ,构造 ℓ 条 offset 比特流并独立检验。§4.3.2 先采用固定 offset 的简化定位版(o = 0,只一条流);§4.3.3 起进入完整 all-offset。
+- **All-offset construction.** §3.2:对每个 ℓ,构造 ℓ 条 offset 比特流并独立检验。§4.3.2 先采用固定 offset 的 pilot 版本(o = 0,只一条流);§4.3.3 起进入完整 all-offset。
 - **Acceptance gates.** 主接受规则使用 D(adaptive *k*) + Monobit:single offset 要求两项 *p* 值均 ≥ α;all-offset strict gate 要求两项通过率均 ≥ 0.80;relaxed gate 是 §3.4 中定义的 heuristic 版本。Runs、D(*k* = 2)、ApEn 与 Shannon bias 仍被记录为辅助诊断,其中 Runs 在 §4.3.5 中被显式加入 +Runs gate。
 - **ℓ grid.** §4.3.2 / §4.3.3 取 50 至 2000、步长 25;§4.3.4 取 10 至 2000、步长 2;§4.3.5 取 10 至 600、步长 1。
 
 #### Transaction-Time: Single Offset
 
-Single offset 是固定起始偏移 o = 0 的简化定位版:每个 ℓ 只构造一条比特流,先观察聚合深度与通过性的基本关系;selected ℓ\* 是使 D(adaptive *k*) 与 Monobit 同时给出 *p* ≥ α(α = 0.01)的最小 ℓ。ℓ 网格取 50 至 2000、步长 25,跨 5 资产 × 15 月共 75 个 (asset, month) cell。
+Single offset 固定起始偏移 o = 0:每个 ℓ 只构造一条比特流,先观察聚合深度与通过性的基本关系;selected ℓ\* 是使 D(adaptive *k*) 与 Monobit 同时给出 *p* ≥ α(α = 0.01)的最小 ℓ。ℓ 网格取 50 至 2000、步长 25,跨 5 资产 × 15 月共 75 个 (asset, month) cell。
 
 **Figure 4.2 — Single-offset −log₁₀(*p*) vs ℓ。** Figure 4.2(a) 展示 2025 Q1,Figure 4.2(b) 展示 2026 Q1(Q5);每张图按资产 × 月份排列,显示 D 与 Monobit 的 −log₁₀(*p*) 如何随 ℓ 增长而下降。水平红线为 α = 0.01 阈值,完整 15 月 selected ℓ\* 见 Appendix Table A.1。
 
@@ -493,9 +493,9 @@ Single offset 是固定起始偏移 o = 0 的简化定位版:每个 ℓ 只构�
 
 **Selected ℓ\* 呈现粗粒度的活跃度分层。** Table 4.3 显示,BTC 与 ETH 在 [50, 2000] 区间内需要明显更深的聚合,而较低活跃的三个资产在 ~200–300 即可触达阈值。这与 Onofri et al. (2025) Case 2 在 8 只美股 + 1 ETF 上报告的"trades/s 越高、所需 ℓ 越大"为同向关系;但这里的结论只应理解为粗粒度分层,不是五个资产之间严格单调的排序。
 
-**Single offset 的作用是定位,不是最终接受方案。** 在 2025-01 与 2025-08 两个月,BTC 在整个 [50, 2000] 网格上都不能让 D 与 Monobit 同时通过,完整结果见 Appendix Table A.1。这说明固定 o = 0 已经能给出 ℓ\* 的初始量级,但不能保证覆盖完整;这些失败也不能仅用单月 trades/s 高低解释。Single offset 因此只作为定位实验,不作为最终候选方案。
+**Single offset 只给出初始估计,不是最终接受方案。** 在 2025-01 与 2025-08 两个月,BTC 在整个 [50, 2000] 网格上都不能让 D 与 Monobit 同时通过,完整结果见 Appendix Table A.1。这说明固定 o = 0 可以给出 ℓ\* 的大致量级,但不能说明其他起始 offset 是否也有同样表现;这些失败也不能仅用单月 trades/s 高低解释。Single offset 因此只作为 pilot diagnostic。
 
-**真正需要解决的是 offset 稳健性。** 即便某 ℓ 在 o = 0 下通过,也无法判断 o = 1, …, ℓ − 1 这 ℓ − 1 条平行比特流是否同样通过。若通过性高度依赖于 o,该 cell 上的"acceptable"就只是单一起点下的结果。§4.3.3 因此把这条固定-offset 诊断升级为"≥ 80% 的 offset 同时通过",同时回应 BTC 空 cell 与稳健性问题。
+**下一步问题是结果是否在多个 offset 上稳定。** 对固定 ℓ 而言,all-offset 构造有 ℓ 个可能起始 offset。o = 0 通过,并不意味着另外 ℓ − 1 条 offset 流也通过。若结果高度依赖起点,就不能只因为一个 offset 成功而接受该 cell。§4.3.3 因此把 fixed-offset 诊断升级为完整规则:至少 80% 的 offset 必须同时通过。
 
 #### Transaction-Time: All-Offset Strict Gate
 
@@ -521,7 +521,7 @@ Single offset 是固定起始偏移 o = 0 的简化定位版:每个 ℓ 只构�
 
 **Strict gate 选中的流仍系统性地过不了 Runs。** 需要强调:strict gate 的主判据只含 D(adaptive *k*) + Monobit。被它选中的 63 个 acceptable cell 中,有 38 个的 Runs 通过率低于 0.05(统计口径见 Appendix Table A.2 说明)——即在这些 cell 的 selected ℓ\* 上,几乎每一条 offset 流都被 Runs 拒绝;D(*k* = 2) 通过率呈现同样的模式。换言之,"strict gate 通过" ≠ "一阶结构被消化",它只保证 adaptive-*k* 的 D 与 Monobit 两项达标。这一残留是 transaction-time 轴的稳定病征,也是后续比较 physical-time 轴的动机之一。
 
-**Strict gate 的两条工程问题为 §4.3.4 relaxed gate 提供动机。** 第一,BTC 在 8 个月里完全无 acceptable ℓ ≤ 2000,说明 80% offset 同时通过的要求对高活跃资产过严。第二,selected ℓ\* 的 month-to-month range 较宽,粗网格也限制了估计精度。§4.3.4 因此改用启发式 relaxed gate,在保留少量 offset 冗余的同时重新折中 coverage、throughput 与 robustness,并把 ℓ 网格细化到 step = 2。
+**Strict gate 留下两条实际问题。** 第一,BTC 在 8 个月里完全无 acceptable ℓ ≤ 2000,说明 80% offset 同时通过的要求对高活跃资产可能过严。第二,selected ℓ\* 的 month-to-month range 较宽,粗网格也限制了估计精度。§4.3.4 因此尝试 relaxed offset-coverage gate,并把 ℓ 网格细化到 step = 2。
 
 #### Transaction-Time: All-Offset Relaxed Gate
 
@@ -541,7 +541,7 @@ Single offset 是固定起始偏移 o = 0 的简化定位版:每个 ℓ 只构�
 
 > *Note.* n_pass = 该资产在 15 月中 relaxed gate 返回 acceptable 的月份数;selected ℓ\* median 与 range 在全部 15 月上计算。行按 selected ℓ\* median 降序排列。完整 per-(asset, month) 表见 Appendix Table A.4。
 
-**Relaxed gate 把覆盖率从 strict 的 63/75 推到 75/75。** Strict gate 在 BTC 8 个月、ETH 2 个月、SOL 2 个月共 12 个 cell 上失败(§4.3.3 Table 4.4);relaxed gate 在全部 75 cell 上都找到 acceptable ℓ\*。BTC 此前 strict 下无 ℓ ≤ 2000 通过的 8 个月,relaxed 下均找到 ℓ\* ∈ [998, 1750]——仍在 [50, 2000] 网格内,只是 strict 的 80% bar 对它们过严。这一观察直接回应 §4.3.3 末尾给出的工程问题。
+**Relaxed gate 把覆盖率从 strict 的 63/75 推到 75/75。** Strict gate 在 BTC 8 个月、ETH 2 个月、SOL 2 个月共 12 个 cell 上失败(§4.3.3 Table 4.4);relaxed gate 在全部 75 cell 上都找到 acceptable ℓ\*。BTC 此前 strict 下无 ℓ ≤ 2000 通过的 8 个月,relaxed 下均找到 ℓ\* ∈ [998, 1750]——仍在 [50, 2000] 网格内,只是 strict 的 80% bar 对它们过严。这一观察直接回应 §4.3.3 末尾给出的 practical coverage problem。
 
 **Selected ℓ\* 整体压低,但粗粒度资产分层保持不变。** 逐资产对比 per-asset selected ℓ\* median(strict 在其有 acceptable ℓ 的月份、relaxed 在全部 15 月各自计算),relaxed gate 把每个资产的 median 都拉低:BTC 1500 → 1150、ETH 975 → 556、BNB 350 → 212、DOGE 375 → 156、SOL 350 → 180,降幅约 23%(BTC)至 58%(DOGE)。两组 median 月份基数不同(strict 有 12 个失败 cell、relaxed 全部 75 个 cell 成功),故降幅是量级口径而非逐月差值。Relaxed gate 等价于一条更松的 bar,因此每个资产都用更小的 ℓ 通过。资产层面仍呈现 BTC 最高、ETH 次之、BNB / SOL / DOGE 同量级的粗粒度结构。
 
@@ -549,9 +549,9 @@ Single offset 是固定起始偏移 o = 0 的简化定位版:每个 ℓ 只构�
 
 **Bonferroni / Šidák 对照给出更小的 ℓ\*。** 作为方向性对照,Bonferroni / Šidák 版本在 2025 Q1 给出系统性更小的 selected ℓ\*。这与 §3.4 的判断一致,因此不作为主判据;完整结果见 Appendix Table A.5。
 
-§4.3.4 至此把 transaction-time 轴上的方法链条收尾:single offset → strict gate → relaxed gate 三步,后两步在 robustness、coverage 与 throughput 之间做权衡。Relaxed gate 给出 75/75 cell 全部 acceptable 的工程候选版本,但它仍是一条 heuristic,不构成更强的统计保证。
+§4.3.4 至此把 transaction-time 轴上的方法链条收尾:single offset → strict gate → relaxed gate 三步,后两步在 offset stability、coverage 与 bit rate 之间做权衡。Relaxed gate 给出 75/75 cell 全部 acceptable,但它仍是一条 heuristic,不构成更强的统计保证。
 
-与此同时,transaction-time 轴仍留下两个部署层面的疑问:第一,*D*(*k* = 2) / Runs 在 selected ℓ\* 附近几乎普遍拒绝,短程依赖是否由采样轴放大仍需检验;第二,transaction-time throughput 随月内 trades/s 波动,不易写成固定 per-bit latency。§4.3.5 因此切换到 physical-time 轴(1-second bar),同时检查独立性残留与 fixed-time SLA 口径。
+与此同时,transaction-time 轴仍留下一个重要问题:*D*(*k* = 2) / Runs 在 selected ℓ\* 附近几乎普遍拒绝,短程依赖是否由采样轴放大仍需检验。§4.3.5 因此切换到 physical-time 轴(1-second bar)。
 
 #### Physical-Time: 1-Second Bars
 
@@ -577,19 +577,19 @@ Single offset 是固定起始偏移 o = 0 的简化定位版:每个 ℓ 只构�
 
 **该独立性改善与聚合轴有关。** 同一份 aggTrades 数据在 transaction-time 轴上仍保留较强一阶残留,但在 physical-time 轴上多数 cell 得到缓解。这一对照不支持"一阶残留完全来自源数据且不可缓解"的解释;更合理的理解是,按成交笔数等距采样会把短时间内的同向 order-flow 浓缩到相邻 bit 中,而 1-second bar 把这种局部集中性稀释开。这与 Exp 1 中 lag-1 自相关为正、且量级与活跃度大体同向的诊断相一致。
 
-**Physical-time 轴的 SLA 友好性来自固定采样节奏。** Transaction-time 轴上的吞吐量随当月 trades/s 浮动;physical-time 轴上,1 / ℓ\* 给出固定 sampling rate 与 per-bit latency 的 SLA 口径。由于 drop-zero 仍会过滤零差分秒,实际 bit/s 会略低于 1 / ℓ\*,但量级基本一致。Table 4.6 的 ℓ\* median 对应的描述性速率大约落在 0.01–0.03 bps 区间。加入 Runs 后覆盖率下降,在部分资产或月份上也会带来更高 latency。
+**Physical-time 轴更容易解释为 wall-clock waiting time。** Transaction-time 轴上的吞吐量随当月 trades/s 浮动;physical-time 轴上,ℓ\* 以秒为单位,可直接解释为产出下一个 candidate bit 前大约需要等待多久。由于 drop-zero 仍会过滤零差分秒,实际 bit/s 会略低于 1 / ℓ\*,但量级基本一致。Table 4.6 的 ℓ\* median 对应的描述性速率大约落在 0.01–0.03 bps 区间。加入 Runs 后覆盖率下降,在部分资产或月份上也会带来更长等待时间。
 
 #### Implications
 
-Experiment 2 的主要作用是为后续 pipeline 选择聚合轴；两条轴都能产生 acceptable bit streams,但它们服务的工程语义不同。§4.3.6 将结果收束为四点。
+Experiment 2 的主要作用是为后文 pipeline 选择聚合轴。两条轴都能产生 accepted cells,但实际含义不同:transaction-time 按成交笔数聚合,更适合作为统计对照;physical-time 的 ℓ 以秒为单位,更容易在后文解释为等待时间。§4.3.6 将结果收束为四点。
 
-(i) **应采用 physical-time 作为主聚合轴。** Transaction-time 的 bit rate 随 trades/s 波动,更适合作为统计构造和补充对照,不适合作为后续 pipeline 的主部署口径。而 Physical-time 的 ℓ 以秒为单位,selected ℓ\* 可以直接解释为 wall-clock sampling schedule 与 per-bit latency 口径。
+(i) **应采用 physical-time 作为主聚合轴。** Transaction-time 的 bit rate 随 trades/s 波动,更适合作为统计构造和补充对照。而 Physical-time 的 ℓ 以秒为单位,selected ℓ\* 可以直接解释为 wall-clock sampling schedule 与每个 candidate bit 的近似等待时间。
 
 (ii) **Physical-time 更适合作为扩展检验的输入配置。** 在 +Runs 口径下,transaction-time strict gate 的覆盖率从 63/75 跌到 48/75(within-axis 损失 24%),physical-time base gate 从 70/75 跌到 62/75(within-axis 损失 11%);进一步加入 ApEn 后仍为 62/75。**Within-axis 的 coverage 损失幅度在 transaction-time 上显著更大**,这说明 transaction-time 下的 Runs / *D*(*k* = 2) 残留至少部分由采样轴放大。因此,后续 entropy-rate 分析、补充 NIST 子检验与 TestU01 sanity check 优先在 physical-time 选出的 bit streams 上进行。
 
-(iii) **Transaction-time relaxed gate 保留为补充配置。** 它证明成交笔数轴上可以通过 heuristic offset 冗余得到完整 acceptable cell,也可作为 physical-time base 失败 cell 的潜在 fallback;但它依赖 heuristic gate,且吞吐随市场活跃度变化,因此不作为主配置。Experiment 3 也不调用这一 fallback——audit 的对象是 1-second bar +Runs gate 本身的覆盖边界,把另一条轴(transaction time)、另一类 gate(heuristic relaxed)选出的 cell 混进样本会污染对照;1-second bar +Runs gate 下失败的 13 个 cell 因此作为该 gate 覆盖边界的证据保留,不进 Experiment 3 样本、也不做救援。
+(iii) **Transaction-time relaxed gate 保留为补充配置。** 它证明成交笔数轴上在放松 offset-coverage rule 后也能达到完整覆盖;但该规则是 heuristic,且吞吐随市场活跃度变化,因此不作为主配置。Experiment 3 也不把它作为 fallback:审计对象是 1-second bar +Runs gate 本身的覆盖边界。1-second bar +Runs gate 下失败的 13 个 cell 因此作为该 gate 边界的证据保留,不进 Experiment 3 样本。
 
-(iv) **吞吐量只作为量级锚点。** Experiment 2 中 selected cell 的 per-cell bit rate 大致落在 10⁻² bps,说明聚合换来了更强随机性诊断但显著降低产出速率。具体 bits/day、拼接后样本长度、扩展 test battery 的适用性与端到端 latency 留给后续实验评估。
+(iv) **吞吐量只作为量级锚点。** Experiment 2 中 selected cell 的 per-cell bit rate 大致落在 10⁻² bps,说明更强的随机性诊断会带来更低的 bit emission rate。
 
 ---
 
