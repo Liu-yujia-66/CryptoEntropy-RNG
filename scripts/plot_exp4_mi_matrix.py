@@ -2,11 +2,11 @@
 Experiment 4 — pairwise MI / Pearson heatmap.
 
 Reads ``mi_pool_matrix.csv`` and ``rho_pool_matrix.csv`` produced by
-``scripts/runner_exp4_mi_matrix.py`` and produces a side-by-side
+``scripts/runner_exp4_mi_matrix.py`` and produces a vertically stacked
 heatmap suitable for thesis §4.5:
 
-  - Left panel:  pairwise 1-bit mutual information (bits)
-  - Right panel: pairwise Pearson correlation ρ
+  - Top panel:    pairwise 1-bit mutual information (bits)
+  - Bottom panel: pairwise Pearson correlation ρ
   - Cells annotated with the numeric value
   - Diagonal masked to light grey
   - Asset rows / columns reordered by row-mean MI ascending, so the
@@ -117,16 +117,16 @@ def main() -> int:
     labels = [DISPLAY_NAMES.get(a, a) for a in mi.index]
     n = len(labels)
 
-    fig, axes = plt.subplots(1, 2, figsize=(11, 5))
+    fig, axes = plt.subplots(2, 1, figsize=(7.0, 7.4))
 
-    # ---- Left: MI heatmap (bits) ----
+    # ---- Top: MI heatmap (bits) ----
     ax = axes[0]
     mi_values = mi.values.astype(float)
     mi_masked = np.ma.masked_invalid(mi_values)
     cmap = plt.cm.viridis.copy()
     cmap.set_bad(color="#dcdcdc")
     vmax = float(np.nanmax(mi_values))
-    im = ax.imshow(mi_masked, cmap=cmap, vmin=0.0, vmax=vmax, aspect="equal")
+    im = ax.imshow(mi_masked, cmap=cmap, vmin=0.0, vmax=vmax, aspect="auto")
     ax.set_xticks(range(n))
     ax.set_xticklabels(labels, rotation=0)
     ax.set_yticks(range(n))
@@ -136,14 +136,14 @@ def main() -> int:
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     cbar.set_label("MI (bits)")
 
-    # ---- Right: Pearson heatmap ----
+    # ---- Bottom: Pearson heatmap ----
     ax = axes[1]
     rho_values = rho.values.astype(float)
     rho_masked = np.ma.masked_invalid(rho_values)
     cmap = plt.cm.viridis.copy()
     cmap.set_bad(color="#dcdcdc")
     rho_max = float(np.nanmax(np.abs(rho_values)))
-    im = ax.imshow(rho_masked, cmap=cmap, vmin=0.0, vmax=rho_max, aspect="equal")
+    im = ax.imshow(rho_masked, cmap=cmap, vmin=0.0, vmax=rho_max, aspect="auto")
     ax.set_xticks(range(n))
     ax.set_xticklabels(labels, rotation=0)
     ax.set_yticks(range(n))

@@ -4,13 +4,13 @@ Experiment 4 — validation visualisation.
 Produces two thesis-ready figures from the validation outputs:
 
   Figure 1 — exp4_validation_verdict.png
-    2x2 panel of cell-level verdict matrices, one panel per n.
+    4x1 panel of cell-level verdict matrices, one panel per n.
     Each panel is 6 validation months (rows) x 12 sub-tests (cols),
     colour-coded PASS (green) / FAIL (red) / INVALID (grey).
     Panel title carries n + subset + ell* + witness offset.
 
   Figure 2 — exp4_validation_tradeoff.png
-    1x3 panel of n-axis trade-offs:
+    3x1 panel of n-axis trade-offs:
       (a) bits/month — calibration estimate vs validation median
       (b) ell*_n      — exposes the odd/even-n effect
       (c) fused_p1 median — confirms the moment-cancellation result
@@ -151,7 +151,7 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
 
     # 29 sub-tests per panel; widen from the 12-test era's (13, 9) so the
     # x-axis labels stay legible.
-    fig, axes = plt.subplots(2, 2, figsize=(24, 11), constrained_layout=True)
+    fig, axes = plt.subplots(4, 1, figsize=(13.5, 19.5))
     axes = axes.flatten()
 
     for idx, n in enumerate(n_values):
@@ -171,7 +171,8 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
         ax.set_xticklabels(SUB_TEST_LABELS, rotation=45, ha="right", fontsize=8)
         ax.set_yticks(range(len(months)))
         ax.set_yticklabels(months, fontsize=8)
-        ax.set_xlabel("sub-test")
+        if idx == len(n_values) - 1:
+            ax.set_xlabel("sub-test")
         ax.set_ylabel("validation month")
         ax.set_title(
             f"n={n}: {_short_subset(pick['subset'])}  "
@@ -217,15 +218,16 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
     fig.legend(
         handles=handles,
         loc="lower center",
-        ncol=4,
+        ncol=2,
         frameon=False,
-        bbox_to_anchor=(0.5, -0.02),
+        bbox_to_anchor=(0.5, 0.01),
     )
     fig.suptitle(
         "Experiment 4 validation — cell-level verdict per sub-test "
         f"(6 months × {len(SUB_TESTS)} sub-tests, throughput-best subset per n)",
         fontsize=12,
     )
+    fig.tight_layout(rect=(0.0, 0.06, 1.0, 0.975))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=200, bbox_inches="tight")
     plt.close(fig)
@@ -286,7 +288,7 @@ def _plot_tradeoff(
     output_path: Path,
 ) -> None:
     df = _gather_tradeoff_data(validation_root, calib_summary_path)
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4.2), constrained_layout=True)
+    fig, axes = plt.subplots(3, 1, figsize=(8.0, 12.0), constrained_layout=True)
 
     # ---- Panel (a): throughput ----
     ax = axes[0]

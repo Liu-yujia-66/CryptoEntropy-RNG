@@ -4,7 +4,7 @@ Computes the data summary for the password demo and writes:
   - prototype_summary.txt : numbers only (regenerated every run)
   - per_cell_eval.csv     : per-cell chi-square and entropy
   - summary.json          : machine-readable group summary
-  - two figures           : position heatmap, side-by-side comparison
+  - two figures           : position heatmap, group comparison figure
 
 Metrics (master's-scope, descriptive -- no formal hypothesis test):
   A. Pooled chi-square goodness-of-fit to a uniform 70-char distribution,
@@ -189,13 +189,13 @@ def figure_position_heatmap(cells: list[dict]) -> Path | None:
 
 
 def figure_side_by_side(rows: list[dict]) -> Path:
-    """Two-panel comparison: chi-square p-values and Shannon entropy per group."""
+    """Two-panel vertical comparison: chi-square p-values and entropy per group."""
     order = GROUP_ORDER
     labels = {"n2": "market n=2", "n3": "market n=3", "n5": "market n=5",
               "b1": "B1 ideal-password", "b2": "B2 ideal-IKM"}
     by_group = {g: [r for r in rows if r["group"] == g] for g in order}
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(8, 9))
     for x, g in enumerate(order):
         ps = [r["chi2_p"] for r in by_group[g]]
         hs = [r["shannon_entropy"] for r in by_group[g]]
@@ -415,7 +415,7 @@ def main() -> None:
           f"  (hand-maintained -- not regenerated)")
     if heatmap:
         print(f"heatmap      : {heatmap.relative_to(REPO)}")
-    print(f"side-by-side : {sidebyside.relative_to(REPO)}")
+    print(f"eval figure  : {sidebyside.relative_to(REPO)}")
 
 
 if __name__ == "__main__":
