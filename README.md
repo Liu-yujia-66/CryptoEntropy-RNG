@@ -1,5 +1,16 @@
 # CryptoEntropy-RNG
-A high-fidelity Random Number Generator (RNG) leveraging temporal aggregation and multi-asset fusion of cryptocurrency market dynamics. This project implements an entropy extraction pipeline validated by NIST SP800-22 and TestU01 suites, featuring a secure password generation prototype.
+
+A high-fidelity Random Number Generator (RNG) leveraging temporal
+aggregation and multi-asset XOR combination of cryptocurrency market
+dynamics. The pipeline runs Experiments 1–4 (raw baseline → temporal
+aggregation → extended NIST + TestU01 Alphabit battery → multi-asset
+XOR combination) and feeds the resulting fused streams through an
+HKDF-SHA256 prototype that generates 16-character strong passwords.
+
+Status (2026-05): all four experiments and the prototype are
+complete. Pipeline outputs land under `data/processed/{data_overview,
+experiment{1..4}, prototype}/`. The thesis manuscript draft lives at
+[`thesis/main.tex`](thesis/main.tex).
 
 ## Environment Setup
 
@@ -38,6 +49,14 @@ pip install -r requirements.txt
 │   ├── testu01_alphabit.py   # Python wrapper for the TestU01 Alphabit driver
 │   ├── battery.py            # 3-battery orchestrator (stats + nistrng + Alphabit)
 │   │                         #   + sanity-bracket schema for Exp 3 / Exp 4
+│   ├── fusion.py             # Exp 4: per-asset sign streams + drop-any-zero XOR
+│   │                         #   combination at the 1-second tick
+│   ├── calibration.py        # Exp 4: XOR ℓ-aggregation + +Runs gate +
+│   │                         #   select_ell_star_from_grid + select_witness_offset + p80
+│   ├── mutual_info.py        # Exp 4: pairwise 1-bit MI / Pearson ρ utilities
+│   ├── min_entropy.py        # Exp 4: NIST SP 800-90B MCV + Markov estimators
+│   ├── prototype.py          # Prototype: HKDF-SHA256 (RFC 5869) + charset
+│   │                         #   rejection sampling + B1/B2 baselines (salt-seeded)
 │   ├── summary.py            # shared summary helpers (used by Exp 2 runners)
 │   └── utils.py              # small utilities
 ├── tools/                    # TestU01 C build artefacts (binaries git-ignored)
@@ -263,6 +282,123 @@ and `NOT_RUN` (TestU01 length-skipped the sub-test) are reported separately
 so the cell verdict preserves the Phase 5 three-state record; both stay out
 of the admissible denominator.
 
+### Experiment 4 — Multi-Asset XOR Combination
+
+Exp 4 combines the per-asset 1-second sign bits across `n ∈ {2, 3, 4, 5}`
+assets via XOR, then runs the same 29-sub-test battery as Exp 3 on the
+combined stream's ℓ-XOR-aggregated outputs. A 9/6 calibration/validation
+split fixes the asset subset, the aggregation level ℓ\*\_n, and the
+witness offset on the first 9 months (2025-01..2025-09) and holds out
+the next 6 (2025-10..2026-03) for unconditional evaluation.
+
+```bash
+# Step 1 — MI matrix on the calibration window (subset-selection diagnostic)
+python scripts/runner_exp4_mi_matrix.py
+python scripts/plot_exp4_mi_matrix.py
+
+# Step 2 — exhaust all C(5,n) subsets (26 total) over the 9 calibration months
+#   ~13 min on M-series; first-hit ℓ scan with +Runs gate, P80 across months
+python scripts/runner_exp4_calibration_all_subsets.py
+
+# Step 3 — validation on the held-out 6 months using the calibration picks
+#   ~10 min; runs the 29-sub-test battery on each (n, month) cell and
+#   auto-emits validation_summary.txt at the end
+python scripts/runner_exp4_validation.py
+python scripts/plot_exp4_validation.py
+
+# Step 4 — NIST SP 800-90B min-entropy estimation on the validation streams
+python scripts/runner_exp4_min_entropy.py
+```
+
+Output layout:
+
+```text
+data/processed/experiment4/
+├── mi/                            # Step 1 — pairwise MI matrix
+│   ├── mi_pool_matrix.csv
+│   ├── mi_pool_summary.json       # subset_recommendations_by_max_pairwise_mi
+│   └── figures/exp4_mi_matrix.png
+├── calibration_all_subsets/       # Step 2 — 26 subsets x 9 months
+│   ├── all_subsets_summary.csv    # one row per (n, subset) — throughput
+│   │                              #   estimate, ℓ\*_n, witness, p(combined=1)
+│   ├── all_subsets_summary.json
+│   └── n{N}_<sorted-assets>/      # per-subset detail (ell_n_choice.json,
+│                                  #   witness_offset.json, etc.)
+├── validation/                    # Step 3 — 4 n x 6 months
+│   ├── validation_summary.json    # ell\*_n / witness / output_bits / per-
+│   │                              #   sub-test pass counts per n
+│   ├── validation_summary.txt     # human-readable summary (auto-regenerated
+│   │                              #   by summarize_exp4_validation.py)
+│   ├── n{N}/per_month_verdict_matrix.csv
+│   ├── n{N}/per_month_throughput.csv
+│   ├── n{N}/{YYYY-MM}/fused_stream.bin       # combined stream (one bit per
+│   │                                         #   byte; consumed by the
+│   │                                         #   prototype as IKM)
+│   ├── n{N}/{YYYY-MM}/per_offset_pvalues.csv
+│   └── figures/exp4_validation_{verdict,tradeoff}.png
+└── min_entropy/                   # Step 4 — SP 800-90B MCV + Markov
+    ├── min_entropy_per_cell.csv
+    └── min_entropy_summary.json   # per-n median + worst-month H∞ + IKM bytes
+```
+
+The calibration scan uses the ℓ grid `[1, 400]` with step 1. In the
+production run, ℓ=1 is rejected by Monobit on every calibration cell, so
+including it does not change the selected subsets or the reported ℓ\*_n
+values; it only makes the scan grid match the thesis description exactly.
+
+### Prototype — Password Generation
+
+The prototype reads Exp 4's `fused_stream.bin` files, which store one
+combined bit per byte. It first packs these 0/1 bytes with `np.packbits`,
+then consumes disjoint 33-byte IKM blocks through HKDF-Extract →
+HKDF-Expand → charset rejection sampling, and emits 16-character strong
+passwords. Two salt-seeded baselines (B1 = direct uniform sampling, B2 =
+salt-seeded ideal random IKM through the same HKDF pipeline) are generated
+alongside for indistinguishability comparison.
+
+```bash
+# Step 1 — generate 3,000 passwords (market n in {2,3,5} + B1 + B2)
+#   30 cells x 100 = 3,000 passwords; a few seconds; reads Exp 4
+#   validation/n{2,3,5}/{month}/fused_stream.bin
+python scripts/runner_prototype.py
+
+# Step 2 — evaluation: pooled chi-square uniformity + Shannon entropy +
+#   selected-cell position-frequency heatmap + 5-group side-by-side figure
+python scripts/eval_prototype.py
+```
+
+Output layout:
+
+```text
+data/processed/prototype/
+├── salt.bin                            # 32-byte HKDF salt (persisted for
+│                                       #   demo reproducibility; production
+│                                       #   would rotate per deployment)
+├── config.json                         # full HKDF / charset parameters
+├── market/n{2,3,5}/{YYYY-MM}/
+│   ├── passwords.txt                   # 100 passwords per cell
+│   └── metadata.json
+├── baseline_b1/{YYYY-MM}/...            # secrets-style direct sampling
+├── baseline_b2/{YYYY-MM}/...            # salt-seeded ideal random IKM
+│                                        #   through the same pipeline
+└── evaluation/
+    ├── prototype_summary.txt           # data summary (regenerated each run)
+    ├── prototype_analysis.txt          # interpretation + security model
+    │                                   #   (hand-maintained companion)
+    ├── per_cell_eval.csv               # 30 rows = 5 groups x 6 months
+    ├── summary.json
+    └── figures/
+        ├── position_heatmap_n3_2026-03.png
+        └── sidebyside_chi2_entropy.png
+```
+
+The two text files are intentionally split: `prototype_summary.txt`
+holds **numbers only** and is regenerated by `eval_prototype.py` on
+every run; `prototype_analysis.txt` holds the **interpretation and
+security model** (target tier, Miller-Madow caveat, public-source vs
+secret-salt framing, out-of-scope extensions for key generation and
+public beacons) and is hand-maintained.
+
 ## Data
 
 Raw data is not included in this repository. Download aggTrades data from [https://data.binance.vision](https://data.binance.vision) and place it under:
@@ -277,6 +413,14 @@ Two granularities are used:
 - **Data overview** — reads the same monthly archives as Experiment 2; processed outputs live under `data/processed/data_overview/`.
 - **Experiment 2** — monthly files (e.g. `BTCUSDT-aggTrades-2025-01.csv`); processed outputs live under `data/processed/experiment2/`.
 - **Experiment 3** — re-uses the same monthly archives as Experiment 2 (driven by Exp 2's selected ℓ\* per (asset, month)); processed outputs live under `data/processed/experiment3/`.
+- **Experiment 4** — re-uses the same monthly archives; combines per-asset
+  1-second sign bits across `n ∈ {2,3,4,5}` assets via XOR with a 9/6
+  calibration/validation split (2025-01..2025-09 / 2025-10..2026-03);
+  processed outputs live under `data/processed/experiment4/`.
+- **Prototype** — reads Exp 4's validation `fused_stream.bin` files,
+  packs their 0/1 byte-per-bit streams into IKM bytes, and emits
+  16-character strong passwords plus matched B1/B2 baselines; processed
+  outputs live under `data/processed/prototype/`.
 
 Assets used: `BTCUSDT`, `ETHUSDT`, `BNBUSDT`, `SOLUSDT`, `DOGEUSDT`
 
@@ -293,5 +437,10 @@ chapter:
   orchestrator that backs `full_battery()`.
 - **Ch.~4 (Experiments).** The runners under `scripts/` drive each
   experiment's acceptance loop on both the transaction-time and
-  physical-time axes (Exp 1 / Exp 2), then the 29-sub-test extended
-  battery on Exp 2's selected ℓ\* (Exp 3, see above).
+  physical-time axes (§4.2 Exp 1 / §4.3 Exp 2), then the 29-sub-test
+  extended battery on Exp 2's selected ℓ\* (§4.4 Exp 3, see above), then
+  the multi-asset XOR combination with the 9/6 split (§4.5 Exp 4), and
+  finally the HKDF-SHA256 password generator (Ch.~5 Prototype). Data
+  source for each thesis figure / table is mapped in the per-experiment
+  sections above; raw output trees sit under
+  `data/processed/experiment{1..4}/` and `data/processed/prototype/`.

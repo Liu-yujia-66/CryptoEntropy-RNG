@@ -70,7 +70,7 @@ DEFAULT_N_VALUES = [2, 3, 4, 5]
 
 # ell grid: piling-up convergence (see src/calibration.py unit tests) means
 # real fused streams should hit a passing ell well before 400.
-ELL_MIN = 2
+ELL_MIN = 1
 ELL_MAX = 400
 ELL_STEP = 1
 
