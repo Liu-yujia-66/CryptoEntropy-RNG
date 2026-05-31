@@ -325,9 +325,15 @@ This section reviews the core concepts used in the later Methods chapter. All ra
 \begin{itemize}
 \item \textbf{salt} -- a random or pseudo-random byte string given to the Extract step. Standard HKDF usage allows the salt to be public; however, if the HKDF output itself must remain secret, the conditioning stage must also include some non-public deployment-secret material. That secret may be carried by the salt, or it may enter the system design as a separate secret input.
 \item \textbf{IKM (input keying material)} -- the entropy input to the Extract step, and the object sized by the min-entropy budget.
-\item \textbf{PRK (pseudo-random key)} -- the 32-byte intermediate output of $\mathtt{HKDF\text{-}Extract}(\text{salt}, \text{IKM})$.
+\item \textbf{PRK (pseudo-random key)} -- the 32-byte intermediate output:
+\[
+\text{PRK} = \mathtt{HKDF\text{-}Extract}(\text{salt}, \text{IKM}).
+\]
 \item \textbf{info} -- a context label given to the Expand step.
-\item \textbf{OKM (output keying material)} -- the variable-length byte output of $\mathtt{HKDF\text{-}Expand}(\text{PRK}, \text{info}, L)$.
+\item \textbf{OKM (output keying material)} -- the variable-length byte output:
+\[
+\text{OKM} = \mathtt{HKDF\text{-}Expand}(\text{PRK}, \text{info}, L).
+\]
 \end{itemize}
 
 The min-entropy budget follows a simplified subset of NIST SP800-90B~\citep{turan2018sp80090b}: this thesis uses the Most Common Value and Markov estimators, takes the smaller value, and does not claim to implement the full SP800-90B entropy validation flow. The estimator output is used in \cref{sec:output-metrics} and \cref{sec:exp4-min-entropy}.
@@ -649,11 +655,14 @@ Experiment~1 answers the negative side of RQ1. The simplest possible baseline is
 \begin{table}[!htbp]
   \caption{Experiment~1 baseline - per-asset summary.}
   \label{tab:exp1-summary}
-  \begin{center}
-    \begin{tabular}{lrrrcccccr}
+  \centering
+  \footnotesize
+  \setlength{\tabcolsep}{4.2pt}
+  \renewcommand{\arraystretch}{1.08}
+    \begin{tabular}{@{}lrrrcccccr@{}}
       \toprule
-      Asset & bps    & $1-H$               & $\rho_1$  & Monobit & Runs    & ApEn    & $D$     & $D(k{=}2)$ & $L_{\max}$ \\
-            & median & max                 & median    & rejects & rejects & rejects & rejects & rejects    & max \\
+      Asset & bps & $1-H$ & $\rho_1$ & Mono. & Runs & ApEn & $D$ & $D_2$ & $L_{\max}$ \\
+            & med. & max & med. & rej. & rej. & rej. & rej. & rej. & max \\
       \midrule
       BTC  & $10.68$ & $1.94 \times 10^{-3}$ & $+0.636$ & $15/15$ & $15/15$ & $15/15$ & $15/15$ & $15/15$ & $12{,}039$ \\
       ETH  & $9.56$  & $7.93 \times 10^{-3}$ & $+0.745$ & $13/15$ & $15/15$ & $15/15$ & $15/15$ & $15/15$ & $15{,}899$ \\
@@ -662,8 +671,8 @@ Experiment~1 answers the negative side of RQ1. The simplest possible baseline is
       SOL  & $1.74$  & $2.35 \times 10^{-6}$ & $+0.095$ & $4/15$  & $15/15$ & $15/15$ & $15/15$ & $15/15$ & $792$ \\
       \bottomrule
     \end{tabular}
-  \end{center}
-  {\footnotesize Each row aggregates 15 (asset, month) cells covering 2025-01 to 2026-03: the median bit emission rate (bps), the worst-case Shannon bias (largest $1 - H$), the median lag-1 autocorrelation, the number of months (out of fifteen) on which Monobit, Runs, ApEn, $D$ (adaptive $k$), and $D(k{=}2)$ reject at $\alpha = 0.01$, and the largest 0-run or 1-run length $L_{\max}$ observed across all 15 cells. Rows are sorted by bps median in descending order. The adaptive block length $k = \lfloor 0.5 \log_2 n \rfloor$ falls in $10$--$12$ on this sample. The per-(asset, month) distributions behind these summary statistics are shown in \cref{fig:exp1-distributions}.}
+  \par\smallskip
+  {\footnotesize Each row aggregates 15 (asset, month) cells covering 2025-01 to 2026-03: the median bit emission rate (bps), the worst-case Shannon bias (largest $1 - H$), the median lag-1 autocorrelation, the number of months (out of fifteen) on which Monobit, Runs, ApEn, $D$ (adaptive $k$), and $D_2 = D(k{=}2)$ reject at $\alpha = 0.01$, and the largest 0-run or 1-run length $L_{\max}$ observed across all 15 cells. Rows are sorted by bps median in descending order. The adaptive block length $k = \lfloor 0.5 \log_2 n \rfloor$ falls in $10$--$12$ on this sample. The per-(asset, month) distributions behind these summary statistics are shown in \cref{fig:exp1-distributions}.}
 \end{table}
 
 \begin{figure}[!htbp]
@@ -1683,6 +1692,14 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 %% =====================================================================
 \bibliographystyle{plainnat}
 \bibliography{references}
+
+\cleardoublepage
+\chapter*{AI Assistance Statement}
+\addcontentsline{toc}{chapter}{AI Assistance Statement}
+
+AI tools were used as support during the writing of this thesis. The support included finding and organising possible related literature, checking consistency between references and in-text citations, reviewing experiment scripts and thesis code, helping to identify possible narrative inconsistencies, unclear data definitions, and LaTeX layout issues, and assisting with translation and language polishing after the Chinese draft had already been written.
+
+AI did not independently produce the research design, experimental decisions, or conclusions of this thesis. All experiment design, code execution, data interpretation, thesis structure, and final wording were reviewed, revised, and confirmed by the author. AI outputs were used only as supporting material for writing and engineering checks.
 
 \end{document}
 
