@@ -30,7 +30,7 @@
 %% Figures, tables, floats, and links.
 \usepackage[section]{placeins}
 \usepackage{adjustbox}
-\usepackage{url}
+\usepackage{xurl}  % allow long URLs to break at any character (fixes stretched lines in the bibliography)
 \usepackage{booktabs}
 \usepackage{float}
 \usepackage{eso-pic}
@@ -45,6 +45,7 @@
 
 \hypersetup{
   colorlinks=true,
+  breaklinks=true,
   urlcolor=blue,
   linkcolor=black,
   citecolor=black,
@@ -80,10 +81,10 @@
 \usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
 \usepackage[
   paper=a4paper,
-  top=28mm,
-  bottom=28mm,
-  left=30mm,
-  right=30mm,
+  top=31mm,
+  bottom=31mm,
+  left=31mm,
+  right=31mm,
   marginparsep=5mm,
   marginparwidth=25mm
 ]{geometry}
@@ -119,9 +120,9 @@
     \AddToShipoutPictureFG*{%
       \AtPageUpperLeft{%
         \put(\LenToUnit{28mm},\LenToUnit{-62mm}){%
-          \includegraphics[width=4.8cm]{figures/uppsala_logo.png}%
+          \includesvg[inkscapelatex=false,width=4.8cm]{figures/uppsala_logo}%
         }%
-        \put(\LenToUnit{\dimexpr\paperwidth-70mm\relax},\LenToUnit{-42mm}){%
+        \put(\LenToUnit{\dimexpr\paperwidth-70mm\relax},\LenToUnit{-30mm}){%
           \parbox[t]{50mm}{%
             \raggedleft\sffamily
             \if\relax\detokenize\expandafter{\ThesisSerial}\relax\else
@@ -134,7 +135,7 @@
       }%
     }%
     \sffamily
-    \vspace*{6cm}
+    \vspace*{5.5cm}
     \begin{minipage}{0.9\textwidth}
       \raggedright
       {\fontsize{26}{31}\selectfont\ThesisTitle\par}
@@ -1404,7 +1405,9 @@ The contributions of this thesis can be grouped into two levels: method-level an
 
 \textbf{Application contribution.} \cref{cha:prototype} gives an end-to-end password generator prototype. It connects the Experiment~4 deployable streams to HKDF-SHA256 conditioning and 70-character rejection sampling. In the evaluation, all the market-derived cells pass the character-uniformity test and their Shannon entropy matches the ideal baselines (see \cref{tab:prototype-evaluation}). This is the application-level evidence that standard cryptographic conditioning can turn the deployable streams into usable passwords.
 
-Overall, the thesis shows that market-derived randomness is not usable in raw form, but it can become useful after aggregation, extended testing, multi-asset combination, min-entropy sizing, and cryptographic conditioning. The implementation code, experiment scripts, and processed outputs are available in the project repository: \url{https://github.com/Liu-yujia-66/CryptoEntropy-RNG}.
+Overall, the thesis shows that market-derived randomness is not usable in raw form, but it can become useful after aggregation, extended testing, multi-asset combination, min-entropy sizing, and cryptographic conditioning.
+
+The implementation code, experiment scripts, and processed outputs are available in the project repository: \url{https://github.com/Liu-yujia-66/CryptoEntropy-RNG}.
 
 %% =====================================================================
 %% Appendix
