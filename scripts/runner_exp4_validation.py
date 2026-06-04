@@ -1,6 +1,5 @@
 """
-Experiment 4 — validation runner (plan v3.2 §2.5 / §2.6, v3.3 subset
-selection).
+Experiment 4 — validation runner.
 
 For each fusion size n in {2, 3, 4, 5}:
 
@@ -127,13 +126,11 @@ def _select_best_subset_per_n(
         candidates = df[df["n"] == n].copy()
         if candidates.empty:
             raise KeyError(f"no subsets for n={n} in {summary_csv}")
-        # Drop rows where calibration did not pick an ell_star_n (None)
         candidates = candidates.dropna(subset=["ell_star_n"])
         if candidates.empty:
             raise KeyError(
                 f"no subsets for n={n} found an ell_star_n in calibration"
             )
-        # Pick max throughput row
         best = candidates.sort_values(
             "estimated_bits_per_month", ascending=False
         ).iloc[0]
@@ -183,24 +180,21 @@ def _evaluate_cell(
     batched per cell), compute four-state cell verdict + return per-offset
     detail + deployment stream.
 
-    Four-state verdict per sub-test (mirrors src/aggregate_exp3_battery.py):
+    Four-state verdict per sub-test:
         NOT_RUN  -- no offset produced a p-value (TestU01 length-skip OR
-                    every offset < MIN_BIT_COUNT). Does NOT enter the
-                    admissible denominator.
+                    every offset < MIN_BIT_COUNT). Excluded from denominator.
         INVALID  -- at least one offset ran, but every such offset is
-                    sanity-invalid for this (sub_test, bracket). Same:
-                    does NOT enter the admissible denominator.
+                    sanity-invalid for this (sub_test, bracket). Excluded too.
         PASS/FAIL — at least one sanity-valid offset; threshold over those.
 
-    Alphabit is batched per cell: a single run_alphabit_batch() call covers
-    every qualifying offset (one alphabit_driver subprocess per cell rather
-    than per offset). Slashes per-stream startup from ~ell_star_n times to 1.
+    Alphabit is batched per cell: one run_alphabit_batch() call (one
+    alphabit_driver subprocess per cell rather than per offset).
     """
     per_asset = [signs_cache[a] for a in subset]
     fused = build_fused_stream_from_signs(subset, month, per_asset)
 
-    # Build all offsets first; capture the witness stream for the Prototype
-    # and decide which offsets qualify for the battery.
+    # Build all offsets; capture the witness stream for the Prototype and
+    # decide which offsets qualify for the battery.
     all_offsets: list[tuple[int, np.ndarray]] = []
     witness_stream: np.ndarray | None = None
     for offset in range(ell_star_n):
@@ -210,7 +204,7 @@ def _evaluate_cell(
         all_offsets.append((offset, agg))
 
     # Batch Alphabit across all qualifying offsets — one driver subprocess
-    # per cell, not per offset. Internal keys "o{offset}" are tab/comma-free.
+    # per cell. Internal keys "o{offset}" are tab/comma-free.
     qualifying = {
         f"o{offset}": agg
         for offset, agg in all_offsets
@@ -218,10 +212,9 @@ def _evaluate_cell(
     }
     alphabit_batch = run_alphabit_batch(qualifying) if qualifying else {}
 
-    # Per-offset rows. Pre-fill NaN / False for every ALL_SUB_TESTS entry so
-    # the resulting DataFrame is column-complete even if TestU01 length-
-    # skipped a sub-test on every offset (otherwise per_offset_df[<col>]
-    # would KeyError below).
+    # Pre-fill NaN / False for every ALL_SUB_TESTS entry so the DataFrame is
+    # column-complete even if TestU01 length-skipped a sub-test on every
+    # offset (otherwise per_offset_df[<col>] would KeyError below).
     per_offset_rows: list[dict] = []
     for offset, agg in all_offsets:
         row: dict = {
@@ -283,9 +276,8 @@ def _evaluate_cell(
         verdict_row[f"{sub_test}_pass_rate"] = pass_rate
         verdict_row[f"{sub_test}_n_valid_offsets"] = n_valid
 
-    # Throughput — deployment uses the witness offset's stream as IKM, so a
-    # missing witness means the Prototype contract is broken. Fail loud here
-    # rather than silently fall back to a different summary statistic.
+    # Deployment uses the witness offset's stream as IKM, so a missing
+    # witness means the Prototype contract is broken. Fail loud here.
     if witness_stream is None:
         raise RuntimeError(
             f"n={n} subset={'-'.join(subset)} month={month}: "
@@ -383,15 +375,12 @@ def _write_per_n_outputs(
 ) -> dict:
     """Aggregate per-month results into per_month_verdict_matrix.csv +
     per_month_throughput.csv + subset.json. Return summary dict."""
-    # subset.json
     (n_dir / "subset.json").write_text(json.dumps(subset_meta, indent=2))
 
-    # per_month_verdict_matrix.csv
     rows: list[dict] = [cell["verdict_row"] for cell in cell_results.values()]
     verdict_df = pd.DataFrame(rows).sort_values("month")
     verdict_df.to_csv(n_dir / "per_month_verdict_matrix.csv", index=False)
 
-    # per_month_throughput.csv
     throughput_rows: list[dict] = []
     for month, cell in sorted(cell_results.items()):
         throughput_rows.append(
@@ -405,7 +394,6 @@ def _write_per_n_outputs(
     throughput_df = pd.DataFrame(throughput_rows)
     throughput_df.to_csv(n_dir / "per_month_throughput.csv", index=False)
 
-    # Per-n aggregate counts
     sub_test_pass_counts = {}
     for sub_test in ALL_SUB_TESTS:
         col = f"{sub_test}_verdict"
@@ -495,7 +483,6 @@ def main() -> int:
     output_root = Path(args.output_root)
     output_root.mkdir(parents=True, exist_ok=True)
 
-    # ---------------- subset selection ----------------
     subset_picks = _select_best_subset_per_n(summary_csv, n_values)
     sanity_matrix = _load_sanity_matrix(sanity_path)
     all_assets_needed = sorted(
@@ -507,7 +494,7 @@ def main() -> int:
         ell_meta, witness_meta = _load_calibration_for_subset(
             calib_root, pick["calibration_dir_name"]
         )
-        # Cross-check (defensive; summary CSV should already agree)
+        # Cross-check; summary CSV should already agree.
         if ell_meta.get("ell_star_n") != pick["ell_star_n"]:
             raise RuntimeError(
                 f"n={n}: summary CSV ell_star_n={pick['ell_star_n']} "
@@ -531,7 +518,6 @@ def main() -> int:
         pick["calibration_ell_meta"] = ell_meta
         pick["calibration_witness_meta"] = witness_meta
 
-    # ---------------- print header ----------------
     print("=== exp4 validation ===")
     print(f"n values        : {n_values}")
     print(f"validation months: {months[0]}..{months[-1]} ({len(months)} months)")
@@ -618,7 +604,6 @@ def main() -> int:
         print(f"  month elapsed: {time.time() - month_start:.1f}s")
     print()
 
-    # ---------------- per-n aggregation ----------------
     per_n_summary: dict[str, dict] = {}
     for n, pick in subset_picks.items():
         cell_results = per_n_cells[n]
@@ -637,7 +622,6 @@ def main() -> int:
         summary = _write_per_n_outputs(n, subset_meta, cell_results, n_dir)
         per_n_summary[str(n)] = summary
 
-    # ---------------- top-level summary ----------------
     summary_payload = {
         "n_values": n_values,
         "validation_months": months,
@@ -668,7 +652,6 @@ def main() -> int:
         json.dumps(summary_payload, indent=2)
     )
 
-    # ---------------- console summary table ----------------
     print()
     print("=== validation summary ===")
     header = (

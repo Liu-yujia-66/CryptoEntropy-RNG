@@ -3,7 +3,7 @@ from __future__ import annotations
 """
 Multi-asset XOR fusion at the 1-second sign-bit level (Experiment 4).
 
-Pipeline (matches plan v3.2 §2.3):
+Pipeline:
   1. Per asset, build a per-second close-price series (forward-filled empty
      seconds) using src.bars.prepare_month_bars.
   2. Per asset, compute the sign of consecutive deltas; preserve zero
@@ -22,10 +22,9 @@ join.
 
 Forward-fill convention follows src.bars (empty seconds inherit the
 previous close, producing a zero delta that drop-any-zero removes).
-Baseline survival is reported two ways: a naive 0.85^n heuristic
-(referenced in plan v3.2 §2.3 fallback thresholds) and an
+Baseline survival is reported two ways: a naive 0.85^n heuristic and an
 empirical-independent baseline computed from per-asset zero-delta rates,
-which is more accurate but loses the plan's fixed reference point.
+which is more accurate but loses the fixed reference point.
 """
 
 from dataclasses import dataclass, field
@@ -62,7 +61,7 @@ class FusedStream:
     ``fused_bits`` is the dense 1-D bit array after drop-any-zero, ready
     to feed the Exp 2 1-sec-bar all-offset framework as if it were a
     single-asset stream. Note that downstream "time" semantics are token
-    indices on this stream, not UTC seconds (plan v3.2 §2.3 second pass).
+    indices on this stream, not UTC seconds.
     """
 
     subset: tuple[str, ...]
@@ -73,7 +72,7 @@ class FusedStream:
     raw_seconds: int               # intersection length across the subset
     kept_seconds: int              # == fused_bits.size
     survival_rate: float           # kept_seconds / raw_seconds
-    naive_baseline: float                  # 0.85 ** n (plan v3.2 §2.3 reference)
+    naive_baseline: float                  # 0.85 ** n reference
     empirical_independent_baseline: float  # ∏ (1 - per_asset_zero_delta_rate)
     survival_vs_naive_ratio: float
     survival_vs_empirical_ratio: float
@@ -96,10 +95,9 @@ class FusedStream:
     #   (canonical order: a < b lexicographically).
     pairwise_mi_1bit: dict[tuple[str, str], float] = field(default_factory=dict)
     # ↑ Mutual information in bits on the same pair-of-binary streams.
-    #   Plan v3.2 §2.4 acceptance heuristic: I < 1e-3 bits/symbol means
-    #   "near-independent" inputs; the smoke-time per-(month, subset)
-    #   value here previews what the calibration-pool 5x5 matrix will
-    #   look like.
+    #   Acceptance heuristic: I < 1e-3 bits/symbol means "near-independent"
+    #   inputs; the smoke-time per-(month, subset) value here previews what
+    #   the calibration-pool 5x5 matrix will look like.
 
 
 def _file_path_for(asset: str, month_label: str, input_root: Path) -> Path:

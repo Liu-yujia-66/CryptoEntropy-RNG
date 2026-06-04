@@ -15,9 +15,7 @@ from scipy.special import gammaincc
 from scipy.stats import chi2
 
 
-# ---------------------------------------------------------------------------
 # Basic measures
-# ---------------------------------------------------------------------------
 
 def shannon_entropy_from_bits(bits: np.ndarray) -> float:
     """Shannon entropy (bits) of a binary sequence."""
@@ -69,9 +67,7 @@ def lag_autocorrelation(bits: np.ndarray, lag: int) -> float:
     return float(np.corrcoef(x, y)[0, 1])
 
 
-# ---------------------------------------------------------------------------
 # NIST-style tests
-# ---------------------------------------------------------------------------
 
 def monobit_test(bits: np.ndarray) -> tuple[float, float]:
     """NIST frequency (monobit) test. Returns (z_score, p_value)."""
@@ -142,9 +138,7 @@ def _pattern_counts(bits: np.ndarray, m: int) -> np.ndarray:
     return np.bincount(patterns, minlength=2**m).astype(float)
 
 
-# ---------------------------------------------------------------------------
 # Shannon entropy bias test (Paper Lemma 1, non-overlapping blocks)
-# ---------------------------------------------------------------------------
 
 def shannon_bias_test(
     bits: np.ndarray, block_length: int
@@ -190,9 +184,7 @@ def shannon_bias_test(
     return bias, entropy_hat, p_value
 
 
-# ---------------------------------------------------------------------------
 # Predictability test
-# ---------------------------------------------------------------------------
 
 def entropy_predictability_test(
     bits: np.ndarray, history_length: int = 1
@@ -292,9 +284,7 @@ def entropy_predictability_test(
     return mutual_information_bits, float(g_stat), float(p_value)
 
 
-# ---------------------------------------------------------------------------
 # Summary helper
-# ---------------------------------------------------------------------------
 
 def _adaptive_k(n: int) -> int:
     """

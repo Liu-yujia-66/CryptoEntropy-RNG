@@ -127,10 +127,9 @@ def process_asset(asset: str) -> list[dict[str, object]]:
         runs_z, runs_p = runs_test(bits)
 
         # Conditional-predictability battery: NIST Approximate Entropy plus the
-        # entropy-predictability test D from Shternshis & Marmi (2025) at the
-        # adaptive block length k = floor(0.5 log2 n) and at the fixed k = 2
-        # ("pairs of signs") diagnostic. Reported on the ell=1 baseline so the
-        # ell=1 -> ell* arc uses the same battery as Experiment 2's gate.
+        # entropy-predictability test D at the adaptive block length
+        # k = floor(0.5 log2 n) and at the fixed k = 2 ("pairs of signs")
+        # diagnostic. Same battery as Experiment 2's gate.
         k_adaptive = _adaptive_k(int(bits.size))
         approx_entropy, approx_entropy_p = approximate_entropy_test(bits)
         _, _, predictability_p = entropy_predictability_test(

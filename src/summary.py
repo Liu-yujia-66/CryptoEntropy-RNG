@@ -3,32 +3,20 @@ from __future__ import annotations
 """
 Shared summary helpers across Experiments 2/3/4.
 
-Naming convention (v3.1 third pass): experiment-specific functions are prefixed
+Naming convention: experiment-specific functions are prefixed
 `build_exp{N}_*` / `format_exp{N}_*`; generic helpers (e.g.
 `period_label_from_months`) carry no prefix.
-
-This module was renamed from `exp2_summary.py` to accommodate Exp 3 / Exp 4
-summary functions without spawning per-experiment files. Previous callers used
-`build_combined_row` / `format_selection_table`; those names are now
-`build_exp2_combined_row` / `format_exp2_selection_table`.
 
 Functions:
 - `build_exp2_combined_row`: assemble the per-(asset, ell, offset) summary row
   consumed by `summarize_bits_full`. Used by both transaction-time and
   1s-bar runners; varies only in `timestamp_unit` and `analysis_scope`.
 - `period_label_from_months`: format a list of "YYYY-MM" strings as a
-  compact window label ("2025.03", "2025.01-03", "2025"). Currently used
-  only by `format_exp2_selection_table`; Exp 3 / Exp 4 helpers may reuse
-  if they need similar text labels. (Note: distinct from
+  compact window label ("2025.03", "2025.01-03", "2025"). Distinct from
   `utils.period_dir_name`, which returns directory-style names like
-  "1month-2025.01" for filesystem paths.)
+  "1month-2025.01" for filesystem paths.
 - `format_exp2_selection_table`: render the cross-period selected-ell table
   (Window x Asset) used in `selected_ell_by_window.txt`.
-
-Exp 3 / Exp 4 summary functions (to be added):
-- `build_exp3_per_asset_summary`
-- `build_exp4_per_month_verdict_row`
-- ...
 """
 
 from pathlib import Path
@@ -95,11 +83,8 @@ def build_exp2_combined_row(
 def period_label_from_months(months: list[str]) -> str:
     """Format a month list as a window label.
 
-    Currently called only by `format_exp2_selection_table` (this module).
-    Public-named without `_` prefix so Exp 3 / Exp 4 helpers can reuse if
-    they need similar human-readable labels in text reports. Distinct from
-    `utils.period_dir_name`, which returns directory-style "1month-YYYY.MM"
-    strings used by Exp 2 runners for filesystem paths.
+    Distinct from `utils.period_dir_name`, which returns directory-style
+    "1month-YYYY.MM" strings used for filesystem paths.
 
     - 1 month  -> "YYYY.MM"
     - 12 months in same year -> "YYYY"

@@ -414,7 +414,7 @@ def main() -> int:
         print(f"  month elapsed: {time.time() - month_start:.1f}s")
     print()
 
-    # ---- per-subset P80 + witness + write outputs ----
+    # per-subset P80 + witness + write outputs
     witness_signs_cache = None
     summary_rows: list[dict] = []
 
@@ -544,7 +544,7 @@ def main() -> int:
         json.dumps(summary_meta, indent=2)
     )
 
-    # ---- print top-line summary table ----
+    # print top-line summary table
     print()
     print(f"=== all-subsets calibration summary ({n_subsets} subsets) ===")
     print(

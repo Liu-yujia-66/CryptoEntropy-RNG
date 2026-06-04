@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 """
-Thesis figures for Experiment 2 (§4.3).
+Thesis figures for Experiment 2.
 
-Following the supervisor conversation (L293) and the layout used by Onofri
-et al. (2025) [paper 7], each figure is a "small-multiples" grid:
+Each figure is a "small-multiples" grid:
 
     rows = assets, cols = months in the quarter.
 
@@ -50,7 +49,7 @@ import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.offsetbox import AnchoredOffsetbox, VPacker, TextArea
 
-from src.utils import ASSET_COLORS  # kept for Fig 4.4 (single-test relaxed criterion)
+from src.utils import ASSET_COLORS
 
 # (D-colour, Monobit-colour) pairs per column for Fig 4.2 / 4.3 / 4.5.
 # Each month column uses its own contrasting pair; both lines are solid.
@@ -61,10 +60,6 @@ COLUMN_TEST_COLOR_PAIRS = [
     ("#7b1fa2", "#fbc02d"),  # col 2  — deep purple / amber
     ("#17becf", "#bcbd22"),  # col 3  — cyan       / olive   (fallback)
 ]
-
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
 
 ALPHA = 0.01
 NEG_LOG_ALPHA = -np.log10(ALPHA)
@@ -97,11 +92,6 @@ RUN_RELAXED = "relaxed-all-offset-per-month(3,0.03)-(10,2000,2)"
 RUN_1SBARS = "all-offset-per-month-1sbars(10,600,1)"
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-
-
 def _month_dir(month: str) -> str:
     """Convert YYYY-MM (CLI form) to 1month-YYYY.MM (directory form)."""
     if "." in month:
@@ -120,11 +110,6 @@ def _load_month(
 
 def _safe_neg_log10(p: np.ndarray) -> np.ndarray:
     return -np.log10(np.clip(p, 1e-300, 1.0))
-
-
-# ---------------------------------------------------------------------------
-# Curve drawing — one curve per (asset, month, test); no asset overlay
-# ---------------------------------------------------------------------------
 
 
 def _smooth_subsample(
@@ -179,9 +164,7 @@ def _draw_two_tests_cell(
     ax.plot(xm, y_mono, color=mono_color, linewidth=1.4, linestyle="-", label="Monobit")
 
 
-# ---------------------------------------------------------------------------
-# Common 5×N grid scaffolding (rows = assets, cols = months in a quarter)
-# ---------------------------------------------------------------------------
+# Common 5×N grid scaffolding (rows = assets, cols = months in a quarter).
 
 
 def _setup_grid(months: list[str], figsize=None):
@@ -205,11 +188,6 @@ def _label_grid(axes, months: list[str], ylabel_left: str, xlabel: str) -> None:
         )
     for col in range(axes.shape[1]):
         axes[4, col].set_xlabel(xlabel, fontsize=10)
-
-
-# ---------------------------------------------------------------------------
-# Figure 4.2 — Single offset (5×N small-multiples)
-# ---------------------------------------------------------------------------
 
 
 def plot_fig_4_2(
@@ -262,11 +240,6 @@ def plot_fig_4_2(
     print(f"[saved] {output_path}")
 
 
-# ---------------------------------------------------------------------------
-# Figures 4.3 / 4.5 — Pass-rate (2×2)
-# ---------------------------------------------------------------------------
-
-
 def plot_pass_rate_figure(
     processed_root: Path,
     run_dir: str,
@@ -317,11 +290,6 @@ def plot_pass_rate_figure(
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
     print(f"[saved] {output_path}")
-
-
-# ---------------------------------------------------------------------------
-# Figure 4.4 — Relaxed (2×N combined)
-# ---------------------------------------------------------------------------
 
 
 def _draw_relaxed_panel(
@@ -503,11 +471,6 @@ def plot_fig_4_4_combined(
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
     print(f"[saved] {output_path}")
-
-
-# ---------------------------------------------------------------------------
-# Driver
-# ---------------------------------------------------------------------------
 
 
 def main() -> None:

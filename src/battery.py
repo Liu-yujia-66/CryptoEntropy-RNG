@@ -1,42 +1,11 @@
 from __future__ import annotations
 
-# Experiment 3 / Experiment 4 共用的 test battery 编排层（plan §0.3）。
-#
-# 把三个 peer battery 合在一起、加上 sanity 长度档 schema：
-#
-#   1. `src.stats` 的 5 个 sub-test：D_adaptive, D_k2, Monobit, Runs, ApEn
-#      （保 Exp 1 / Exp 2 已发表数字一致）
-#   2. `src.nist_extended` 包装的 nistrng (Pasqualini / SP800-22 R1A Python
-#      reimpl) 7 个 sub-test：BlockFrequency, CumSum_forward/backward,
-#      LongestRun, DFT, Serial_m / m_minus_1
-#   3. `src.testu01_alphabit` 包装的 TestU01 1.2.3 Alphabit C 库,最多 17 个
-#      sub-test（TestU01 在短流上自己 skip 长-L 子项）
-#
-# 这三个是 **平级 batteries**——本文件刻意是 battery-neutral 的编排+schema，
-# 不偏向其中任一来源。
-#
-# 主入口：`full_battery(bits, sanity_matrix=None, alphabit_pvals=None)`
-#   - 输入：单条 1D `bits` 数组（一个 offset 的流，或一条融合流）
-#   - 输出：dict[`sub_test_name` → (`p_value`, `sanity_valid`)]
-#   - **不做** offset 聚合 / ≥80% pass-rate 判定（交给外层 runner）
-#
-# Schema：
-#   - `SANITY_BRACKETS` / `BELOW_MIN_BRACKET` / `bracket_for_length()`
-#     定义了 sanity validity matrix 的 (sub_test, bracket_label) 索引粒度，
-#     是 sanity check runner / 主 runner / aggregator 三方共用的数据契约
-#   - `ALL_SUB_TESTS` 是三个 battery 的 sub-test 名清单并集（universe）
-#
-# 冒烟测试（本文件底部内置 `_smoke_test`）：
-#
-#     python src/battery.py
-#
-# ~3-5 秒跑完，验证 4 件事：(1) bracket_for_length 边界、(2) 12 固定 sub-test
-# 在 10K bits 上结构 / p 值合理性、(3) 100K bit nistrng CumSum int64 cast 回归
-# （用 RuntimeWarning → error 升级强制断言）、(4) sanity_matrix join 行为。
-# 全 PASS 退 0，任何 FAIL 退 1，可直接进 CI。
+# Experiment 3 / 4 共用的 test battery 编排层：把三个平级 battery（src.stats 5 个、
+# nistrng 7 个、TestU01 Alphabit 最多 17 个）合并，加上 sanity 长度档 schema。
+# 主入口 full_battery(bits, ...) 对单条流返回 {sub_test: (p_value, sanity_valid)}，
+# 不做 offset 聚合或 pass-rate 判定（交给外层 runner）。
+# 冒烟测试：python src/battery.py
 
-# 把项目根加进 sys.path，这样本文件作为 script 跑（`python src/battery.py`
-# 跑底部冒烟测试）时 `from src.xxx import` 才解析得到。被 import 时无副作用。
 import sys
 from pathlib import Path
 
@@ -62,10 +31,7 @@ from src.nist_extended import (
 )
 from src.testu01_alphabit import ALPHABIT_SUB_TESTS, run_alphabit
 
-# ---------------------------------------------------------------------------
 # Sanity 长度档（schema）
-# ---------------------------------------------------------------------------
-
 # (下界 bit 数, 标签)。bracket_for_length() 返回标签。
 SANITY_BRACKETS: list[tuple[int, str]] = [
     (5_000, "5K"),
@@ -76,15 +42,14 @@ SANITY_BRACKETS: list[tuple[int, str]] = [
     # 200K 对应 Exp 4 n=3 BTC+ETH+SOL fused stream 的月长上沿
     # （per_month_throughput.csv 实测 168K–240K bits/月）。
     (200_000, "200K"),
-    # 500K 跟 Paper 7 (Onofri 2025) Table 3 对齐，但当前 Exp 3/4 单 cell 都不到
-    # 500K —— bracket_for_length() 永不返回 "500K"，跑这一档只是给一行没人读
-    # 的 sanity 数据多花几十分钟。等 Future Work 真有 ≥500K 的多月 concat /
-    # 更大 fusion size 流时再取消注释（记得同步 _smoke_test 的 boundary_cases）。
+    # 500K 档当前 Exp 3/4 单 cell 都到不了，bracket_for_length() 永不返回
+    # "500K"，跑它只是浪费几十分钟。等真有 ≥500K 的多月 concat / 更大 fusion
+    # 流时再取消注释（记得同步 _smoke_test 的 boundary_cases）。
     # (500_000, "500K"),
 ]
 
-# 当 len(bits) < 5_000 时的兜底标签。按 plan §1.4.1 cell-length inspection 实测，
-# 没有任何 Exp 2 cell 落到 5,009 bits 以下，所以这条不期望触发；保留作防御。
+# 当 len(bits) < 5_000 时的兜底标签。实测没有 cell 落到 5,009 bits 以下，
+# 所以这条不期望触发；保留作防御。
 BELOW_MIN_BRACKET = "below_5K"
 
 
@@ -92,7 +57,7 @@ def bracket_for_length(n: int) -> str:
     """把单 offset 的 bit 数映射到 sanity 长度档标签。
 
     返回 SANITY_BRACKETS 中的标签之一；若 n < 第一档下界，返回
-    `BELOW_MIN_BRACKET`（兜底，按 §1.4.1 Exp 2 cell 不会触发）。
+    `BELOW_MIN_BRACKET`（兜底，实测 cell 不会触发）。
     """
     if n < SANITY_BRACKETS[0][0]:
         return BELOW_MIN_BRACKET
@@ -105,10 +70,7 @@ def bracket_for_length(n: int) -> str:
     return label
 
 
-# ---------------------------------------------------------------------------
 # Sub-test 名清单（universe）
-# ---------------------------------------------------------------------------
-
 # CSV `sub_test` 列：5 个走 src/stats.py 的 sub-test 名字。
 SUB_TESTS_FROM_STATS: list[str] = [
     "D_adaptive",
@@ -127,9 +89,7 @@ ALL_SUB_TESTS: list[str] = (
 )
 
 
-# ---------------------------------------------------------------------------
 # 公开 coordinator
-# ---------------------------------------------------------------------------
 
 
 def full_battery(
@@ -139,7 +99,7 @@ def full_battery(
 ) -> dict[str, tuple[float, bool | None]]:
     """对单条 bit 流跑完整 battery，返回 p 值 + sanity 标签。
 
-    battery 三个来源（plan §1.3 / v3.4）：
+    battery 三个来源：
       - 5 个走 src/stats.py：D_adaptive, D_k2, Monobit, Runs, ApEn
       - 7 个走 nistrng：BlockFrequency, CumSum_forward/backward, LongestRun,
         DFT, Serial_m/m_minus_1
@@ -172,9 +132,7 @@ def full_battery(
     """
     n = bits.size
 
-    # ------------------------------------------------------------------
-    # 5 个旧 sub-test 走 src/stats.py（保 Exp 1 / Exp 2 数字一致）
-    # ------------------------------------------------------------------
+    # 5 个旧 sub-test 走 src/stats.py
     k_adaptive = _adaptive_k(n)
     _, _, p_d_adaptive = entropy_predictability_test(
         bits, history_length=k_adaptive - 1
@@ -192,29 +150,23 @@ def full_battery(
         ("ApEn", float(p_apen)),
     ]
 
-    # ------------------------------------------------------------------
     # 5 个新 sub-test 走 nistrng（CumSum + Serial 各拆 2，总 7 行）。
     # int64 cast 一次复用。
-    # ------------------------------------------------------------------
     bits_i64 = ensure_int64(bits)
     for csv_name, nistrng_key in NISTRNG_CALLS:
         score = run_nistrng(nistrng_key, bits_i64)
         rows.extend(normalize_result(csv_name, score))
 
-    # ------------------------------------------------------------------
     # TestU01 Alphabit（最多 17 个 sub-test）。结果数随流长变——TestU01 自己
     # 在短流上跳长-L 子项，11–17 个都算正常。若 caller 传了 alphabit_pvals
     # （外层 runner 对整个 cell 批量算好的，高效路径），直接用；传 None 则
     # 对这单条流调一次 driver；传 {} 则跳过 Alphabit。
-    # ------------------------------------------------------------------
     if alphabit_pvals is None:
         alphabit_pvals = run_alphabit(bits)
     for name, p in alphabit_pvals.items():
         rows.append((name, float(p)))
 
-    # ------------------------------------------------------------------
     # Sanity-valid join（可选，看外层 runner 是否传 sanity_matrix）
-    # ------------------------------------------------------------------
     bracket = bracket_for_length(n)
     result: dict[str, tuple[float, bool | None]] = {}
     for sub_test, p in rows:
@@ -229,9 +181,7 @@ def full_battery(
     return result
 
 
-# ---------------------------------------------------------------------------
 # 冒烟测试（跑法：`python src/battery.py`）
-# ---------------------------------------------------------------------------
 
 
 def _smoke_test() -> int:

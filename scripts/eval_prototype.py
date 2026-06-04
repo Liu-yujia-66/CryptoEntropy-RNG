@@ -1,19 +1,10 @@
-"""Prototype evaluation -- CryptoEntropy-RNG password generator (plan v3.4 Section 3.3).
+"""Prototype evaluation -- CryptoEntropy-RNG password generator.
 
-Computes the data summary for the password demo and writes:
-  - prototype_summary.txt : numbers only (regenerated every run)
-  - per_cell_eval.csv     : per-cell chi-square and entropy
-  - summary.json          : machine-readable group summary
-  - two figures           : position heatmap, group comparison figure
-
-Metrics (master's-scope, descriptive -- no formal hypothesis test):
-  A. Pooled chi-square goodness-of-fit to a uniform 70-char distribution,
-     per (group, month) cell (16 positions pooled -> 1,600 chars).
-  B. Shannon entropy per cell over the same 1,600 characters.
-
-Interpretation, assumptions and the security model are NOT emitted by this
-script -- they live in the hand-maintained companion document
-data/processed/prototype/evaluation/prototype_analysis.txt.
+Computes the descriptive data summary for the password demo (pooled chi-square
+goodness-of-fit to a uniform 70-char distribution and Shannon entropy, per
+(group, month) cell) and writes prototype_summary.txt, per_cell_eval.csv,
+summary.json, and two figures. Interpretation and the security model live in
+the hand-maintained data/processed/prototype/evaluation/prototype_analysis.txt.
 
 Usage:
     python scripts/eval_prototype.py
@@ -93,9 +84,7 @@ def load_sample_passwords(group: str, month: str, n: int = 8) -> list[str]:
     return load_passwords(pw_path)[:n]
 
 
-# --------------------------------------------------------------------------
 # Cell discovery and loading
-# --------------------------------------------------------------------------
 def discover_cells() -> list[dict]:
     """Return the 30 evaluation cells: 18 market + 6 B1 + 6 B2."""
     cells = []
@@ -120,9 +109,7 @@ def load_passwords(path: Path) -> list[str]:
     return [ln.strip() for ln in path.read_text().splitlines() if ln.strip()]
 
 
-# --------------------------------------------------------------------------
 # Metrics
-# --------------------------------------------------------------------------
 def char_counts(passwords: list[str]) -> np.ndarray:
     """Pooled count of each of the 70 charset characters over all positions."""
     counts = np.zeros(proto.CHARSET_SIZE, dtype=np.int64)
@@ -156,9 +143,7 @@ def position_frequency(passwords: list[str], length: int) -> np.ndarray:
     return mat
 
 
-# --------------------------------------------------------------------------
 # Figures
-# --------------------------------------------------------------------------
 def figure_position_heatmap(cells: list[dict]) -> Path | None:
     """70 x 16 position-frequency heatmap for the selected display cell."""
     match = [c for c in cells
@@ -227,9 +212,7 @@ def figure_side_by_side(rows: list[dict]) -> Path:
     return out
 
 
-# --------------------------------------------------------------------------
 # Main
-# --------------------------------------------------------------------------
 def main() -> None:
     EVAL_DIR.mkdir(parents=True, exist_ok=True)
     FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -259,7 +242,7 @@ def main() -> None:
             "shannon_bias": round(MAX_ENTROPY - entropy, 6),
         })
 
-    # ---- per-cell CSV -------------------------------------------------------
+    # per-cell CSV
     csv_path = EVAL_DIR / "per_cell_eval.csv"
     with open(csv_path, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=list(rows[0].keys()))
@@ -268,7 +251,7 @@ def main() -> None:
                                              r["month"])):
             writer.writerow(r)
 
-    # ---- 5-group summary ----------------------------------------------------
+    # 5-group summary
     order = GROUP_ORDER
     labels = {"n2": "market n=2", "n3": "market n=3", "n5": "market n=5",
               "b1": "B1 ideal-password", "b2": "B2 ideal-IKM"}
@@ -293,7 +276,7 @@ def main() -> None:
         json.dump({"alpha": ALPHA, "max_entropy": MAX_ENTROPY,
                    "groups": summary}, fh, indent=2)
 
-    # ---- precompute the figures used by the data summary -------------------
+    # precompute the figures used by the data summary
     all_pass = sum(s["chi2_pass"] for s in summary.values())
     all_cells = sum(s["cells"] for s in summary.values())
     ent_lo = min(s["entropy_min"] for s in summary.values())
@@ -329,7 +312,7 @@ def main() -> None:
     else:
         flist, fail_tag = "none", ""
 
-    # ---- data summary (numbers only; interpretation -> prototype_analysis.txt)
+    # data summary (numbers only; interpretation -> prototype_analysis.txt)
     lines = []
     lines.append("Prototype evaluation -- data summary")
     lines.append("=" * 78)
@@ -404,7 +387,7 @@ def main() -> None:
     summary_txt = "\n".join(lines) + "\n"
     (EVAL_DIR / "prototype_summary.txt").write_text(summary_txt)
 
-    # ---- figures ------------------------------------------------------------
+    # figures
     heatmap = figure_position_heatmap(cells)
     sidebyside = figure_side_by_side(rows)
 

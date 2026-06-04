@@ -103,9 +103,9 @@ def parse_month_label(path: Path) -> str:
       - monthly:  '<ASSET>-aggTrades-YYYY-MM.csv'    -> 'YYYY-MM'
       - daily:    '<ASSET>-aggTrades-YYYY-MM-DD.csv' -> 'YYYY-MM-DD'
 
-    The earlier hardcoded `path.stem.split('-')[-3:]` accidentally absorbed the
-    'aggTrades' segment on monthly archives (producing 'aggTrades-YYYY-MM'),
-    which leaked into selected_ell_by_window.txt headers.
+    Gotcha: a naive `path.stem.split('-')[-3:]` absorbs the 'aggTrades'
+    segment on monthly archives (producing 'aggTrades-YYYY-MM'), so the
+    part-count branch below is required.
     """
     parts = path.stem.split("-")
     if len(parts) == 4:

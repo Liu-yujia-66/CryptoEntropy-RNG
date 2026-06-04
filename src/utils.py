@@ -8,10 +8,7 @@ import subprocess
 from pathlib import Path
 
 
-# ---------------------------------------------------------------------------
 # Cross-cutting constants (used by both runners and plot scripts)
-# ---------------------------------------------------------------------------
-
 ASSET_ORDER = ["BNBUSDT", "BTCUSDT", "DOGEUSDT", "ETHUSDT", "SOLUSDT"]
 
 ASSET_COLORS = {

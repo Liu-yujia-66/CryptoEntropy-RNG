@@ -69,7 +69,6 @@ def write_summary(val_dir: Path | str = DEFAULT_VAL_DIR) -> Path:
          f"NOT_RUN if the +Alphabit sanity matrix excludes that (ell, sub_test) cell.")
     push("")
 
-    # ---- pick / throughput table ----
     push("--- per-n picks and median throughput ---")
     push(f"  {'n':>2}  {'subset':<22}  {'ell*':>4}  {'witness':>7}  "
          f"{'out_bits/mo':>12}  {'sec/256':>9}  {'hr/256':>7}")
@@ -85,7 +84,6 @@ def write_summary(val_dir: Path | str = DEFAULT_VAL_DIR) -> Path:
         )
     push("")
 
-    # ---- per-n sub-test verdict counts ----
     for n_str in (str(n) for n in n_values):
         s = summary["per_n_summary"][n_str]
         push(f"--- n = {s['n']}  subset = {_fmt_subset(s['subset'])}  "
@@ -112,7 +110,6 @@ def write_summary(val_dir: Path | str = DEFAULT_VAL_DIR) -> Path:
         push(f"  -> {n_with_any_fail}/{len(sub_tests)} sub-tests FAIL at least once across the {len(months)} months.")
         push("")
 
-    # ---- per-month overall pass count ----
     push("--- per-month overall pass count (sub-tests that PASS that month, out of those that ran) ---")
     push(f"  {'n':>2}  {'subset':<22}  " + "  ".join(f"{m:>9}" for m in months))
     push("  " + "-" * (28 + 11 * len(months)))

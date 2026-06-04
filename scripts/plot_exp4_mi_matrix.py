@@ -1,18 +1,10 @@
 """
 Experiment 4 — pairwise MI / Pearson heatmap.
 
-Reads ``mi_pool_matrix.csv`` and ``rho_pool_matrix.csv`` produced by
-``scripts/runner_exp4_mi_matrix.py`` and produces a vertically stacked
-heatmap suitable for thesis §4.5:
-
-  - Top panel:    pairwise 1-bit mutual information (bits)
-  - Bottom panel: pairwise Pearson correlation ρ
-  - Cells annotated with the numeric value
-  - Diagonal masked to light grey
-  - Asset rows / columns reordered by row-mean MI ascending, so the
-    cleanest pair sits at top-left and the most coupled pair at
-    bottom-right (visual reading aid; raw CSV preserves alphabetical
-    order)
+Reads mi_pool_matrix.csv and rho_pool_matrix.csv from
+scripts/runner_exp4_mi_matrix.py and draws a vertically stacked heatmap
+(top: 1-bit mutual information; bottom: Pearson rho), with rows/cols reordered
+by ascending row-mean MI for readability (raw CSV stays alphabetical).
 
 Run from the project root after the matrix runner has finished:
     python scripts/plot_exp4_mi_matrix.py
@@ -38,9 +30,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap as _LSC
 
 INK = "#16324f"
-# Monochrome "ink" colormap (no red/green): faint -> deep navy.
-# Saturated blue (no red/green): light blue -> vivid blue -> deep navy;
-# the vivid mid-stop stops the mid-range washing out to grey.
+# Monochrome "ink" colormap (no red/green): light blue -> vivid blue ->
+# deep navy; the vivid mid-stop stops the mid-range washing out to grey.
 INK_CMAP = _LSC.from_list("ink", ["#e8f1fa", "#4292c6", "#08306b"])
 
 DISPLAY_NAMES = {
@@ -54,7 +45,7 @@ DISPLAY_NAMES = {
 DEFAULT_INPUT_DIR = Path("data/processed/experiment4/mi")
 DEFAULT_OUTPUT_PATH = DEFAULT_INPUT_DIR / "figures" / "exp4_mi_matrix.png"
 
-# Plan v3.2 §2.4 threshold (kept here only to label the colour bar).
+# Near-independent threshold (kept here only to label the colour bar).
 NEAR_INDEPENDENT_THRESHOLD_BITS = 1e-3
 
 

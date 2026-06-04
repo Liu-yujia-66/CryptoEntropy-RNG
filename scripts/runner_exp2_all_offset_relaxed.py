@@ -3,11 +3,11 @@ from __future__ import annotations
 """
 Experiment 2 all-offset runner — relaxed (heuristic) gate.
 
-Plan A from advisor (2026-04). Accepts an aggregation level ell when at least
+Accepts an aggregation level ell when at least
     max(RELAXED_MIN_PASS_ABSOLUTE, ceil(RELAXED_MIN_PASS_FRACTION * ell))
 offsets simultaneously pass Predictability (adaptive k) and Monobit at an
 uncorrected alpha. This is a heuristic supplementary analysis, NOT a formal
-multiple-testing correction. See `Exp2 Plan A - Relaxed Gate.md`.
+multiple-testing correction.
 
 Double early termination:
   - Within (asset, ell): break the offset loop as soon as num_pass >= threshold.
@@ -85,7 +85,6 @@ AGG_START = 10
 AGG_STOP = 2000
 AGG_STEP = 2
 
-# per - month
 ASSET_AGG_CONFIG: dict[str, tuple[int, int, int]] = {
     "ETHUSDT": (200, AGG_STOP, AGG_STEP),
     "BTCUSDT": (700, AGG_STOP, AGG_STEP),

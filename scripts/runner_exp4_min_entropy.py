@@ -1,26 +1,13 @@
 """
 Experiment 4 — min-entropy assessment of the validation fused streams.
 
-Reads the 24 deployment streams written by runner_exp4_validation.py
-(validation/n{N}/{month}/fused_stream.bin, one witness-offset stream
-per (n, validation month)) and runs the NIST SP 800-90B two-estimator
-subset from src.min_entropy: Most Common Value (Sec 6.3.1) and Markov
-(Sec 6.3.3). Per-bit min-entropy H_inf = min(MCV, Markov).
-
-Why this matters: HKDF-Extract produces a key indistinguishable from
-uniform at a security level equal to the IKM min-entropy, NOT at a
-level implied by statistical-test pass rates. A fused stream can pass
-the +Runs gate yet carry less than 1 bit of min-entropy per bit; this
-runner quantifies that gap and derives the IKM byte length the
-Prototype needs so a 256-bit-strength password is achievable.
-
-Outputs land under data/processed/experiment4/min_entropy/:
-
-  min_entropy_per_cell.csv   one row per (n, month): H_inf MCV / Markov
-                             / min, fused-stream length, derived IKM
-                             bytes for 256-bit security
-  min_entropy_summary.json   per-n median H_inf + recommended IKM
-                             length + the binding estimator
+Reads the witness-offset streams from runner_exp4_validation.py and runs the
+src.min_entropy two-estimator subset (MCV + Markov), reporting per-bit
+H_inf = min(MCV, Markov). This matters because HKDF-Extract's security level
+equals the IKM min-entropy, not the statistical-test pass rate — a stream can
+pass the +Runs gate yet carry <1 bit/bit. The runner quantifies that gap and
+derives the IKM byte length the Prototype needs for 256-bit strength. Outputs:
+data/processed/experiment4/min_entropy/ (per-cell CSV + per-n summary JSON).
 
 Run from the project root after runner_exp4_validation.py:
     python scripts/runner_exp4_min_entropy.py
@@ -53,7 +40,7 @@ def _parse_csv_list(value: str) -> list[str]:
 def _load_fused_stream(path: Path) -> np.ndarray:
     """Load a fused_stream.bin written via numpy uint8 .tobytes()."""
     bits = np.frombuffer(path.read_bytes(), dtype=np.uint8)
-    # Defensive: the file should hold only {0, 1}.
+    # The file should hold only {0, 1}.
     if bits.size and bits.max() > 1:
         raise ValueError(
             f"{path}: contains values > 1 (max={bits.max()}); "
@@ -153,7 +140,6 @@ def main() -> int:
     per_cell_path = output_root / "min_entropy_per_cell.csv"
     per_cell.to_csv(per_cell_path, index=False)
 
-    # ---- per-n summary ----
     per_n_summary: dict[str, dict] = {}
     for n in n_values:
         sub = per_cell[per_cell["n"] == n]
@@ -194,7 +180,6 @@ def main() -> int:
     summary_out = output_root / "min_entropy_summary.json"
     summary_out.write_text(json.dumps(payload, indent=2))
 
-    # ---- console summary ----
     print()
     print("=== per-n summary ===")
     print(

@@ -5,16 +5,16 @@ Experiment 3 main runner: for each gate in GATES, runs N cell × ℓ* offset
 × up-to-29 sub-test battery (12 fixed: 5 stats.py + 7 nistrng; plus up to
 17 TestU01 Alphabit — TestU01 itself skips its longer-block sub-tests on
 short streams, so per-offset output is 23–29 rows depending on bit count).
-Cell count N depends on the gate (plan §1.1 main result uses "runs" →
-62 cells). Default `GATES = ["base", "runs"]` runs both pipelines back to
-back; each is a self-contained battery → aggregate → plot triple.
+Cell count N depends on the gate (the "runs" main result uses 62 cells).
+Default `GATES = ["base", "runs"]` runs both pipelines back to back; each is
+a self-contained battery → aggregate → plot triple.
 
 Reads:
 - Exp 2 1sbar gate output: `all_assets_summary_exp2_k_acceptance.csv` per
   month. Selects the smallest ℓ where the gate column (chosen by the
   current gate) is True per (asset, month). With gate="runs" this
-  reproduces the 62-cell sample in plan §1.4.1 (BTC 15, ETH 8, BNB 14,
-  SOL 12, DOGE 13 — 13 cells excluded since their +Runs gate did not pass).
+  reproduces a 62-cell sample (BTC 15, ETH 8, BNB 14, SOL 12, DOGE 13 —
+  13 cells excluded since their +Runs gate did not pass).
 - Sanity validity matrix at
   `data/processed/experiment3/sanity_check/sanity_validity_matrix-k{K}.csv`
   produced by `scripts/runner_exp3_sanity_check.py`.
@@ -36,7 +36,7 @@ Path layout (per-gate subdir, one such tree per entry in GATES):
 
     data/processed/experiment3/{gate}-gate/
         per_cell_pvalues.csv      <- this runner writes (long-format,
-                                     ~55K–90K rows, plan §1.6 schema)
+                                     ~55K–90K rows)
         per_cell_verdict.csv      <- aggregate writes (chained)
         per_asset_summary.csv     <- aggregate writes (chained)
         figures/
@@ -137,7 +137,7 @@ CHECKPOINT_INTERVAL = 5  # write CSV every N completed cells
 
 # Exp 2 gates selecting the (asset, month, ℓ) sample to feed into Exp 3.
 # - "base": predictability + monobit            (loosest, most cells)
-# - "runs": predictability + monobit + runs     (plan §1.1 default, 62/75)
+# - "runs": predictability + monobit + runs     (default, 62/75)
 # - "apen": predictability + monobit + runs + apen  (strictest, fewest)
 # Each gate in GATES is run in sequence as a self-contained pipeline
 # (battery → aggregate → plot). The CSV column and the .txt section
@@ -501,7 +501,6 @@ def _run_one_gate(
                 f"  [done {completed:>2}/{len(cells_to_process)}] "
                 f"{asset:<8} {month}  ℓ*={ell:>3}  "
                 f"valid_offsets={n_valid:>3}  total={len(all_rows):>7,} rows  "
-                # f"(~{eta_min:.1f}min remaining)"
             )
 
             # Trigger off (completed + failed) so consecutive failures

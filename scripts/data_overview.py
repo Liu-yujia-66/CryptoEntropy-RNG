@@ -48,9 +48,7 @@ import pandas as pd
 from src.data_io import detect_time_unit, filter_month_files
 
 
-# ---------------------------------------------------------------------------
 # Configuration -- mirrors runner_exp2_all_offset.py defaults.
-# ---------------------------------------------------------------------------
 
 ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
 
@@ -133,7 +131,6 @@ def scan_one_file(path: Path) -> dict[str, float | int | str]:
     )
 
     return {
-        # "source_file": str(path),
         "timestamp_unit": time_unit,
         "agg_trades_count": agg_trades_count,
         "raw_trades_count": raw_trades_count,

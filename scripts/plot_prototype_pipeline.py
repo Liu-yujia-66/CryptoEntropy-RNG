@@ -1,19 +1,9 @@
 """
-Prototype pipeline diagram for thesis §5.1 (Chapter 5 Password Generator).
+Prototype pipeline diagram for the thesis Password Generator chapter.
 
-Vertical flowchart showing the per-password data flow:
-    Experiment 4 combined stream  ->  33-byte IKM (disjoint)
-      ->  HKDF-Extract(salt, IKM)  ->  32-byte PRK
-      ->  HKDF-Expand(PRK, info)   ->  OKM bytes
-      ->  rejection sampling (accept byte b < 210, map b mod 70)
-      ->  16 accepted characters  ->  16-character password
-
-Salt is drawn as a side input feeding HKDF-Extract (dashed border).
-Re-Expand fallback (info || counter, triggered 0/2400 in demo) is
-shown as a side annotation.
-
-Style matches other thesis figures: matplotlib default sans-serif,
-plain text labels, near-black lines, no coloured fills.
+Draws the vertical per-password flowchart (combined stream -> 33-byte IKM ->
+HKDF-Extract -> PRK -> HKDF-Expand -> OKM -> rejection sampling -> 16-char
+password), with salt as a side input and the re-Expand fallback annotated.
 
 Run from the project root:
     python scripts/plot_prototype_pipeline.py
@@ -39,7 +29,7 @@ from matplotlib.patches import FancyArrowPatch, Rectangle
 
 OUTPUT_PATH = Path("thesis/figures/prototype_pipeline.png")
 
-# ---------- layout ----------
+# Layout
 FIG_W, FIG_H = 6.5, 8.5
 CX = 0.50
 BOX_W = 0.62
@@ -59,7 +49,7 @@ Y_NODES = {
 SALT_X = 0.88
 SALT_Y = 0.70
 
-# ---------- styling (match other thesis figures: plain, near-black) ----------
+# Styling (match other thesis figures: plain, near-black).
 EDGE = "0.20"            # near-black for borders and arrows
 TEXT = "0.10"
 LABEL_TEXT = "0.30"      # slightly lighter for arrow side-labels

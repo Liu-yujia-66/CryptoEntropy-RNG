@@ -9,7 +9,7 @@ battery, via the compiled C batch driver at ``tools/alphabit_driver``.
 Why a real C driver + subprocess, not a Python reimplementation: the value of
 Alphabit as a cross-battery check is that it is an *external, independently
 validated* implementation. A reimplementation would share this project's code
-and lose that independence. See notes/Exp3-4-Prototype Plan v3.md (v3.4).
+and lose that independence.
 
 Pipeline per call:
 
@@ -17,7 +17,7 @@ Pipeline per call:
                 --subprocess------>  tools/alphabit_driver  -->  CSV
                 --parse / map----->  {stream_id: {schema_name: p_value}}
 
-Alphabit emits 17 p-values (confirmed empirically in Phase 0): TestU01 reports
+Alphabit emits 17 p-values: TestU01 reports
 RandomWalk1 as five statistics (H/M/J/R/C) per length, so the 9 Alphabit
 "tests" of Onofri et al. (2025) expand to 4 + 2 + 1 + 5 + 5 = 17 result rows.
 The 17 stable schema names are exported as ``ALPHABIT_SUB_TESTS``.
@@ -44,17 +44,13 @@ from pathlib import Path
 
 import numpy as np
 
-# ---------------------------------------------------------------------------
-# Constants
-# ---------------------------------------------------------------------------
-
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _DEFAULT_DRIVER = _REPO_ROOT / "tools" / "alphabit_driver"
 
 # Raw TestU01 ``bbattery_TestNames`` strings -> CSV-friendly schema names.
-# The raw strings are verbatim from TestU01 1.2.3, confirmed by the Phase 0
-# probe. If TestU01's naming ever changes, _schema_name() flags the mismatch
-# rather than dropping the result silently.
+# The raw strings are verbatim from TestU01 1.2.3. If TestU01's naming ever
+# changes, _schema_name() flags the mismatch rather than dropping the result
+# silently.
 _RAW_TO_SCHEMA: dict[str, str] = {
     "MultinomialBitsOver, L = 2":  "Alphabit_MultinomialBitsOver_L2",
     "MultinomialBitsOver, L = 4":  "Alphabit_MultinomialBitsOver_L4",
@@ -82,8 +78,7 @@ ALPHABIT_SUB_TESTS: list[str] = list(_RAW_TO_SCHEMA.values())
 
 # Alphabit's result count is a DETERMINISTIC function of the bit count
 # (independent of the data): TestU01 itself skips its longer-block sub-tests
-# at shorter lengths. Measured on TestU01 1.2.3 (Phase 3, identical across
-# random seeds):
+# at shorter lengths. Measured on TestU01 1.2.3:
 #
 #     bit count            results   sub-tests TestU01 skips
 #     2000, 5000              11      MultinomialBitsOver_L16
@@ -92,23 +87,15 @@ ALPHABIT_SUB_TESTS: list[str] = list(_RAW_TO_SCHEMA.values())
 #     100000, 250000          17      -- (full battery)
 #
 # So a result dict with 11 or 16 entries is NORMAL length eligibility, not a
-# driver error. The Phase 5 sanity runner re-measures eligibility per length
-# bracket; its sanity matrix is the canonical eligibility record for the
-# Exp 3 / Exp 4 aggregator (this wrapper deliberately does not hard-code it).
+# driver error.
 
 # Crash guard, NOT a policy floor. TestU01's Alphabit rounds the bit count
 # down to a multiple of 32 and aborts the whole process if the result is 0
 # (i.e. nb < 32). Streams shorter than this are skipped here so that one tiny
 # stream cannot kill a whole batch. This is deliberately distinct from the
-# Exp 2/3 framework floor (MIN_BIT_COUNT = 2000, enforced by the runners):
-# this wrapper is a low-level tool and does not bake in framework policy.
-# With that 2000-bit framework floor in place, this guard never triggers.
+# framework floor (MIN_BIT_COUNT = 2000, enforced by the runners): this
+# wrapper is a low-level tool and does not bake in framework policy.
 _MIN_SAFE_BITS = 64
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 
 def _driver_path() -> Path:
@@ -130,11 +117,6 @@ def _schema_name(raw: str) -> str:
     print(f"[testu01_alphabit] WARNING: unrecognised TestU01 test name "
           f"{raw!r} -- check the TestU01 version.", file=sys.stderr)
     return f"Alphabit_UNKNOWN_{safe}"
-
-
-# ---------------------------------------------------------------------------
-# Public API
-# ---------------------------------------------------------------------------
 
 
 def run_alphabit_batch(
@@ -172,8 +154,7 @@ def run_alphabit_batch(
 
     A p-value < 0 means TestU01 did not run that test; such rows are dropped
     here, which is what produces shape 2. This length eligibility is
-    TestU01's own behaviour, not a bug. (The Phase 5 sanity runner measures
-    and locks it per length bracket.)
+    TestU01's own behaviour, not a bug.
 
     Raises
     ------
@@ -277,11 +258,7 @@ def run_alphabit(bits: np.ndarray) -> dict[str, float]:
     return run_alphabit_batch({"_single": bits})["_single"]
 
 
-# ---------------------------------------------------------------------------
 # Smoke test (run: python src/testu01_alphabit.py)
-# ---------------------------------------------------------------------------
-
-
 def _smoke_test() -> int:
     """Self-contained smoke test. Returns 0 on success, 1 on failure/skip."""
     driver = _driver_path()

@@ -33,12 +33,8 @@ import matplotlib.pyplot as plt
 
 from src.utils import ASSET_COLORS, ASSET_ORDER
 
-# ---------------------------------------------------------------------------
-# Configuration
-# ---------------------------------------------------------------------------
-
 ALPHA = 0.01
-THRESHOLD = -np.log10(ALPHA)  # 2.0
+THRESHOLD = -np.log10(ALPHA)
 
 TESTS = [
     ("predictability_pvalue", "Predictability (adaptive k)"),
@@ -48,11 +44,6 @@ TESTS = [
     ("runs_pvalue", "Runs"),
     ("approximate_entropy_pvalue", "Approx. Entropy (m=5)"),
 ]
-
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
-
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
@@ -77,11 +68,6 @@ def parse_args() -> argparse.Namespace:
         help="Significance level for the threshold line (default 0.01).",
     )
     return parser.parse_args()
-
-
-# ---------------------------------------------------------------------------
-# Plotting
-# ---------------------------------------------------------------------------
 
 
 def _neg_log10(p: pd.Series) -> pd.Series:
@@ -166,7 +152,6 @@ def plot_all_assets(
         )
         ax.set_title(label, fontsize=11)
         ax.set_xlabel(r"Aggregation Level $\ell$")
-        # Only left column gets ylabel to avoid redundancy
         if ax in axes[:, 0]:
             ax.set_ylabel(r"$-\log_{10}(p)$")
         ax.legend(fontsize=7)
@@ -365,11 +350,6 @@ def plot_predictability_k(
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"[plot] {out_path}")
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
 
 
 def main() -> None:

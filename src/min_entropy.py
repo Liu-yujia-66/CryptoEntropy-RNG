@@ -1,33 +1,14 @@
 """
 NIST SP 800-90B min-entropy estimators (two-estimator subset).
 
-Implements two of the ten non-IID-track estimators from NIST
-SP 800-90B Section 6.3:
-
-  mcv_min_entropy    -- Sec 6.3.1 Most Common Value. Bounds per-bit
-                        min-entropy from the marginal frequency of the
-                        most common symbol (upper 99% confidence bound).
-  markov_min_entropy -- Sec 6.3.3 Markov. Bounds per-bit min-entropy
-                        from a first-order Markov model, accounting for
-                        lag-1 dependence; most-likely length-128 path
-                        via a Viterbi recursion.
-
-estimate_min_entropy reports H_inf = min(MCV, Markov) as a
-conservative per-bit lower bound, following the NIST "take the minimum
-across estimators" rule.
-
-Why this two-estimator subset (documented for the thesis): the full
-SP 800-90B non-IID track runs ten estimators through the NIST
-reference C tool. The XOR-fused crypto streams of Experiment 4 lose
-entropy through two mechanisms only -- residual marginal bias
-(even-n fusion) and first-order dependence -- which MCV and Markov
-respectively target. The remaining eight estimators (collision,
-compression, t-tuple, LRS, and the four predictors) target
-longer-range structure already probed by the D-test and Serial
-sub-tests of the Section 4.5 battery. Point estimates are used for
-the transition probabilities (no per-cell confidence widening beyond
-MCV's), which the thesis notes as a mild optimism relative to the
-full NIST procedure.
+Implements the Most Common Value (Sec 6.3.1, marginal-frequency bound) and
+Markov (Sec 6.3.3, first-order/lag-1 bound via length-128 Viterbi) estimators;
+estimate_min_entropy reports H_inf = min(MCV, Markov) as a conservative per-bit
+lower bound. These two are chosen because the Exp 4 XOR-fused streams lose
+entropy only through residual marginal bias and first-order dependence, which
+MCV and Markov respectively target (longer-range structure is already probed by
+the D-test/Serial battery). Transition probabilities use point estimates — a
+mild optimism vs. the full NIST procedure, noted in the thesis.
 """
 
 from __future__ import annotations

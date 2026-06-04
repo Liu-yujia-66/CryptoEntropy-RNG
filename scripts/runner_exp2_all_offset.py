@@ -189,8 +189,8 @@ def _summarize_acceptance(
         predictability_pass_rate = float(
             (valid["predictability_pvalue"] >= ALPHA).mean()
         )
-        # Fixed-k=2 "pairs of signs" diagnostic (Shternshis & Marmi 2025 §4.4);
-        # reported alongside Runs for cross-check but not part of is_acceptable.
+        # Fixed-k=2 "pairs of signs" diagnostic; reported alongside Runs for
+        # cross-check but not part of is_acceptable.
         predictability_k2_pass_rate = float(
             (valid["predictability_k2_pvalue"] >= ALPHA).mean()
         )
@@ -204,10 +204,9 @@ def _summarize_acceptance(
         valid_offset_ratio = valid_offset_count / total_offset_count
         # Acceptance gate: adaptive-k D + Monobit only. Runs is demoted to
         # reference because the adaptive-k D (~6-7) dilutes 1st-order signal
-        # across 2^(k-1) contexts, producing systematic D/Runs disagreement
-        # matching Shternshis & Marmi (2025) §4.4's SNAP/F/CCL bid-ask-bounce
-        # stylized fact. predictability_k2 is the principled 1st-order
-        # diagnostic for post-hoc interpretation.
+        # across 2^(k-1) contexts, producing systematic D/Runs disagreement.
+        # predictability_k2 is the principled 1st-order diagnostic for
+        # post-hoc interpretation.
         is_acceptable = bool(
             valid_offset_ratio >= VALID_OFFSET_RATIO_THRESHOLD
             and predictability_pass_rate >= PASS_RATE_THRESHOLD

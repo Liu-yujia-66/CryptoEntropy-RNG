@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 """
-Plot Experiment 3 figures (per plan §1.6).
+Plot Experiment 3 figures.
 
 Path layout (per-criterion subdir under data/processed/experiment3/):
 
@@ -45,8 +45,6 @@ from src.battery import ALL_SUB_TESTS
 from src.utils import ASSET_COLORS
 
 
-# Configuration
-
 VALID_GATES = ("base", "runs", "apen")
 ALPHA = 0.01
 
@@ -59,10 +57,9 @@ INK = "#16324f"
 PASS_RATE_CMAP = _LSC.from_list("inkpass", ["#08306b", "#4292c6", "#e8f1fa"])
 PASS_RATE_CMAP.set_bad("white")
 
-# Use the same asset order as scripts/aggregate_exp3_battery.py and
-# plan §1.4 admissible-months table (BTC, ETH, BNB, SOL, DOGE), NOT the
-# alphabetical `src.utils.ASSET_ORDER`. Keeps Exp 3 figures / tables /
-# plan all aligned to one display order.
+# Display asset order (BTC, ETH, BNB, SOL, DOGE), NOT the alphabetical
+# `src.utils.ASSET_ORDER`. Matches scripts/aggregate_exp3_battery.py so
+# Exp 3 figures and tables share one order.
 ASSET_ORDER = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
 
 ASSET_SHORT = {
@@ -91,9 +88,6 @@ def _paths_for_gate(gate: str) -> tuple[Path, Path, Path, Path]:
     )
 
 
-# Figure 1: per-asset × sub-test pass-rate heatmap
-
-
 def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
     """5 asset × 29 sub-test pass-rate heatmap, annotated with X/Y counts."""
     pr_pivot = summary.pivot(
@@ -110,8 +104,8 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
     fig, ax = plt.subplots(figsize=(7, 12))
     # pass_rate is NA when n_admissible_months == 0 (e.g. an Alphabit sub-test
     # like MultinomialBitsOver_L16 for an asset with no ≥100K cell — ETH has
-    # zero 100K cells per plan §1.4.1). pd.to_numeric coerces pd.NA → NaN so
-    # imshow renders it blank instead of `.astype(float)` choking on NAType.
+    # zero 100K cells). pd.to_numeric coerces pd.NA → NaN so imshow renders it
+    # blank instead of `.astype(float)` choking on NAType.
     data = pr_pivot.apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
     im = ax.imshow(data, cmap=PASS_RATE_CMAP, vmin=0.0, vmax=1.0, aspect="auto")
 
@@ -123,8 +117,6 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
             a = adm_pivot.loc[sub_test, asset]
             if pd.isna(a):
                 continue  # (asset, sub_test) absent from summary — skip
-            # Black text on the green/yellow band, white on extreme red/dark
-            # green; NaN rate (n_admissible == 0) → white "0/0" label.
             text_color = (
                 "white" if (pd.notna(rate) and rate < 0.5) else "#1a1a1a"
             )
@@ -158,9 +150,6 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
     print(f"[saved] {out_path}")
 
 
-# Figure 2: length vs -log10(p) scatter, faceted by sub-test
-
-
 def plot_length_vs_pvalue(pvalues: pd.DataFrame, out_path: Path, gate: str) -> None:
     """29-panel facet (5 × 6 grid; the 30th panel holds the legend):
     per-cell median bit length vs median -log10(p).
@@ -178,13 +167,12 @@ def plot_length_vs_pvalue(pvalues: pd.DataFrame, out_path: Path, gate: str) -> N
     NOT the cell-level pass criterion. A cell above the line has the median
     offset's p < α (likely fails verdict); below the line, median p ≥ α
     (likely passes). Cell-level verdict is actually based on the 80%-pass-
-    rate rule (plan §1.6), so the line is a rough but-not-strict indicator.
+    rate rule, so the line is a rough but-not-strict indicator.
 
-    Diagnostic purpose (plan §1.6): if within one sub-test panel the points
-    drift systematically (y grows as x shrinks), then p-values still depend
-    on length inside a sanity-valid bracket — implying the 5-bracket sanity
-    grid is too coarse and should be revisited in Future Work (§5 #5/#6
-    decision says: not in this thesis).
+    Diagnostic purpose: if within one sub-test panel the points drift
+    systematically (y grows as x shrinks), then p-values still depend on
+    length inside a sanity-valid bracket — implying the 5-bracket sanity
+    grid is too coarse.
     """
     criterion_label = _criterion_label(gate)
     # -log10(p_value) per offset, clipped to avoid -inf
@@ -270,9 +258,6 @@ def plot_length_vs_pvalue(pvalues: pd.DataFrame, out_path: Path, gate: str) -> N
     fig.savefig(out_path, dpi=150, bbox_inches="tight")
     plt.close(fig)
     print(f"[saved] {out_path}")
-
-
-# Main
 
 
 def main() -> None:

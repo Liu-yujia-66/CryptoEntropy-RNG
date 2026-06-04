@@ -1,47 +1,10 @@
 """
-Experiment 4 calibration helpers.
-
-Implements the aggregation + gate stack for the XOR-fused stream:
-
-  xor_aggregate_offset(fused_bits, ell, offset)
-      For one starting offset, group consecutive ell fused bits into
-      windows and XOR them: output[i] = XOR_{j=0..ell-1} fused[o + i*ell + j].
-      This is the piling-up aggregation operator: marginal bias
-      shrinks exponentially in ell (Bernoulli(p) ⇒ output bias
-      0.5 − 0.5*(1−2p)^ell), and within-offset positions sample
-      disjoint windows so the output inherits no spurious
-      alternation. Replaces the v3.2 §2.3 literal text
-      ("Exp 2 §4.3 1sbar framework"): on a binary input that
-      framework's sub-sample → diff → drop-zero → sign produces a
-      perfectly alternating stream because two consecutive non-zero
-      transitions of a binary chain must differ in direction.
-      XOR-aggregation is what the plan's piling-up argument
-      (v3.2 §2.1) actually requires.
-
-  evaluate_offset_bits(bits)
-      Run the +Runs gate sub-tests (D adaptive-k, Monobit, Runs) on
-      one offset's aggregated output. Returns the three p-values plus
-      the bit count.
-
-  evaluate_fused_at_ell(fused_bits, ell, ...)
-      XOR-aggregate every offset 0..ell-1, run evaluate_offset_bits
-      on each, apply the +Runs all-offset gate (>=80% of valid
-      offsets pass D + Monobit + Runs at alpha=0.01). Returns the
-      per-offset rows and the cell-level pass/fail.
-
-  select_ell_star_from_grid(fused_bits, ell_grid, ...)
-      Sweep ell from smallest to largest, return the smallest ell
-      that passes the gate. Stops early on first hit. None if no ell
-      passes.
-
-  select_witness_offset(fused_bits, ell, ...)
-      For a given (fused stream, ell), pick the offset with the
-      largest combined p-value (geometric mean of D + Monobit + Runs).
-
-  p80(values, ...)
-      Calibration aggregation: 80th-percentile across calibration
-      months, with explicit handling of None entries (months where
-      the gate did not select any ell).
+Experiment 4 calibration helpers: the aggregation + gate stack for the
+XOR-fused stream. Provides the piling-up XOR aggregation operator
+(xor_aggregate_offset), per-offset and all-offset +Runs gate evaluation
+(evaluate_offset_bits / evaluate_fused_at_ell), ell* grid selection and
+witness-offset selection, and the p80 calibration aggregator. See each
+function's docstring for details.
 """
 
 from __future__ import annotations
@@ -60,9 +23,7 @@ from src.stats import (
 )
 
 
-# ---------------------------------------------------------------------------
 # Per-offset evaluation
-# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -101,9 +62,7 @@ def evaluate_offset_bits(offset: int, bits: np.ndarray) -> OffsetEval:
     )
 
 
-# ---------------------------------------------------------------------------
 # Per-(fused, ell) gate evaluation
-# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -225,9 +184,7 @@ def evaluate_fused_at_ell(
     )
 
 
-# ---------------------------------------------------------------------------
 # Sweep + selection
-# ---------------------------------------------------------------------------
 
 
 def select_ell_star_from_grid(
@@ -267,9 +224,7 @@ def select_ell_star_from_grid(
     return None, history
 
 
-# ---------------------------------------------------------------------------
 # Witness offset selection
-# ---------------------------------------------------------------------------
 
 
 def select_witness_offset(
@@ -329,18 +284,15 @@ def select_witness_offset(
     return best.offset, best
 
 
-# ---------------------------------------------------------------------------
 # Cross-month aggregation
-# ---------------------------------------------------------------------------
 
 
 def p80(values: Sequence[int | None]) -> int | None:
     """80th percentile of integer ells, ignoring None entries.
 
-    Plan v3.2 §2.2 uses P80 (rather than median or max) because the
-    sample is small (9 calibration months) and the goal is "majority
-    coverage without being dragged by outliers". Returns None when
-    every entry is None.
+    Uses P80 (rather than median or max) because the sample is small
+    (9 calibration months) and the goal is "majority coverage without
+    being dragged by outliers". Returns None when every entry is None.
     """
     clean = [int(v) for v in values if v is not None]
     if not clean:

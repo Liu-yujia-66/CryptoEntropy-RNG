@@ -1,25 +1,13 @@
 """CryptoEntropy-RNG -- password generator prototype core library.
 
-Implements the v3.4 prototype pipeline (see notes/Exp3-4-Prototype Plan v3.md, Section 3):
-
-    fused_stream.bin --(np.packbits)--> IKM bytes
-    per password: a disjoint 33-byte IKM block
-        --HKDF-Extract--> 32-byte PRK
-        --HKDF-Expand---> OKM
-        --charset rejection sampling--> 16-char password
-
-HKDF (RFC 5869, HMAC-SHA256) is implemented here from the standard-library
-``hmac``/``hashlib`` only -- no third-party crypto dependency -- and is
-self-checked against RFC 5869 Appendix A Test Case 1 via ``hkdf_selftest()``.
-
-Three generators are exposed, matching the three evaluation groups:
-
-    generate_market_cell  -- market entropy: disjoint IKM blocks of a fused stream
-    generate_b2_cell      -- baseline B2: salt-seeded random IKM through the pipeline
-    generate_b1_cell      -- baseline B1: salt-seeded uniform charset sampling (no HKDF)
-
-The two baselines are seeded deterministically from the persisted salt, so the
-whole demo -- market and baselines alike -- reproduces bit-for-bit on re-run.
+Pipeline: fused_stream.bin -> packbits IKM -> per password a disjoint 33-byte
+block -> HKDF-Extract (32-byte PRK) -> HKDF-Expand (OKM) -> charset rejection
+sampling -> 16-char password. HKDF (RFC 5869, HMAC-SHA256) is implemented from
+stdlib hmac/hashlib only and self-checked against RFC 5869 App. A Test Case 1
+via hkdf_selftest(). Exposes three generators for the evaluation groups:
+generate_market_cell (market entropy), generate_b2_cell (salt-seeded random IKM)
+and generate_b1_cell (salt-seeded uniform sampling, no HKDF); the salt-seeded
+baselines reproduce bit-for-bit on re-run.
 """
 
 from __future__ import annotations
@@ -32,9 +20,6 @@ import string
 
 import numpy as np
 
-# --------------------------------------------------------------------------
-# Charset and rejection-sampling constant
-# --------------------------------------------------------------------------
 CHARSET = (
     string.ascii_lowercase      # 26
     + string.ascii_uppercase    # 26
@@ -49,9 +34,7 @@ assert CHARSET_SIZE == 70, f"charset must be 70 characters, got {CHARSET_SIZE}"
 # and the acceptance rate is 210 / 256 = 82.0 %.
 MAX_VALID = (256 // CHARSET_SIZE) * CHARSET_SIZE   # 210
 
-# --------------------------------------------------------------------------
-# Prototype parameters (see plan Section 3.1)
-# --------------------------------------------------------------------------
+# Prototype parameters
 IKM_BYTES = 33                              # per-password disjoint IKM block
 INFO_BASE = b"CryptoEntropy-Password-v1"    # HKDF info string (counter appended)
 EXPAND_LEN = 32                             # OKM bytes produced per Expand round
@@ -72,9 +55,7 @@ class InsufficientIKM(Exception):
         super().__init__(f"insufficient IKM: have {have} bytes, need {need}")
 
 
-# --------------------------------------------------------------------------
 # HKDF -- RFC 5869, HMAC-SHA256
-# --------------------------------------------------------------------------
 def hkdf_extract(salt: bytes, ikm: bytes) -> bytes:
     """HKDF-Extract (RFC 5869 Section 2.2): PRK = HMAC-Hash(salt, IKM)."""
     if not salt:
@@ -130,9 +111,7 @@ def hkdf_selftest() -> str:
     return "PASS (RFC 5869 Appendix A, Test Case 1, SHA-256)"
 
 
-# --------------------------------------------------------------------------
 # IKM loading
-# --------------------------------------------------------------------------
 def load_ikm_bytes(bin_path) -> bytes:
     """Load a fused_stream.bin and pack it into IKM bytes.
 
@@ -149,9 +128,7 @@ def load_ikm_bytes(bin_path) -> bytes:
     return np.packbits(raw).tobytes()
 
 
-# --------------------------------------------------------------------------
 # Charset mapping and password derivation
-# --------------------------------------------------------------------------
 def _accepted_chars(okm: bytes) -> list[str]:
     """Map OKM bytes to charset characters via rejection sampling."""
     return [CHARSET[b % CHARSET_SIZE] for b in okm if b < MAX_VALID]
@@ -198,9 +175,7 @@ def password_from_ikm(ikm: bytes, salt: bytes,
     return password_from_prk(prk, length, info_base)
 
 
-# --------------------------------------------------------------------------
 # Cell generators -- one "cell" is one (group, month[, n]) batch of passwords
-# --------------------------------------------------------------------------
 def generate_market_cell(ikm_bytes: bytes, salt: bytes, n_passwords: int,
                          length: int = PASSWORD_LENGTH) -> list[tuple[str, int]]:
     """Market group: each password uses a disjoint 33-byte block of the stream.
@@ -261,15 +236,13 @@ def generate_b1_cell(salt: bytes, tag: str, n_passwords: int,
     ]
 
 
-# --------------------------------------------------------------------------
 # Salt management
-# --------------------------------------------------------------------------
 def load_or_create_salt(salt_path) -> bytes:
     """Return the persisted HKDF salt, creating it once from os.urandom.
 
     The salt is persisted in the repository so the demo is fully reproducible.
     An HKDF salt may be public; a production deployment would rotate it per
-    deployment/epoch (see plan Section 3.4 and the thesis limitations).
+    deployment/epoch.
     """
     if os.path.exists(salt_path):
         with open(salt_path, "rb") as fh:

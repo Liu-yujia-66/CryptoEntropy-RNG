@@ -197,9 +197,7 @@ def main() -> None:
     emit(f"[saved] {output_path}  ({len(out_df)} rows)")
     emit()
 
-    # =========================================================================
     # Per-cell rows: actual length + label (long format, easy to grep)
-    # =========================================================================
     emit("=" * 78)
     emit("Per-cell rows: actual bit count + sanity bracket label (+Runs gate)")
     emit("=" * 78)
@@ -224,9 +222,7 @@ def main() -> None:
         emit(f"{asset:<6} {month:<8} {ell_s}  {bits_s}  {bracket}")
     emit()
 
-    # =========================================================================
     # Pivot 1: actual bit count, asset × month
-    # =========================================================================
     emit("=" * 78)
     emit("Per-offset bit count @ Exp 2 1sbar +Runs gate ell*")
     emit("=" * 78)
@@ -243,9 +239,7 @@ def main() -> None:
         emit(f"{month}    | {cells}")
     emit()
 
-    # =========================================================================
     # Pivot 2: sanity bracket label, asset × month
-    # =========================================================================
     emit("=" * 78)
     emit("Sanity bracket @ Exp 2 1sbar +Runs gate ell*")
     emit("=" * 78)
@@ -262,9 +256,7 @@ def main() -> None:
         emit(f"{month}    | {cells}")
     emit()
 
-    # =========================================================================
     # Distribution summary
-    # =========================================================================
     emit("=" * 78)
     emit("Sanity bracket distribution (+Runs gate)")
     emit("=" * 78)
@@ -287,9 +279,7 @@ def main() -> None:
         emit(f"  {DISPLAY_NAMES[asset]:<5}: {', '.join(parts)}")
     emit()
 
-    # =========================================================================
     # Stats on accepted cells
-    # =========================================================================
     valid_bits = out_df["per_offset_bits_runs"].dropna()
     if not valid_bits.empty:
         emit("=" * 78)
@@ -304,9 +294,7 @@ def main() -> None:
         emit(f"  max:    {int(valid_bits.max()):>10,} bits")
         emit()
 
-    # =========================================================================
     # Useful side info: how often +Runs differs from base in ell* + bits
-    # =========================================================================
     emit("=" * 78)
     emit("Base gate (D + Monobit only) comparison")
     emit("=" * 78)
@@ -322,9 +310,7 @@ def main() -> None:
         emit(f"  +Runs bits median:{int(valid_bits.median()):>10,}")
     emit()
 
-    # =========================================================================
     # Write txt
-    # =========================================================================
     txt_output_path.parent.mkdir(parents=True, exist_ok=True)
     txt_output_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     print(f"[saved] {txt_output_path}")

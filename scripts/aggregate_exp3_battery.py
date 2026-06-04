@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 """
-Aggregate Experiment 3 per-cell p-values into the plan §1.6 summaries.
+Aggregate Experiment 3 per-cell p-values into per-cell verdicts and a
+per-asset summary.
 
 Reads `per_cell_pvalues-{GATE}.csv` (produced by `runner_exp3_battery.py`)
-and applies the cell-level verdict rule from plan §1.6:
+and applies the cell-level verdict rule:
 
     For each (asset, month, sub_test) cell:
       if the sub_test produced no p-value rows for this cell (an Alphabit
@@ -27,7 +28,7 @@ and applies the cell-level verdict rule from plan §1.6:
     length (its own length eligibility); INVALID = the sub-test ran but
     every offset landed in a sanity-failed bracket. Both stay out of the
     admissible denominator, but are kept distinct so per_cell_verdict
-    preserves the Phase 5 three-state record (passed / failed / not_run).
+    preserves a three-state record (passed / failed / not_run).
 
     NOTE: verdict uses literal "PASS"/"FAIL"/"INVALID"/"NOT_RUN". "N/A"
     and "NA" are in `pd.read_csv` default na_values and would be silently
@@ -52,7 +53,7 @@ Writes two CSVs side-by-side with the input:
     not a missing row — keeping "TestU01 didn't run it" distinct from
     "ran and sanity-failed" (INVALID).
 - `per_asset_summary.csv`  (5 assets × 29 sub-tests; the main result)
-  - schema per plan §1.6: asset, sub_test, n_admissible_months,
+  - schema: asset, sub_test, n_admissible_months,
     n_passed_months, pass_rate, dominant_bracket
 
 Both are stable-sorted so re-runs produce identical bytes.
@@ -117,12 +118,12 @@ def _build_per_cell_verdict(df: pd.DataFrame) -> pd.DataFrame:
     the 12 fixed stats.py/nistrng sub-tests always emit a p-value, so a
     missing row is always an Alphabit length-skip. Such combinations get
     verdict="NOT_RUN" so the output stays a full N×29 grid and preserves
-    the Phase 5 three-state record (passed / failed / not_run).
+    the three-state record (passed / failed / not_run).
 
     The cell_bracket column is the sanity bracket the cell falls into
     (taken from the first offset's bracket — within a cell, offsets share
     the same per_offset_bits ± drop-zero noise, so bracket is essentially
-    constant; see plan §1.6 'Cell 内 sanity_valid 的均匀性').
+    constant).
     """
     # cell_bracket per (asset, month): take first observed bracket
     cell_bracket = df.drop_duplicates(["asset", "month"])[
@@ -176,7 +177,6 @@ def _build_per_cell_verdict(df: pd.DataFrame) -> pd.DataFrame:
     )
     verdict.loc[has_valid & (verdict["pass_rate"] < PASS_THRESHOLD), "verdict"] = "FAIL"
 
-    # Attach cell_bracket
     verdict = verdict.merge(cell_bracket, on=["asset", "month"])
 
     # Sort by (asset_order, month, sub_test_order)
@@ -210,7 +210,6 @@ def _build_per_cell_verdict(df: pd.DataFrame) -> pd.DataFrame:
 def _build_per_asset_summary(verdict: pd.DataFrame) -> pd.DataFrame:
     """Aggregate cell-level verdicts to per-(asset, sub_test) summary.
 
-    Per plan §1.6:
       n_admissible_months = months where verdict in {PASS, FAIL} (denom Y)
                             — excludes INVALID (sanity-failed) and NOT_RUN
                             (TestU01 length-skip)

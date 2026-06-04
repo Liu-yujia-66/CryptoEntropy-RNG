@@ -1,24 +1,13 @@
 """
 Experiment 4 — pairwise 1-bit mutual information pool matrix.
 
-Implements plan v3.2 §2.4: for the 9-month calibration window, build a
-5x5 pairwise 1-bit MI matrix on per-second sign bits, with PAIR-specific
-drop-any-zero (kept positions are those where both assets have non-zero
-Delta-p; differs from the N-asset fusion drop-any-zero).
+Builds a 5x5 pairwise 1-bit MI matrix on per-second sign bits over the 9-month
+calibration window, using PAIR-specific drop-any-zero (kept positions are where
+both assets have non-zero Delta-p). MI is pooled by per-pair joint-count
+accumulation across months; per-month rows are also written to check stability.
 
-The pool method is per-pair joint-count accumulation across months
-(mathematically equivalent to concatenating the bit streams; cheaper in
-memory). Per-month rows are also written so the analysis can see if MI
-is structurally stable across months or driven by particular months.
-
-Run from the project root (same INPUT_ROOT convention as the Exp 2
-runners):
+Run from the project root (use --months / --assets to subset):
     python scripts/runner_exp4_mi_matrix.py
-
-Override examples:
-    python scripts/runner_exp4_mi_matrix.py --months 2025-01,2025-02
-    python scripts/runner_exp4_mi_matrix.py --assets BTCUSDT,ETHUSDT,BNBUSDT
-    CRYPTOENTROPY_INPUT_ROOT=/path/to/aggTrades python scripts/runner_exp4_mi_matrix.py
 """
 
 from __future__ import annotations
@@ -41,13 +30,12 @@ from src.mutual_info import (
 
 DEFAULT_ASSETS = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "SOLUSDT", "DOGEUSDT"]
 
-# Plan v3.2 §2.4: calibration window = 2025-01 .. 2025-09 (9 months).
+# Calibration window = 2025-01 .. 2025-09 (9 months).
 DEFAULT_MONTHS = [
     "2025-01", "2025-02", "2025-03", "2025-04", "2025-05",
     "2025-06", "2025-07", "2025-08", "2025-09",
 ]
 
-# Plan v3.2 §2.4 acceptance heuristic.
 NEAR_INDEPENDENT_THRESHOLD_BITS = 1e-3
 
 DEFAULT_INPUT_ROOT = Path(
@@ -136,7 +124,6 @@ def main() -> int:
     )
     elapsed = time.time() - started
 
-    # ----- write outputs -----
     mi_path = output_root / "mi_pool_matrix.csv"
     rho_path = output_root / "rho_pool_matrix.csv"
     per_month_path = output_root / "mi_per_month_long.csv"
@@ -184,7 +171,6 @@ def main() -> int:
     with summary_path.open("w") as fp:
         json.dump(summary, fp, indent=2)
 
-    # ----- printable summary -----
     print()
     print(f"=== outputs ===")
     print(f"  {mi_path}")

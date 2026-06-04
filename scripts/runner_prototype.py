@@ -1,4 +1,4 @@
-"""Prototype demo runner -- CryptoEntropy-RNG password generator (plan v3.4 Section 3.2).
+"""Prototype demo runner -- CryptoEntropy-RNG password generator.
 
 Generates the three evaluation groups:
 

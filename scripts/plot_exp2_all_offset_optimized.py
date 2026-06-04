@@ -41,9 +41,7 @@ import matplotlib.pyplot as plt
 
 from src.utils import ASSET_COLORS, ASSET_ORDER
 
-# ---------------------------------------------------------------------------
 # Constants
-# ---------------------------------------------------------------------------
 
 DEFAULT_INPUT_ROOT = Path("data/processed/experiment2/all-offset")
 DEFAULT_OUTPUT_DIRNAME = "plots"
@@ -53,8 +51,8 @@ PASS_RATE_THRESHOLD = 0.80
 
 # (csv_column, display_label, counted_in_is_acceptable)
 # Runs and D(k=2) are reference-only: Runs is known to systematically reject
-# due to 1st-order bid-ask-bounce structure (Paper §4.4 SNAP/F/CCL analog),
-# and D(k=2) is the Paper §4.4 diagnostic for the same phenomenon.
+# due to 1st-order bid-ask-bounce structure, and D(k=2) is a diagnostic for
+# the same phenomenon.
 TESTS = [
     ("predictability_pass_rate", "Predictability (adaptive k)", True),
     ("predictability_k2_pass_rate", "Predictability (k=2)", False),
@@ -85,9 +83,7 @@ _BINDING_SHORT = {
 }
 
 
-# ---------------------------------------------------------------------------
 # CLI
-# ---------------------------------------------------------------------------
 
 
 def parse_args() -> argparse.Namespace:
@@ -105,9 +101,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-# ---------------------------------------------------------------------------
 # I/O helpers
-# ---------------------------------------------------------------------------
 
 
 def load_summary_csv(summary_dir: Path, suffix: str) -> pd.DataFrame:
@@ -154,9 +148,7 @@ def save_plot(fig: Figure, path: Path, dpi: int = 150) -> None:
     print(f"[plot] {path.name}")
 
 
-# ---------------------------------------------------------------------------
 # Small utilities
-# ---------------------------------------------------------------------------
 
 
 def _threshold(acceptance_df: pd.DataFrame) -> float:
@@ -189,9 +181,7 @@ def _selected_ell(selected_df: pd.DataFrame, asset: str) -> int | None:
     return None if pd.isna(val) else int(val)
 
 
-# ---------------------------------------------------------------------------
 # Figure 1: Pass rate vs ℓ  (2×2 by test, all assets)
-# ---------------------------------------------------------------------------
 
 
 def plot_pass_rate_curves(
@@ -290,9 +280,7 @@ def plot_pass_rate_curves(
     save_plot(fig, output_dir / "pass_rate_curves.png")
 
 
-# ---------------------------------------------------------------------------
 # Figure 2: Per-asset acceptance curves + throughput overlay
-# ---------------------------------------------------------------------------
 
 
 def plot_asset_panels(
@@ -390,9 +378,7 @@ def plot_asset_panels(
     save_plot(fig, output_dir / "asset_panels.png")
 
 
-# ---------------------------------------------------------------------------
 # Figure 3: Randomness vs throughput trade-off  (core thesis figure)
-# ---------------------------------------------------------------------------
 
 
 def plot_tradeoff(
@@ -498,9 +484,7 @@ def plot_tradeoff(
     save_plot(fig, output_dir / "tradeoff.png")
 
 
-# ---------------------------------------------------------------------------
 # Figure 4: Selection summary
-# ---------------------------------------------------------------------------
 
 
 def plot_selection_summary(
@@ -620,9 +604,7 @@ def plot_selection_summary(
     save_plot(fig, output_dir / "selection_summary.png")
 
 
-# ---------------------------------------------------------------------------
 # Main
-# ---------------------------------------------------------------------------
 
 
 def main() -> None:

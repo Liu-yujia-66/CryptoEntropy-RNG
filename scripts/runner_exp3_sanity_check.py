@@ -7,7 +7,7 @@ Generates K random bit streams from /dev/urandom at each sanity bracket
 (5K / 10K / 25K / 50K / 100K), runs full_battery() on each, and tallies the
 per-(sub_test, bracket) outcome into the sanity validity matrix.
 
-THREE-STATE OUTCOME (Phase 5 fix, plan v3.4). The previous runner only counted
+THREE-STATE OUTCOME. The previous runner only counted
 sub-tests that FAILED (p < alpha). That silently mishandled TestU01 Alphabit:
 TestU01 skips its longer-block sub-tests at short lengths (11 of the 17
 Alphabit sub-tests run at 5K bits, 16 at 10K-50K, 17 at 100K). A skipped
@@ -29,8 +29,7 @@ PER-BRACKET CAVEAT. Each bracket is probed at its LOWER BOUND length (5000,
 MultinomialBitsOver L=16 switches on somewhere in (5000, 10000)). Probing the
 lower bound is the conservative choice: a real Exp 3 cell in the upper part of
 a bracket may run a sub-test this matrix marks "not_run", so that cell's data
-for the sub-test is discarded -- conservative, never the reverse. (plan v3.4,
-Phase 5 decision.)
+for the sub-test is discarded -- conservative, never the reverse.
 
 Alphabit is batched: each worker task runs run_alphabit_batch() once for its
 whole chunk of trials (a single alphabit_driver subprocess), then
@@ -38,10 +37,9 @@ full_battery(..., alphabit_pvals=...) per stream. Requires tools/alphabit_driver
 (build: `bash tools/build_testu01.sh && make -C tools`); override its path with
 the ALPHABIT_DRIVER environment variable.
 
-PROCESS ISOLATION PER BRACKET (Phase 5). Running all 5 brackets in a single
+PROCESS ISOLATION PER BRACKET. Running all 5 brackets in a single
 Python process accumulated something across brackets that reliably SIGKILLed
-on 100K (driver / TestU01 / Python wrapper state leak; root cause was not
-worth chasing for a one-time sanity-matrix product). The default entry-point
+on 100K (driver / TestU01 / Python wrapper state leak). The default entry-point
 fixes this by spawning ONE fresh Python subprocess per bracket and
 concatenating the per-bracket CSVs. Each subprocess gets a clean slate, so no
 inter-bracket carry-over is possible.
@@ -250,7 +248,7 @@ def run_one_bracket(label: str) -> Path:
 def run_all_brackets(force: bool = False) -> None:
     """Spawn one fresh Python subprocess per bracket, then concat results.
 
-    Fresh-process-per-bracket is the Phase 5 workaround for the (unidentified)
+    Fresh-process-per-bracket is the workaround for the (unidentified)
     cumulative-state SIGKILL at 100K when 5 brackets ran in one process. Each
     subprocess gets a clean slate.
 

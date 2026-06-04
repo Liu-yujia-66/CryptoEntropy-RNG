@@ -76,7 +76,6 @@ def main() -> int:
     print(f"input_root: {input_root}")
     print()
 
-    # Run fusion
     fused = build_fused_stream(
         subset=subset,
         month_label=args.month,
@@ -179,10 +178,9 @@ def main() -> int:
     )
     if fused.fused_bits.size > 0:
         p1 = float(fused.fused_bits.mean())
-        # The XOR output p(1) drifts from 0.5 whenever the inputs are biased
-        # or correlated; the wide [0.20, 0.80] band only flags gross failures
-        # like all-zero / all-one output. Read per_asset_p1 and
-        # pairwise_correlation above to diagnose any drift from 0.5.
+        # XOR output p(1) drifts from 0.5 when inputs are biased/correlated;
+        # the wide [0.20, 0.80] band only flags gross failures (all-zero /
+        # all-one). See per_asset_p1 and pairwise_correlation to diagnose drift.
         checks.append(
             (
                 f"p(1) in [0.20, 0.80] (got {p1:.4f})",

@@ -1,32 +1,12 @@
 """
 Experiment 4 — validation visualisation.
 
-Produces two thesis-ready figures from the validation outputs:
+Produces two thesis figures from the validation outputs: the cell-level
+verdict matrices (exp4_validation_verdict.png, one panel per n) and the
+n-axis trade-offs (exp4_validation_tradeoff.png: bits/month, ell*_n, and
+combined p(1) median). Outputs go to data/processed/experiment4/figures/.
 
-  Figure 1 — exp4_validation_verdict.png
-    4x1 panel of cell-level verdict matrices, one panel per n.
-    Each panel is 6 validation months (rows) x 12 sub-tests (cols),
-    colour-coded PASS (green) / FAIL (red) / INVALID (grey).
-    Panel title carries n + subset + ell* + selected output offset.
-
-  Figure 2 — exp4_validation_tradeoff.png
-    3x1 panel of n-axis trade-offs:
-      (a) bits/month — calibration estimate vs validation median
-      (b) ell*_n      — exposes the odd/even-n effect
-      (c) combined p(1) median — confirms the moment-cancellation result
-                            (odd n at 0.5, even n drifts)
-
-Reads:
-  data/processed/experiment4/validation/validation_summary.json
-  data/processed/experiment4/validation/n{N}/per_month_verdict_matrix.csv
-  data/processed/experiment4/validation/n{N}/per_month_throughput.csv
-  data/processed/experiment4/calibration_all_subsets/all_subsets_summary.csv
-
-Outputs:
-  data/processed/experiment4/figures/exp4_validation_verdict.png
-  data/processed/experiment4/figures/exp4_validation_tradeoff.png
-
-Run from the project root after runner_exp4_validation.py has finished:
+Run from the project root after runner_exp4_validation.py:
     python scripts/plot_exp4_validation.py
 """
 
@@ -58,9 +38,8 @@ DEFAULT_CALIB_SUMMARY = Path(
 DEFAULT_FIGURES_DIR = Path("data/processed/experiment4/validation/figures")
 
 # 29 sub-tests = 5 stats.py + 7 nistrng + 17 Alphabit. Pulled from the
-# battery module so plot_exp4_validation stays in sync with whatever
-# full_battery() returns (and with plot_exp3 / aggregate_exp3_battery,
-# which use the same convention).
+# battery module so this stays in sync with whatever full_battery() returns
+# (and with plot_exp3 / aggregate_exp3_battery).
 from src.battery import ALL_SUB_TESTS as _ALL_SUB_TESTS
 
 SUB_TESTS: list[str] = list(_ALL_SUB_TESTS)
@@ -110,12 +89,11 @@ DISPLAY_ASSET_NAME = {
 }
 
 # Verdict colour mapping: 0=PASS, 1=FAIL, 2=INVALID, 3=NOT_RUN.
-# INVALID (ran, all-offset sanity-failed) keeps its mid-grey from the 12-test
-# era; NOT_RUN (TestU01 length-skipped on every offset of this cell — a
-# common state for MultinomialBitsOver_L16 / RandomWalk1_L320 on short
-# fused streams) is paler so it visually reads as "no data" rather than
-# "ran and failed sanity". Any unknown verdict string is binned into
-# NOT_RUN by the .get() default — keeps the runner / plot drift-safe.
+# INVALID (ran, all-offset sanity-failed) is mid-grey; NOT_RUN (TestU01
+# length-skipped on every offset of this cell — common for
+# MultinomialBitsOver_L16 / RandomWalk1_L320 on short fused streams) is
+# paler so it reads as "no data" rather than "ran and failed sanity". Any
+# unknown verdict string is binned into NOT_RUN by the .get() default.
 VERDICT_COLOURS = ListedColormap(["#e8f1fa", "#08306b", "#bdc7d1", "#ffffff"])
 VERDICT_LABELS = {"PASS": 0, "FAIL": 1, "INVALID": 2, "NOT_RUN": 3}
 
@@ -132,9 +110,8 @@ def _load_verdict_matrix(n_dir: Path) -> tuple[pd.DataFrame, list[str]]:
     matrix = np.zeros((len(months), len(SUB_TESTS)), dtype=np.int8)
     for i, sub in enumerate(SUB_TESTS):
         col = f"{sub}_verdict"
-        # If the verdict column itself is missing (older 12-sub-test
-        # outputs being re-plotted against the 29-sub-test SUB_TESTS
-        # list), mark every month NOT_RUN for that sub-test.
+        # If the verdict column is missing (e.g. older outputs re-plotted
+        # against the current SUB_TESTS list), mark every month NOT_RUN.
         if col not in df.columns:
             matrix[:, i] = VERDICT_LABELS["NOT_RUN"]
             continue
@@ -154,8 +131,7 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
     legend_fontsize = 11
     figure_title_fontsize = 14
 
-    # 29 sub-tests per panel; widen from the 12-test era's (13, 9) so the
-    # x-axis labels stay legible.
+    # 29 sub-tests per panel; wide figure so the x-axis labels stay legible.
     fig, axes = plt.subplots(4, 1, figsize=(13.5, 19.5))
     axes = axes.flatten()
 

@@ -1,53 +1,22 @@
 from __future__ import annotations
 
-# nistrng (Pasqualini SP800-22 R1A Python reimpl) wrapper —— battery 中
-# 来自 nistrng 的那部分（5 个测试，CumSum / Serial 各拆 2 → 7 行 schema）。
+# nistrng (Pasqualini SP800-22 R1A) wrapper：battery 中来自 nistrng 的 5 个测试
+# （CumSum / Serial 各拆 2 → 7 行 schema）。编排在 src/battery.py。
 #
-# 这个文件**只管 nistrng**：不调 stats、不调 TestU01。三 battery 的编排在
-# `src/battery.py`，它从这里 import 下面三个 helper + 名字列表。
-#
-# 关键的 nistrng 1.2.3 内部行为（已被 smoke test 验证）：
-#
-# - **不用 `.passed`**：nistrng 内部硬编码 α=0.01，本项目要 α-agnostic 让
-#   caller 拿原始 p 值自己跟阈值比。
-#
-# - **不用 `.score`**：`.score` 是 `@property`，返回的是
-#   `float(numpy.nanmean(self._score_list))`。
-#   单 p 测试（Monobit, BlockFreq, DFT, LongestRun）正确；但**双 p 测试**
-#   （CumSum F/B 按 §2.13；Serial m / m-1 按 §2.16），`.score` 会**把两个
-#   p 平均成一个**，无声偏离 NIST 标准（NIST 把两者当作独立 p 值分别报告）。
-#   所以 wrapper 直接读 `result._score_list`（私有属性，未来 nistrng 升级
-#   API 时本 wrapper 会爆，需要回头检查；公开 `.score` 完全弃用）。
-#
-# - **int64 cast**：nistrng 1.2.3 `CumulativeSumsTest._execute` 用 scalar
-#   int8 累加；n >~ 10K 时无声溢出污染 CumSum p 值。本 wrapper 在 `ensure_int64`
-#   里一次 cast，所有下游 nistrng 调用复用。代价可忽略
-#   （100K bits int64 ≈ 800 KB）。
-#
-# 输入格式：bits 数组取值 ∈ {0, 1}，dtype int8 / uint8 / int64 / bool 都 OK。
-# **不要**传 -1 / +1：nistrng 内部自动做 0 → -1 转换，传 -1/+1 会变成
-# -3 / +1 垃圾结果。
-#
-# 命名约定（plan §1.6）：
-#
-# - CSV 输出列 `sub_test` 用人类友好名，定义在下面的
-#   `SUB_TESTS_FROM_NISTRNG_BASE`
-# - 查 nistrng dict-key 用 nistrng 自己的 key（如 `'frequency_within_block'`、
-#   `'cumulative sums'` 注意有空格），映射表在 `NISTRNG_CALLS`
-#
-# 冒烟测试在 `src/battery.py` 里（端到端跑 full_battery，自动覆盖本 wrapper
-# 的 int64 cast 回归 + CumSum / Serial 拆分行为）。
+# 关键 nistrng 1.2.3 gotcha（已被 smoke test 验证）：
+# - 读原始 p 值，不用 `.passed`（内部硬编码 α=0.01，本项目要 α-agnostic）。
+# - 不用 `.score`：对双 p 测试（CumSum F/B、Serial m/m-1）它会把两个 p 平均成
+#   一个，无声偏离 NIST。改读私有 `result._score_list`（nistrng 升级 API 时会爆）。
+# - int64 cast：CumulativeSumsTest._execute 用 int8 累加，n>~10K 会无声溢出；
+#   `ensure_int64` 统一 cast 一次。
+# - 输入 bits ∈ {0,1}（int8/uint8/int64/bool 均可），切勿传 -1/+1。
+# - dict-key 用 nistrng 自己的 key（注意 `'cumulative sums'` 有空格），映射见 NISTRNG_CALLS。
 
 import numpy as np
 import nistrng
 
 
-# ---------------------------------------------------------------------------
-# 常量
-# ---------------------------------------------------------------------------
-
-# CSV `sub_test` 列：nistrng 来源的 sub-test 名字。冒烟测试 (2026-05-18)
-# 已通过 `_score_list.shape` 实测确认：
+# CSV `sub_test` 列：nistrng 来源的 sub-test 名字。`_score_list.shape` 实测：
 #   - BlockFreq / LongestRun / DFT: 0-d ndarray → 单行
 #   - CumSum:    1-d (2,) → CumSum_forward / CumSum_backward
 #   - Serial:    1-d (2,) → Serial_m / Serial_m_minus_1
@@ -70,11 +39,6 @@ NISTRNG_CALLS: list[tuple[str, str]] = [
     ("DFT", "dft"),
     ("Serial", "serial"),
 ]
-
-
-# ---------------------------------------------------------------------------
-# Helper 函数
-# ---------------------------------------------------------------------------
 
 
 def ensure_int64(bits: np.ndarray) -> np.ndarray:

@@ -15,8 +15,8 @@ Two layers:
     joint_counts_1bit, mi_from_counts, pearson_from_counts and
     pool_pair_across_months / compute_pairwise_mi_matrix — operate on
     the 2x2 joint contingency table and stream-accumulate it across
-    many (asset, month) cells. Used by scripts/runner_exp4_mi_matrix.py
-    to build the 5x5 calibration-window pool matrix in plan v3.2 §2.4.
+    many (asset, month) cells, building the 5x5 calibration-window pool
+    matrix.
 
 The count-based pool is mathematically equivalent to concatenating bit
 streams and computing MI on the concatenation, but does the bookkeeping
@@ -24,8 +24,8 @@ in O(months) memory instead of O(months * cell_length).
 
 drop-any-zero is applied PAIR-specifically here: for the pair (a, b)
 we keep only seconds where both a and b have non-zero per-second
-sign. This matches the plan v3.2 §2.4 spec and differs from the
-N-asset XOR fusion where the mask uses every asset in the subset.
+sign. This differs from the N-asset XOR fusion where the mask uses
+every asset in the subset.
 """
 
 from dataclasses import dataclass
@@ -38,11 +38,6 @@ import pandas as pd
 # Note: src.fusion is imported lazily inside the pool builders to avoid a
 # circular import (src.fusion imports the array-based helpers from here
 # for its smoke-time diagnostics).
-
-
-# ---------------------------------------------------------------------------
-# Array-based helpers (used by src.fusion smoke diagnostics)
-# ---------------------------------------------------------------------------
 
 
 def pearson_phi_1bit(x: np.ndarray, y: np.ndarray) -> float:
@@ -76,11 +71,6 @@ def mi_1bit(x: np.ndarray, y: np.ndarray) -> float:
     n01 = int(np.count_nonzero((x == 0) & (y == 1)))
     n00 = int(x.size - n11 - n10 - n01)
     return mi_from_counts(n00, n01, n10, n11)
-
-
-# ---------------------------------------------------------------------------
-# Count-based helpers (used by the cross-month pool builder)
-# ---------------------------------------------------------------------------
 
 
 def joint_counts_1bit(x: np.ndarray, y: np.ndarray) -> tuple[int, int, int, int]:
@@ -130,11 +120,6 @@ def pearson_from_counts(n00: int, n01: int, n10: int, n11: int) -> float:
         return 0.0
     cov = (n11 / n) - p_x1 * p_y1
     return float(cov / np.sqrt(var_x * var_y))
-
-
-# ---------------------------------------------------------------------------
-# Per-pair pool across months
-# ---------------------------------------------------------------------------
 
 
 @dataclass(frozen=True)
@@ -299,11 +284,6 @@ def pool_pair_across_months(
     )
 
 
-# ---------------------------------------------------------------------------
-# Full matrix builder (with per-month signs cache)
-# ---------------------------------------------------------------------------
-
-
 @dataclass(frozen=True)
 class PairwiseMatrixResult:
     assets: tuple[str, ...]
@@ -452,11 +432,6 @@ def compute_pairwise_mi_matrix(
         per_month_long=pd.DataFrame(per_month_rows),
         pool_summary_long=pd.DataFrame(pool_rows),
     )
-
-
-# ---------------------------------------------------------------------------
-# Subset ordering recommendations (consumed by the runner)
-# ---------------------------------------------------------------------------
 
 
 def recommend_subsets_by_max_mi(
