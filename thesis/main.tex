@@ -64,8 +64,15 @@
 \captionsetup{justification=raggedright,singlelinecheck=false}
 \newcommand\myhrulefill[1]{\leavevmode\leaders\hrule height#1\hfill\kern0pt}
 \DeclareCaptionFormat{FigFormat}{{\color{black}\myhrulefill{0.5pt}}\\#1#2#3}
-\captionsetup[figure]{format=FigFormat}
-\captionsetup[table]{format=FigFormat}
+\captionsetup[figure]{format=FigFormat,justification=raggedright,singlelinecheck=false}
+\captionsetup[table]{format=FigFormat,justification=raggedright,singlelinecheck=false}
+\captionsetup[algorithm]{justification=raggedright,singlelinecheck=false}
+\newcommand{\floatnote}[1]{%
+  \par\smallskip\noindent%
+  \begin{minipage}{\linewidth}%
+    \footnotesize\emergencystretch=1em #1%
+  \end{minipage}\par%
+}
 
 %% Typography and page layout.
 \usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
@@ -73,8 +80,8 @@
   paper=a4paper,
   top=28mm,
   bottom=28mm,
-  left=32mm,
-  right=32mm,
+  left=30mm,
+  right=30mm,
   marginparsep=5mm,
   marginparwidth=25mm
 ]{geometry}
@@ -334,7 +341,7 @@ The test battery of this thesis is as follows:
 \item \textbf{Monobit.} A basic frequency test that checks the overall 0/1 balance.
 \item \textbf{Runs.} NIST-style, checking correlation between neighbouring bits. The NIST pre-frequency check is not implemented separately, since Monobit passing at $\alpha = 0.01$ implies $|\pi - 0.5| \le 1.288/\sqrt{n}$, which is strictly tighter than the NIST threshold $2/\sqrt{n}$; the check is therefore equivalently absorbed by the Monobit criterion on every accepted~$\ell$.
 \item \textbf{Approximate Entropy ($m = 5$).} The multi-window complexity difference~\citep{pincus1991apen}, aligned with Table~4 of \citet{onofri2025emergence}. The NIST default is $m = 2$ (more stable on short sequences); $m = 5$ is more sensitive to short-range structure but requires $n \gtrsim 10 \cdot 2^m \approx 320$ for the asymptotic distribution to be reliable. This thesis uses $n \ge 2000$, well above this threshold.
-\item \textbf{TestU01.} Cross-battery external validation for the extended-audit and validation stages~\citep{lecuyer2007testu01}. Alphabit is enabled; Rabbit is reserved for future work.
+\item \textbf{TestU01.} TestU01~\citep{lecuyer2007testu01} is used for cross-battery external validation in the extended-audit and validation stages. Alphabit is enabled; Rabbit is reserved for future work.
 \end{itemize}
 
 Under the extended-battery convention, this thesis uses a fixed \textbf{29-sub-test universe}: 5 core tests ($D$ at adaptive $k$, $D(k = 2)$, Monobit, Runs, and ApEn), 7 NIST SP800-22 extensions~\citep{bassham2010sp80022} (Block Frequency, Cumulative Sums forward/backward, Longest Run, DFT, and Serial $m$/$m{-}1$), and 17 TestU01 Alphabit statistics. Alphabit has 9 named tests, but RandomWalk1 outputs 5 statistics at each of L64 and L320; this thesis therefore counts Alphabit at the statistic level, giving 17 sub-tests. The three parts sum to $5 + 7 + 17 = 29$. At short lengths, TestU01 may length-skip long-block sub-tests, and such entries are excluded from the admissible denominator.
@@ -544,7 +551,7 @@ This chapter first describes the experimental setup and data in the Overview (\c
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Throughout this thesis ``/s'' is shorthand for ``per second''. For each of the two rates (raw trades/s and aggTrades/s), the table reports the per-asset median and the [5th, 95th] percentiles across the 15 monthly archives covering the 2025-01 to 2026-03 sample period. Assets are sorted by the median raw trades/s in descending order.}
+  \floatnote{Throughout this thesis ``/s'' is shorthand for ``per second''. For each of the two rates (raw trades/s and aggTrades/s), the table reports the per-asset median and the [5th, 95th] percentiles across the 15 monthly archives covering the 2025-01 to 2026-03 sample period. Assets are sorted by the median raw trades/s in descending order.}
 \end{table}
 
 \textbf{aggTrades vs raw trades.} The aggTrades/s rate counts records in Binance's public aggregated stream, which merges raw fills that share timestamp, price, and direction into a single record. The raw trades/s rate is recovered from the \texttt{aggTrades} side by summing $(\texttt{last\_trade\_id} - \texttt{first\_trade\_id} + 1)$ over all rows; downloading from the raw \texttt{trades} endpoint is therefore unnecessary. This raw count matches the granularity of the LOBSTER message-file counts used by \citet{shternshis2025predictability} and \citet{onofri2025emergence}. The raw/agg ratio is much higher on \texttt{SOLUSDT} and \texttt{DOGEUSDT} than on the other three assets, which suggests that on these two assets a single taker order tends to consume more maker fills before the price moves to the next level. This is consistent with their lower price levels and finer ticks compared to the typical trade size.
@@ -593,17 +600,16 @@ Experiment~1 answers the negative side of RQ1. The simplest possible baseline is
       \bottomrule
     \end{tabular}
     \end{adjustbox}
-  \par\smallskip
-  {\footnotesize Each row aggregates 15 (asset, month) cells covering 2025-01 to 2026-03: the median bit emission rate (bps), the worst-case Shannon bias (largest $1 - H$), the median lag-1 autocorrelation, the number of months (out of fifteen) on which Monobit, Runs, ApEn, $D$ (adaptive $k$), and $D_2 = D(k{=}2)$ reject at $\alpha = 0.01$, and the largest 0-run or 1-run length $L_{\max}$ observed across all 15 cells. Rows are sorted by bps median in descending order. The adaptive block length $k = \lfloor 0.5 \log_2 n \rfloor$ falls in $10$--$12$ on this sample. The per-(asset, month) distributions behind these summary statistics are shown in \cref{fig:exp1-distributions}.}
+  \floatnote{Each row aggregates 15 (asset, month) cells covering 2025-01 to 2026-03: the median bit emission rate (bps), the worst-case Shannon bias (largest $1 - H$), the median lag-1 autocorrelation, the number of months (out of fifteen) on which Monobit, Runs, ApEn, $D$ (adaptive $k$), and $D_2 = D(k{=}2)$ reject at $\alpha = 0.01$, and the largest 0-run or 1-run length $L_{\max}$ observed across all 15 cells. Rows are sorted by bps median in descending order. The adaptive block length $k = \lfloor 0.5 \log_2 n \rfloor$ falls in $10$--$12$ on this sample. The per-(asset, month) distributions behind these summary statistics are shown in \cref{fig:exp1-distributions}.}
 \end{table}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp1_per_asset_distributions.png}
   \end{center}
   \caption{Experiment~1 baseline - per-(asset, month) distributions.}
   \label{fig:exp1-distributions}
-  {\footnotesize One observation per (asset, month) cell across the 15-month sample. \emph{Top-left:} bits per second. \emph{Top-right:} lag-1 autocorrelation $\rho_1$, with the zero line marked. \emph{Bottom-left:} ECDF of $-\log_{10}(p_{\text{Monobit}})$, with the $\alpha = 0.01$ rejection threshold marked. \emph{Bottom-right:} $L_{\max} = \max(\text{0-run}, \text{1-run})$ histogram.}
+  \floatnote{One observation per (asset, month) cell across the 15-month sample. \emph{Top-left:} bits per second. \emph{Top-right:} lag-1 autocorrelation $\rho_1$, with the zero line marked. \emph{Bottom-left:} ECDF of $-\log_{10}(p_{\text{Monobit}})$, with the $\alpha = 0.01$ rejection threshold marked. \emph{Bottom-right:} $L_{\max} = \max(\text{0-run}, \text{1-run})$ histogram.}
 \end{figure}
 
 The marginal distribution is nearly balanced across all 75 baseline cells, with $1 - H$ at most $7.93 \times 10^{-3}$ and as low as $\sim 10^{-5}$ on the lower-activity assets. However, the Shannon bias only describes the 0/1 ratio; it cannot test adjacent dependence or longer structure, so it is reported only as a summary indicator and does not enter the acceptance criterion. The five observations below are organised as a chain of evidence.
@@ -666,25 +672,25 @@ The shared setup below covers \cref{sec:exp2-single-offset,sec:exp2-strict-crite
 
 This step uses the simplified single-offset version with $o = 0$: for each $\ell$, only one bit stream is built, and the basic relation between aggregation depth and the pass result is inspected. The selected $\ell^*$ is the smallest $\ell$ at which $D$ (adaptive $k$) and Monobit both give $p \geq \alpha$ ($\alpha = 0.01$). The $\ell$ grid is $50$ to $2000$ with step $25$, applied to all $5 \times 15 = 75$ (asset, month) cells.
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_2a_single_offset_q1.png}
   \end{center}
   \caption{Single-offset $-\log_{10}(p)$ versus $\ell$ on 2025~Q1.}
   \label{fig:exp2-single-offset-q1}
-  {\footnotesize Each panel arranges the curves by asset and by month, showing how the $-\log_{10}(p)$ of $D$ and Monobit drops as $\ell$ grows. The horizontal red line marks the $\alpha = 0.01$ threshold. The full 15-month table of selected $\ell^*$ is in \cref{tab:appendix-a1}.}
+  \floatnote{Each panel arranges the curves by asset and by month, showing how the $-\log_{10}(p)$ of $D$ and Monobit drops as $\ell$ grows. The horizontal red line marks the $\alpha = 0.01$ threshold. The full 15-month table of selected $\ell^*$ is in \cref{tab:appendix-a1}.}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_2b_single_offset_q5.png}
   \end{center}
   \caption{Single-offset $-\log_{10}(p)$ versus $\ell$ on 2026~Q1 (Q5).}
   \label{fig:exp2-single-offset-q5}
-  {\footnotesize Same format as \cref{fig:exp2-single-offset-q1}.}
+  \floatnote{Same format as \cref{fig:exp2-single-offset-q1}.}
 \end{figure}
 
-\begin{table}[!htbp]
+\begin{table}[!htb]
   \caption{Single-offset criterion -- per-asset summary.}
   \label{tab:exp2-single-offset-summary}
   \begin{center}
@@ -702,7 +708,7 @@ This step uses the simplified single-offset version with $o = 0$: for each $\ell
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize n\_pass is the number of months (out of fifteen) on which the single-offset criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a1}.}
+  \floatnote{n\_pass is the number of months (out of fifteen) on which the single-offset criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a1}.}
 \end{table}
 
 \textbf{Selected $\ell^*$ shows a coarse activity-based layering.} The per-asset medians (BTC $\approx 1300$, ETH $\approx 725$, BNB $\approx 275$, SOL $\approx 225$, DOGE $\approx 225$) show that BTC and ETH need a clearly deeper aggregation in the $[50, 2000]$ range, while the three lower-activity assets reach the threshold around $200$--$300$. This is in the same direction as the ``higher trades/s, larger required $\ell$'' relation reported by \citet{onofri2025emergence} on 8 US stocks plus 1 ETF; but the result should be read only as a coarse layering, not as a strict monotone ranking between all five assets.
@@ -716,25 +722,25 @@ This step uses the simplified single-offset version with $o = 0$: for each $\ell
 
 This step replaces the ``single offset passes'' rule with the strict criterion of the all-offset framework (\cref{alg:acceptance-criterion}, \cref{sec:acceptance-criteria}): for each $\ell$, $\ell$ offset bit streams are built, and at least $80\%$ of them must give $p \geq \alpha$ on both $D$ (adaptive $k$) and Monobit at the same time ($\alpha = 0.01$). The selected $\ell^*$ is the smallest $\ell$ on which this holds. The $\ell$ grid stays at $50$ to $2000$ with step $25$.
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_3a_all_offset_strict_q1.png}
   \end{center}
   \caption{All-offset strict criterion -- pass rate versus $\ell$ on 2025~Q1.}
   \label{fig:exp2-strict-criterion-q1}
-  {\footnotesize Each panel shows the offset pass rate of $D$ and Monobit for one (asset, month) cell. The horizontal red line is the $0.80$ strict criterion threshold. The full 15-month table of selected $\ell^*$ is in \cref{tab:appendix-a2}.}
+  \floatnote{Each panel shows the offset pass rate of $D$ and Monobit for one (asset, month) cell. The horizontal red line is the $0.80$ strict criterion threshold. The full 15-month table of selected $\ell^*$ is in \cref{tab:appendix-a2}.}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_3b_all_offset_strict_q5.png}
   \end{center}
   \caption{All-offset strict criterion -- pass rate versus $\ell$ on 2026~Q1 (Q5).}
   \label{fig:exp2-strict-criterion-q5}
-  {\footnotesize Same format as \cref{fig:exp2-strict-criterion-q1}.}
+  \floatnote{Same format as \cref{fig:exp2-strict-criterion-q1}.}
 \end{figure}
 
-\begin{table}[!htbp]
+\begin{table}[!htb]
   \caption{All-offset strict criterion -- per-asset summary.}
   \label{tab:exp2-strict-summary}
   \begin{center}
@@ -752,7 +758,7 @@ This step replaces the ``single offset passes'' rule with the strict criterion o
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize n\_pass is the number of months (out of fifteen) on which the strict criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a2}.}
+  \floatnote{n\_pass is the number of months (out of fifteen) on which the strict criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a2}.}
 \end{table}
 
 \textbf{The strict criterion pushes $\ell^*$ higher; the coarse ranking remains the same as in single offset.} Compared with \cref{sec:exp2-single-offset}, the strict criterion raises the per-asset median of selected $\ell^*$ on every asset: BTC $1300 \to 1500$, ETH $725 \to 975$, BNB $275 \to 350$, DOGE $225 \to 375$, SOL $225 \to 350$ (the two medians are computed over different months because the acceptable subsets differ, so the comparison is a magnitude trend, not a month-by-month difference). This is the cost of asking $80\%$ of offsets to pass together rather than only one: the joint confirmation from many offsets is statistically a higher bar, so a deeper aggregation is needed to move out of the rejection region. The relation between assets is still that BTC and ETH are clearly above BNB, SOL and DOGE; the lower three should not be read as a strict monotone ranking.
@@ -768,13 +774,13 @@ This step replaces the ``single offset passes'' rule with the strict criterion o
 
 This step replaces the strict criterion with the relaxed criterion defined in \cref{sec:acceptance-criteria}. The main text uses $(F, f) = (3, 0.03)$, and the $\ell$ grid is refined to $10$ to $2000$ with step $2$.
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_4_all_offset_relaxed.png}
   \end{center}
   \caption{All-offset relaxed criterion -- $n_{\text{pass}}(\ell)$ and selected $\ell^*$.}
   \label{fig:exp2-relaxed-criterion}
-  {\footnotesize 2025~Q1 and 2026~Q1 (Q5) are shown together. Each panel plots $n_{\text{pass}}(\ell)$ for the five assets, where $n_{\text{pass}}$ is the number of offsets that pass both $D$ and Monobit. The red line is the relaxed criterion threshold; the marked points are the selected $\ell^*$. The full 15-month results are in \cref{tab:appendix-a4}; a Bonferroni comparison is in \cref{tab:appendix-a5}.}
+  \floatnote{2025~Q1 and 2026~Q1 (Q5) are shown together. Each panel plots $n_{\text{pass}}(\ell)$ for the five assets, where $n_{\text{pass}}$ is the number of offsets that pass both $D$ and Monobit. The red line is the relaxed criterion threshold; the marked points are the selected $\ell^*$. The full 15-month results are in \cref{tab:appendix-a4}; a Bonferroni comparison is in \cref{tab:appendix-a5}.}
 \end{figure}
 
 \begin{table}[!htbp]
@@ -795,7 +801,7 @@ This step replaces the strict criterion with the relaxed criterion defined in \c
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize n\_pass is the number of months on which the relaxed criterion returns acceptable; the median and the range are computed over all 15 months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a4}.}
+  \floatnote{n\_pass is the number of months on which the relaxed criterion returns acceptable; the median and the range are computed over all 15 months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a4}.}
 \end{table}
 
 \textbf{The relaxed criterion raises coverage from $63/75$ to $75/75$.} The strict criterion fails on 8 months of BTC, 2 months of ETH and 2 months of SOL, which is 12 cells in total (\cref{tab:exp2-strict-summary}). The relaxed criterion finds an acceptable $\ell^*$ on all 75 cells. The 8 BTC months that had no $\ell \leq 2000$ acceptable under the strict criterion now find $\ell^* \in [998, 1750]$ under the relaxed criterion, all still inside the same $[50, 2000]$ grid; it is the strict $80\%$ bar that is too tight on those cells. This observation directly responds to the practical coverage problem raised at the end of \cref{sec:exp2-strict-criterion}.
@@ -813,25 +819,25 @@ This subsection closes the chain on the transaction-time axis: single offset $\t
 
 This step redoes the all-offset acceptance loop on the physical-time axis. Different from transaction-time, the price series is first turned into a per-second closing price, and then $\ell$ takes the unit ``seconds'' (see \cref{sec:time-based-pipeline}). The $\ell$ grid is $10$ to $600$ with step $1$; the criterion still uses the $80\%$ pass-rate framework. The base criterion already gives $70/75$ coverage on 1-second bars, so no relaxed criterion is needed here.
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_5a_1sbars_q1.png}
   \end{center}
   \caption{1-second bar criterion -- pass rate versus $\ell$ on 2025~Q1.}
   \label{fig:exp2-1sbars-q1}
-  {\footnotesize The format is the same as \cref{fig:exp2-strict-criterion-q1}, but the unit of $\ell$ changes from ``number of trades'' to ``seconds''. The horizontal red line is the $0.80$ pass rate threshold. The full 15-month tables of selected $\ell^*$ across the three criteria are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
+  \floatnote{The format is the same as \cref{fig:exp2-strict-criterion-q1}, but the unit of $\ell$ changes from ``number of trades'' to ``seconds''. The horizontal red line is the $0.80$ pass rate threshold. The full 15-month tables of selected $\ell^*$ across the three criteria are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
 \end{figure}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_5b_1sbars_q5.png}
   \end{center}
   \caption{1-second bar criterion -- pass rate versus $\ell$ on 2026~Q1 (Q5).}
   \label{fig:exp2-1sbars-q5}
-  {\footnotesize Same format as \cref{fig:exp2-1sbars-q1}.}
+  \floatnote{Same format as \cref{fig:exp2-1sbars-q1}.}
 \end{figure}
 
-\begin{table}[!htbp]
+\begin{table}[!htb]
   \caption{1-second bar criterion -- per-asset summary.}
   \label{tab:exp2-1sbars-summary}
   \begin{center}
@@ -849,7 +855,7 @@ This step redoes the all-offset acceptance loop on the physical-time axis. Diffe
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Each row aggregates 15 (asset, month) cells under two criteria: base ($D$ + Monobit) and +Runs. For even sample sizes the $\ell^*$ median is the average of the two middle values rounded to the nearest integer (BNB base $83.5 \to 84$, ETH base $64.5 \to 65$, ETH +Runs $55.5 \to 56$, SOL +Runs $58.5 \to 59$). The full per-(asset, month) tables, including the +Runs+ApEn criterion, are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
+  \floatnote{Each row aggregates 15 (asset, month) cells under two criteria: base ($D$ + Monobit) and +Runs. For even sample sizes the $\ell^*$ median is the average of the two middle values rounded to the nearest integer (BNB base $83.5 \to 84$, ETH base $64.5 \to 65$, ETH +Runs $55.5 \to 56$, SOL +Runs $58.5 \to 59$). The full per-(asset, month) tables, including the +Runs+ApEn criterion, are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
 \end{table}
 
 \textbf{The 1-second bar base criterion covers $70/75$ cells on the physical-time axis.} The base criterion gives 70 acceptable cells out of 75, which shows that the axis change still finds a second-level $\ell^*$ on most cells. The failures concentrate on a few months of ETH, BNB and DOGE; the seconds-with-trades coverage can explain a part of these failures, but it is not the only factor.
@@ -896,7 +902,7 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
 
 \item \textbf{Acceptance.} The acceptance rule follows Experiment~2. For each (cell, sub-test), the sub-test is counted as passed if at least $80\%$ of valid offsets give $p \geq \alpha = 0.01$. Per-asset summaries report ``passing months / admissible months''.
 
-\item \textbf{Sanity check.} Before the main run, each sub-test is checked on IID null data from \texttt{/dev/urandom}. The sanity run uses $K = 1000$ trials over six length brackets: 5K, 10K, 25K, 50K, 100K, and 200K bits. These brackets match the bit-length range that cells can reach. The sanity check decides whether a (sub-test, bracket) is admissible in the main run. Passing entries enter the denominator; entries with too high an observed type-I rate are marked \textsc{invalid}; entries that cannot run at that length are marked \textsc{not\_run}.
+\item \textbf{Sanity check.} Before the main run, each sub-test is checked on IID null data from \path{/dev/urandom}. The sanity run uses $K = 1000$ trials over six length brackets: 5K, 10K, 25K, 50K, 100K, and 200K bits. These brackets match the bit-length range that cells can reach. The sanity check decides whether a (sub-test, bracket) is admissible in the main run. Passing entries enter the denominator; entries with too high an observed type-I rate are marked \textsc{invalid}; entries that cannot run at that length are marked \textsc{not\_run}.
 
 \end{itemize}
 
@@ -905,13 +911,13 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
 
 \textbf{The sanity check shows that the extended battery is mostly usable.} Out of $29 \times 6 = 174$ (sub-test, bracket) entries, $164$ pass the sanity filter, with observed type-I rate $\leq 0.02 = 2\alpha$. The threshold is a loose sanity filter, not a re-calibration of the test level.\footnote{The threshold is set to $2\alpha$ rather than $\alpha$ to allow binomial sampling variation under $K = 1000$ null trials. When $\alpha = 0.01$ and $K = 1000$, a correctly implemented sub-test has a binomial 99\% confidence-interval upper end of about $0.018$~\citep{clopper1934binomial}. The value $0.02$ is slightly above this.} One entry is marked \textsc{invalid}: LongestRun in the 5K bracket has type-I rate $0.122$, which is consistent with the NIST length recommendation $N \geq 6272$ bits for LongestRun. Another 9 entries are marked \textsc{not\_run} because the length is too short. All pass rates below use only sanity-admissible entries in the denominator.
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
-    \includegraphics[width=\textwidth]{figures/exp3_pass_rate_per_asset.png}
+    \includegraphics[width=0.92\textwidth]{figures/exp3_pass_rate_per_asset.png}
   \end{center}
   \caption{Experiment~3 -- per-asset sub-test pass rates.}
   \label{fig:exp3-pass-rate-per-asset}
-  {\footnotesize Each cell shows the share of admissible months on which one asset passes one sub-test. The main sample is the 62-cell 1-second bar +Runs sample selected in Experiment~2.}
+  \floatnote{Each cell shows the share of admissible months on which one asset passes one sub-test. The main sample is the 62-cell 1-second bar +Runs sample selected in Experiment~2.}
 \end{figure}
 
 \textbf{Most sub-tests still pass under the extended battery.} $D$ (adaptive $k$), Monobit, Runs, and DFT pass in all admissible cells across all five assets. The first three are already part of the +Runs criterion. DFT is outside that criterion, so its 100\% pass rate gives an additional spectral check. Most other sub-tests also pass on most months, as shown in \cref{fig:exp3-pass-rate-per-asset}. In this sense, the aggregation levels selected by Experiment~2 are broadly stable under a wider battery.
@@ -932,7 +938,7 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Each entry is ``passing months / admissible months''. The admissible month count differs by asset because the +Runs criterion accepts different numbers of monthly cells: BTC 15, ETH 8, BNB 14, SOL 12, and DOGE 13. Rows are grouped by source battery, not sorted by failure rate.}
+  \floatnote{Each entry is ``passing months / admissible months''. The admissible month count differs by asset because the +Runs criterion accepts different numbers of monthly cells: BTC 15, ETH 8, BNB 14, SOL 12, and DOGE 13. Rows are grouped by source battery, not sorted by failure rate.}
 \end{table}
 
 \textbf{Three higher-order sub-tests expose the remaining weak point.} \cref{tab:exp3-failing-subtests} shows that Serial $m$ has per-asset pass rates from $33\%$ (SOL, $4/12$) to $64\%$ (BNB, $9/14$), with $30/62$ passes in total. It is the weakest NIST SP800-22 extension in this experiment. Across the full 29-sub-test universe, MultinomialBitsOver L4 is even weaker, with per-asset pass rates from $25\%$ to $57\%$ and $28/62$ passes in total. ApEn also fails clearly, especially on ETH ($2/8$). These tests all target higher-order or multi-symbol structure. Their failures show that the small criterion from Experiment~2 removes much of the short-range dependence, but still leaves structure that the criterion does not see.
@@ -980,13 +986,13 @@ $\binom{5}{2}+\binom{5}{3}+\binom{5}{4}+\binom{5}{5}=10+10+5+1=26$ subsets.
 \subsection{Mutual Information Diagnostic}
 \label{sec:exp4-mi}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=0.78\textwidth]{figures/exp4_mi_matrix.png}
   \end{center}
   \caption{Experiment~4 -- calibration-window mutual information matrix.}
   \label{fig:exp4-mi-matrix}
-  {\footnotesize Pairwise mutual information between the five 1-second sign-bit streams over the 2025-01 to 2025-09 calibration window.}
+  \floatnote{Pairwise mutual information between the five 1-second sign-bit streams over the 2025-01 to 2025-09 calibration window.}
 \end{figure}
 
 \cref{fig:exp4-mi-matrix} first checks the main assumption behind the combination step: whether the asset streams are close to independent. The answer is no, but the diagnostic is still useful. Using $10^{-3}$ bits/symbol as a practical near-independence reference level, all 10 asset pairs are above this level. The pooled mutual information ranges from 0.062 bits (BTC--BNB) to 0.244 bits (SOL--DOGE), with a mean of 0.131 bits. The absolute correlation $|\rho|$ ranges from 0.292 to 0.565, with a mean of 0.409.
@@ -1015,7 +1021,7 @@ The calibration procedure is simple. For each subset and each calibration month,
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize ``$\Delta$ vs runner-up'' is the throughput gap between the selected subset and the second-best subset with the same $n$. For $n=5$ there is only one subset.}
+  \floatnote{``$\Delta$ vs runner-up'' is the throughput gap between the selected subset and the second-best subset with the same $n$. For $n=5$ there is only one subset.}
 \end{table}
 
 \cref{tab:exp4-calibration} gives three observations. First, the throughput-best subset is not the same as the MI-best subset. For example, the MI-best subset for $n=3$ is BTC+BNB+SOL, while the throughput-best subset is BTC+ETH+SOL. The main text uses the throughput-best subset because the deployment goal is usable output rate under the fixed criterion. MI remains a diagnostic.
@@ -1048,29 +1054,29 @@ Validation fixes the selected subset, $\ell^*_n$, and selected output offset fro
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Throughput is measured on the selected output offset fixed during calibration. Failure count is the number of sub-tests that fail in at least one of the six validation months.}
+  \floatnote{Throughput is measured on the selected output offset fixed during calibration. Failure count is the number of sub-tests that fail in at least one of the six validation months.}
 \end{table}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
-    \includegraphics[width=\textwidth]{figures/exp4_validation_tradeoff.png}
+    \includegraphics[width=0.87\textwidth]{figures/exp4_validation_tradeoff.png}
   \end{center}
   \caption{Experiment~4 -- validation throughput and trade-off summary.}
   \label{fig:exp4-validation-tradeoff}
-  {\footnotesize The figure shows validation throughput, combined-stream marginal balance, and the distribution of failures for the four selected configurations.}
+  \floatnote{The figure shows validation throughput, combined-stream marginal balance, and the distribution of failures for the four selected configurations.}
 \end{figure}
 
 The first validation result is that throughput is usable for low-frequency password generation. The $n=3$ configuration has the highest median throughput, about 191,830 bits/month, or about 0.98 hours for 256 bits. The $n=2$ and $n=5$ configurations are both near 95k bits/month, or about 2 hours for 256 bits. The $n=4$ configuration is slower, about 35,583 bits/month, or 5.28 hours for 256 bits. For deployment latency, $n=2$, $n=3$, and $n=5$ are all in an acceptable range for occasional password generation. Throughput is not the main bottleneck.
 
 Validation throughput is close to, but lower than, the calibration estimate. The largest drop is for $n=4$ (about 22\%), which matches the later diagnosis that this configuration has moved outside the calibration regime.
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp4_validation_verdict.png}
   \end{center}
   \caption{Experiment~4 -- validation verdict matrix.}
   \label{fig:exp4-validation-verdict}
-  {\footnotesize The matrix shows pass/fail verdicts for the 29-sub-test universe over the six validation months.}
+  \floatnote{The matrix shows pass/fail verdicts for the 29-sub-test universe over the six validation months.}
 \end{figure}
 
 \begin{table}[!htbp]
@@ -1140,7 +1146,7 @@ Using the min-entropy budget from \cref{sec:output-metrics}, each validation cel
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize $h_\infty$ is the smaller of the MCV and Markov estimates for each validation cell. The IKM byte count is computed against a 256-bit target.}
+  \floatnote{$h_\infty$ is the smaller of the MCV and Markov estimates for each validation cell. The IKM byte count is computed against a 256-bit target.}
 \end{table}
 
 \cref{tab:exp4-min-entropy} agrees with the validation battery. If all $n$ values are included, the worst cell is $n=4$ with $h_\infty = 0.903$ bits/symbol, requiring 36 input bytes for a 256-bit target. If the deployment set is restricted to $n \in \{2,3,5\}$, the worst-month value is $h_\infty = 0.975$ bits/symbol, so 33 input bytes are enough for the 256-bit target. MCV is almost always the binding estimator: among 24 validation cells, 23 are bound by MCV and only 1 by Markov.
@@ -1167,13 +1173,13 @@ The prototype uses the deployable set from Experiment~4: $n \in \{2,3,5\}$. The 
 
 In this chapter, a ``strong password'' means a randomly generated password string with a near-uniform character distribution and search-space entropy clearly above common human-chosen passwords. The main strength measure is the password length and the character set size, as discussed in \cref{sec:background-information}.
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=0.82\textwidth]{figures/prototype_pipeline.png}
   \end{center}
   \caption{Prototype pipeline from Experiment~4 combined stream to password output.}
   \label{fig:prototype-pipeline}
-  {\footnotesize Each password uses a disjoint 33-byte IKM block from a deployable Experiment~4 stream. HKDF-SHA256 conditions the input, and rejection sampling maps the output bytes into a 70-character password alphabet.}
+  \floatnote{Each password uses a disjoint 33-byte IKM block from a deployable Experiment~4 stream. HKDF-SHA256 conditions the input, and rejection sampling maps the output bytes into a 70-character password alphabet.}
 \end{figure}
 
 \cref{fig:prototype-pipeline} shows the per-password pipeline. Each password uses a disjoint 33-byte IKM block cut from an Experiment~4 deployable stream. The block is passed through HKDF-SHA256, then mapped into a 70-character alphabet:
@@ -1217,13 +1223,13 @@ Each cell is evaluated with two output metrics. First, the 100 passwords are exp
   \end{center}
 \end{table}
 
-\begin{figure}[!htbp]
+\begin{figure}[!htb]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/prototype_eval_chi2_entropy.png}
   \end{center}
   \caption{Prototype evaluation -- chi-square and Shannon entropy.}
   \label{fig:prototype-eval}
-  {\footnotesize Market outputs for $n \in \{2,3,5\}$ are compared with the ideal-password baseline B1 and the ideal-IKM baseline B2.}
+  \floatnote{Market outputs for $n \in \{2,3,5\}$ are compared with the ideal-password baseline B1 and the ideal-IKM baseline B2.}
 \end{figure}
 
 \textbf{The market-derived passwords pass the output uniformity test.} All 18 market-derived cells pass the chi-square test. Across all 30 cells, only one cell fails, and it is in the B1 ideal-password baseline for 2026-01 ($p = 0.000375$), not in the market output. With $\alpha = 0.01$ and 30 cells, the expected number of type-I failures is $30 \times 0.01 = 0.30$, and the probability of at least one failure is about 26\%. This single baseline failure is therefore best read as normal finite-sample variation, not as a problem in the prototype pipeline.
@@ -1407,7 +1413,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Overall acceptance rate is $63/75$ (BTC fails on 8 months, ETH and SOL each fail on 2 months). On these 63 accepted cells, the Runs pass rate is below $0.05$ on 38 cells, and the $D(k{=}2)$ pass rate is below $0.05$ on the same 38 cells.}
+  \floatnote{Overall acceptance rate is $63/75$ (BTC fails on 8 months, ETH and SOL each fail on 2 months). On these 63 accepted cells, the Runs pass rate is below $0.05$ on 38 cells, and the $D(k{=}2)$ pass rate is below $0.05$ on the same 38 cells.}
 \end{table}
 
 \begin{table}[!htbp]
@@ -1438,7 +1444,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Overall acceptance rate is $48/75$ (BTC passes on 1 month, ETH on 9, BNB on 12, SOL and DOGE on 13 each).}
+  \floatnote{Overall acceptance rate is $48/75$ (BTC passes on 1 month, ETH on 9, BNB on 12, SOL and DOGE on 13 each).}
 \end{table}
 
 \begin{table}[!htbp]
@@ -1469,7 +1475,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Overall acceptance rate is $75/75$.}
+  \floatnote{Overall acceptance rate is $75/75$.}
 \end{table}
 
 \begin{table}[!htbp]
@@ -1518,7 +1524,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Acceptance rate $70/75$. Failed cells: 2025.06 ETH, 2025.07 BNB, 2025.12 ETH, 2026.02 DOGE and 2026.02 ETH. Among these, the 2025.12 ETH and 2026.02 DOGE cells have a seconds-with-trades coverage below $0.75$; the other failed cells still have a coverage between $0.76$ and $0.83$.}
+  \floatnote{Acceptance rate $70/75$. Failed cells: 2025.06 ETH, 2025.07 BNB, 2025.12 ETH, 2026.02 DOGE and 2026.02 ETH. Among these, the 2025.12 ETH and 2026.02 DOGE cells have a seconds-with-trades coverage below $0.75$; the other failed cells still have a coverage between $0.76$ and $0.83$.}
 \end{table}
 
 \begin{table}[!htbp]
@@ -1549,7 +1555,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Acceptance rate $62/75$. Runs passes on most cells here, while on the transaction-time axis it is rejected on almost every cell at the selected $\ell^*$ (\cref{tab:appendix-a2,tab:appendix-a3}); this is the key independence result of the 1-second bar axis (\cref{sec:exp2-1sbars}).}
+  \floatnote{Acceptance rate $62/75$. Runs passes on most cells here, while on the transaction-time axis it is rejected on almost every cell at the selected $\ell^*$ (\cref{tab:appendix-a2,tab:appendix-a3}); this is the key independence result of the 1-second bar axis (\cref{sec:exp2-1sbars}).}
 \end{table}
 
 \begin{table}[!htbp]
@@ -1580,7 +1586,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize Acceptance rate $62/75$. Adding ApEn at $m = 5$ on top of +Runs does not further reduce the acceptance count; the few cells that move only shift their selected $\ell^*$ slightly higher.}
+  \floatnote{Acceptance rate $62/75$. Adding ApEn at $m = 5$ on top of +Runs does not further reduce the acceptance count; the few cells that move only shift their selected $\ell^*$ slightly higher.}
 \end{table}
 
 \begin{table}[!htbp]
@@ -1625,7 +1631,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \end{tabular}
     \end{adjustbox}
   \end{center}
-  {\footnotesize The calibration window is 2025-01 to 2025-09. All 234 (subset, month) cells pass the +Runs criterion, meaning that each cell can find an $\ell^*$ in the $\ell = 1,\ldots,400$ grid where $D$ (adaptive $k$), Monobit, and Runs all reach all-offset pass rate at least $0.80$. Rows are ordered by $n$ and then by estimated bits/month. The dagger marks the throughput-best subset selected for validation.}
+  \floatnote{The calibration window is 2025-01 to 2025-09. All 234 (subset, month) cells pass the +Runs criterion, meaning that each cell can find an $\ell^*$ in the $\ell = 1,\ldots,400$ grid where $D$ (adaptive $k$), Monobit, and Runs all reach all-offset pass rate at least $0.80$. Rows are ordered by $n$ and then by estimated bits/month. The dagger marks the throughput-best subset selected for validation.}
 \end{table}
 
 %% =====================================================================

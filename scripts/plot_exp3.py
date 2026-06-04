@@ -136,6 +136,7 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
         f"cell-level verdict: pass_rate ≥ 0.80 at α = {ALPHA};  "
         f"annotation: X / Y where Y = sanity-admissible months",
         fontsize=10,
+        pad=28,
     )
 
     cbar = fig.colorbar(im, ax=ax, shrink=0.75, label="pass_rate")
