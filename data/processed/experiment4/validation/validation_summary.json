@@ -1,0 +1,864 @@
+{
+  "n_values": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "validation_months": [
+    "2025-10",
+    "2025-11",
+    "2025-12",
+    "2026-01",
+    "2026-02",
+    "2026-03"
+  ],
+  "calibration_root": "data/processed/experiment4/calibration_all_subsets",
+  "sanity_matrix_path": "data/processed/experiment3/sanity_check/sanity_validity_matrix-k1000.csv",
+  "gate_config": {
+    "alpha": 0.01,
+    "pass_rate_threshold": 0.8,
+    "min_bit_count": 2000,
+    "sub_tests": [
+      "D_adaptive",
+      "D_k2",
+      "Monobit",
+      "Runs",
+      "ApEn",
+      "BlockFrequency",
+      "CumSum_forward",
+      "CumSum_backward",
+      "LongestRun",
+      "DFT",
+      "Serial_m",
+      "Serial_m_minus_1",
+      "Alphabit_MultinomialBitsOver_L2",
+      "Alphabit_MultinomialBitsOver_L4",
+      "Alphabit_MultinomialBitsOver_L8",
+      "Alphabit_MultinomialBitsOver_L16",
+      "Alphabit_HammingIndep_L16",
+      "Alphabit_HammingIndep_L32",
+      "Alphabit_HammingCorr_L32",
+      "Alphabit_RandomWalk1_L64_H",
+      "Alphabit_RandomWalk1_L64_M",
+      "Alphabit_RandomWalk1_L64_J",
+      "Alphabit_RandomWalk1_L64_R",
+      "Alphabit_RandomWalk1_L64_C",
+      "Alphabit_RandomWalk1_L320_H",
+      "Alphabit_RandomWalk1_L320_M",
+      "Alphabit_RandomWalk1_L320_J",
+      "Alphabit_RandomWalk1_L320_R",
+      "Alphabit_RandomWalk1_L320_C"
+    ],
+    "n_sub_tests": 29
+  },
+  "subset_picks": {
+    "2": {
+      "subset": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "ell_star_n": 10,
+      "witness_offset": 1,
+      "calibration_estimated_bits_per_month": 97163.5
+    },
+    "3": {
+      "subset": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT"
+      ],
+      "ell_star_n": 3,
+      "witness_offset": 0,
+      "calibration_estimated_bits_per_month": 201950.33333333337
+    },
+    "4": {
+      "subset": [
+        "ETHUSDT",
+        "BNBUSDT",
+        "SOLUSDT",
+        "DOGEUSDT"
+      ],
+      "ell_star_n": 9,
+      "witness_offset": 1,
+      "calibration_estimated_bits_per_month": 45711.11111111111
+    },
+    "5": {
+      "subset": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "BNBUSDT",
+        "SOLUSDT",
+        "DOGEUSDT"
+      ],
+      "ell_star_n": 3,
+      "witness_offset": 0,
+      "calibration_estimated_bits_per_month": 102858.66666666669
+    }
+  },
+  "per_n_summary": {
+    "2": {
+      "n": 2,
+      "subset": [
+        "BTCUSDT",
+        "ETHUSDT"
+      ],
+      "ell_star_n": 10,
+      "witness_offset": 1,
+      "n_months": 6,
+      "sub_test_pass_counts": {
+        "D_adaptive": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "D_k2": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Monobit": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Runs": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "ApEn": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "BlockFrequency": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_forward": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_backward": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "LongestRun": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "DFT": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m_minus_1": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L2": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L4": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L8": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L16": {
+          "PASS": 2,
+          "FAIL": 0,
+          "INVALID": 4,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingIndep_L16": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingIndep_L32": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingCorr_L32": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_H": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_M": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_J": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_C": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_H": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_M": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_J": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_C": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        }
+      },
+      "output_bits_median": 95622.5,
+      "seconds_per_256_bits_median": 7173.8988862342585,
+      "hours_per_256_bits_median": 1.9927496906206275
+    },
+    "3": {
+      "n": 3,
+      "subset": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "SOLUSDT"
+      ],
+      "ell_star_n": 3,
+      "witness_offset": 0,
+      "n_months": 6,
+      "sub_test_pass_counts": {
+        "D_adaptive": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "D_k2": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Monobit": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Runs": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "ApEn": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "BlockFrequency": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_forward": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_backward": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "LongestRun": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "DFT": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m_minus_1": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L2": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L4": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L8": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L16": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingIndep_L16": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingIndep_L32": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingCorr_L32": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_H": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_M": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_J": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_C": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_H": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_M": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_J": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_C": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        }
+      },
+      "output_bits_median": 191829.5,
+      "seconds_per_256_bits_median": 3538.2604581734154,
+      "hours_per_256_bits_median": 0.9828501272703931
+    },
+    "4": {
+      "n": 4,
+      "subset": [
+        "ETHUSDT",
+        "BNBUSDT",
+        "SOLUSDT",
+        "DOGEUSDT"
+      ],
+      "ell_star_n": 9,
+      "witness_offset": 1,
+      "n_months": 6,
+      "sub_test_pass_counts": {
+        "D_adaptive": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "D_k2": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Monobit": {
+          "PASS": 0,
+          "FAIL": 6,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Runs": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "ApEn": {
+          "PASS": 2,
+          "FAIL": 4,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "BlockFrequency": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_forward": {
+          "PASS": 2,
+          "FAIL": 4,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_backward": {
+          "PASS": 0,
+          "FAIL": 6,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "LongestRun": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "DFT": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m": {
+          "PASS": 2,
+          "FAIL": 4,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m_minus_1": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L2": {
+          "PASS": 2,
+          "FAIL": 4,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L4": {
+          "PASS": 1,
+          "FAIL": 5,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L8": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L16": {
+          "PASS": 0,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 6
+        },
+        "Alphabit_HammingIndep_L16": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingIndep_L32": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingCorr_L32": {
+          "PASS": 4,
+          "FAIL": 2,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_H": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_M": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_J": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_C": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_H": {
+          "PASS": 2,
+          "FAIL": 4,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_M": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_J": {
+          "PASS": 3,
+          "FAIL": 3,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_C": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        }
+      },
+      "output_bits_median": 35583.0,
+      "seconds_per_256_bits_median": 19009.130515529057,
+      "hours_per_256_bits_median": 5.280314032091405
+    },
+    "5": {
+      "n": 5,
+      "subset": [
+        "BTCUSDT",
+        "ETHUSDT",
+        "BNBUSDT",
+        "SOLUSDT",
+        "DOGEUSDT"
+      ],
+      "ell_star_n": 3,
+      "witness_offset": 0,
+      "n_months": 6,
+      "sub_test_pass_counts": {
+        "D_adaptive": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "D_k2": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Monobit": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Runs": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "ApEn": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "BlockFrequency": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_forward": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "CumSum_backward": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "LongestRun": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "DFT": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Serial_m_minus_1": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L2": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L4": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L8": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_MultinomialBitsOver_L16": {
+          "PASS": 3,
+          "FAIL": 0,
+          "INVALID": 2,
+          "NOT_RUN": 1
+        },
+        "Alphabit_HammingIndep_L16": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingIndep_L32": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_HammingCorr_L32": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_H": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_M": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_J": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L64_C": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_H": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_M": {
+          "PASS": 5,
+          "FAIL": 1,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_J": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_R": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        },
+        "Alphabit_RandomWalk1_L320_C": {
+          "PASS": 6,
+          "FAIL": 0,
+          "INVALID": 0,
+          "NOT_RUN": 0
+        }
+      },
+      "output_bits_median": 95118.0,
+      "seconds_per_256_bits_median": 7233.568523271013,
+      "hours_per_256_bits_median": 2.0093245897975036
+    }
+  },
+  "elapsed_seconds": 638.3
+}

@@ -1,0 +1,39 @@
+{
+  "n_subsets_total": 26,
+  "n_calibration_months": 9,
+  "n_total_cells": 234,
+  "calibration_months": [
+    "2025-01",
+    "2025-02",
+    "2025-03",
+    "2025-04",
+    "2025-05",
+    "2025-06",
+    "2025-07",
+    "2025-08",
+    "2025-09"
+  ],
+  "witness_month": "2025-09",
+  "n_values": [
+    2,
+    3,
+    4,
+    5
+  ],
+  "assets": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "BNBUSDT",
+    "SOLUSDT",
+    "DOGEUSDT"
+  ],
+  "gate_config": {
+    "alpha": 0.01,
+    "pass_rate_threshold": 0.8,
+    "valid_offset_ratio_threshold": 0.8,
+    "min_bit_count": 2000,
+    "ell_grid": "[1, 400] step 1",
+    "aggregation_operator": "XOR-aggregation (see src/calibration.py)"
+  },
+  "elapsed_seconds": 747.5
+}

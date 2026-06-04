@@ -12,12 +12,46 @@ data/interim/.mplconfig/
 
 data/raw/*
 
-data/processed/
+# Ignore generated experiment outputs by default, but keep small top-level
+# result/summary files that back the thesis tables and numbers.
+data/processed/**
+!data/processed/**/
+# data overview
+!data/processed/data_overview/by_asset_summary.csv
+!data/processed/data_overview/by_asset_month.csv
+# Experiment 1
+!data/processed/experiment1/all_assets_summary_exp1_baseline.csv
+!data/processed/experiment1/per_asset_summary.csv
+!data/processed/experiment1/per_asset_summary.md
+# Experiment 2 (selected ell* roll-ups backing the appendix table)
+!data/processed/experiment2/**/selected_ell_by_window.txt
+# Experiment 3
+!data/processed/experiment3/base-gate/per_asset_summary.csv
+!data/processed/experiment3/runs-gate/per_asset_summary.csv
+# sanity check: keep only the final combined k1000 matrix, not the per-bracket files
+!data/processed/experiment3/sanity_check/sanity_validity_matrix-k1000.csv
+!data/processed/experiment3/sanity_check/sanity_validity_matrix-k1000.txt
+# Experiment 4
+!data/processed/experiment4/run.log
+!data/processed/experiment4/calibration_all_subsets/all_subsets_summary.csv
+!data/processed/experiment4/calibration_all_subsets/all_subsets_summary.json
+!data/processed/experiment4/validation/validation_summary.json
+!data/processed/experiment4/validation/validation_summary.txt
+!data/processed/experiment4/validation/n*/per_month_verdict_matrix.csv
+!data/processed/experiment4/validation/n*/per_month_throughput.csv
+!data/processed/experiment4/min_entropy/min_entropy_summary.json
+!data/processed/experiment4/min_entropy/min_entropy_per_cell.csv
+# Prototype
+!data/processed/prototype/salt.bin
+!data/processed/prototype/config.json
+!data/processed/prototype/evaluation/summary.json
+!data/processed/prototype/evaluation/per_cell_eval.csv
+!data/processed/prototype/evaluation/prototype_summary.txt
+!data/processed/prototype/evaluation/prototype_analysis.txt
+
 notes/
 
 vendor/
-uu-Thesis-Templates-for-Typst-main/
-Template in English - HISTORISKA INSTITUTIONEN.docx
 
 # TestU01 driver binaries (Mach-O); rebuild with `make -C tools`.
 tools/alphabit_probe

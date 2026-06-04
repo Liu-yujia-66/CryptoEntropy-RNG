@@ -1,0 +1,17 @@
+Results. Selected ell per window:
+
+RELAXED_MIN_PASS_ABSOLUTE = 3
+RELAXED_MIN_PASS_FRACTION = 0.03
+
+DEFAULT_AGG_START = 10
+DEFAULT_AGG_STOP = 2000
+DEFAULT_AGG_STEP = 2
+
+ETHUSDT = (300, 2000, 2)
+BTCUSDT = (700, 2000, 2)
+
+Window  | BNB | BTC  | DOGE | ETH | SOL
+--------+-----+------+------+-----+----
+2025.01 | 218 | 1364 | 274  | 500 | 334
+2025.02 | 190 | 1144 | 132  | 422 | 208
+2025.03 | 156 | 1252 | 102  | 338 | 154

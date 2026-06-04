@@ -1,0 +1,575 @@
+=== START Fri May 29 07:00:25 CEST 2026 ===
+=== STAGE 1/3: calibration_all_subsets (ell-min=1) ===
+=== exp4 all-subsets calibration ===
+assets         : ['BTCUSDT', 'ETHUSDT', 'BNBUSDT', 'SOLUSDT', 'DOGEUSDT']
+n values       : [2, 3, 4, 5]
+months         : 2025-01..2025-09 (9 months)
+witness month  : 2025-09
+ell grid       : [1, 400] step 1
+subsets to scan: 26
+total cells    : 234 = 26 subsets x 9 months
+input_root     : /Users/liuyujia/OthersProject/DATA/CryptoEntropy-RNG/raw/binance/spot/aggTrades
+output_root    : data/start1/calibration_all_subsets
+
+  subsets per n:
+    n=2 (10): BTCUSDT, ETHUSDT | BTCUSDT, BNBUSDT | BTCUSDT, SOLUSDT | BTCUSDT, DOGEUSDT | ETHUSDT, BNBUSDT | ETHUSDT, SOLUSDT | ETHUSDT, DOGEUSDT | BNBUSDT, SOLUSDT | BNBUSDT, DOGEUSDT | SOLUSDT, DOGEUSDT
+    n=3 (10): BTCUSDT, ETHUSDT, BNBUSDT | BTCUSDT, ETHUSDT, SOLUSDT | BTCUSDT, ETHUSDT, DOGEUSDT | BTCUSDT, BNBUSDT, SOLUSDT | BTCUSDT, BNBUSDT, DOGEUSDT | BTCUSDT, SOLUSDT, DOGEUSDT | ETHUSDT, BNBUSDT, SOLUSDT | ETHUSDT, BNBUSDT, DOGEUSDT | ETHUSDT, SOLUSDT, DOGEUSDT | BNBUSDT, SOLUSDT, DOGEUSDT
+    n=4 (5): BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT | BTCUSDT, ETHUSDT, BNBUSDT, DOGEUSDT | BTCUSDT, ETHUSDT, SOLUSDT, DOGEUSDT | BTCUSDT, BNBUSDT, SOLUSDT, DOGEUSDT | ETHUSDT, BNBUSDT, SOLUSDT, DOGEUSDT
+    n=5 (1): BTCUSDT, ETHUSDT, BNBUSDT, SOLUSDT, DOGEUSDT
+
+--- month 2025-01 (1/9) ---
+[bars] BTCUSDT-aggTrades-2025-01.csv  seconds_total=2,678,400  with_trades=2,564,364  coverage=0.957
+  loaded BTCUSDT: signs.size=2,678,400  (40.0s)
+[bars] ETHUSDT-aggTrades-2025-01.csv  seconds_total=2,678,400  with_trades=2,365,518  coverage=0.883
+  loaded ETHUSDT: signs.size=2,678,400  (27.0s)
+[bars] BNBUSDT-aggTrades-2025-01.csv  seconds_total=2,678,400  with_trades=2,104,707  coverage=0.786
+  loaded BNBUSDT: signs.size=2,678,400  (6.6s)
+[bars] SOLUSDT-aggTrades-2025-01.csv  seconds_total=2,678,400  with_trades=2,447,005  coverage=0.914
+  loaded SOLUSDT: signs.size=2,678,400  (16.6s)
+[bars] DOGEUSDT-aggTrades-2025-01.csv  seconds_total=2,678,397  with_trades=2,352,716  coverage=0.878
+  loaded DOGEUSDT: signs.size=2,678,397  (15.0s)
+  n=2 BTC,ETH              ell=   9  surv=0.420  p1=0.294  swept=  9  (0.3s)
+  n=2 BTC,BNB              ell=   8  surv=0.317  p1=0.336  swept=  8  (0.2s)
+  n=2 BTC,SOL              ell=   8  surv=0.418  p1=0.328  swept=  8  (0.2s)
+  n=2 BTC,DOGE             ell=   9  surv=0.444  p1=0.310  swept=  9  (0.3s)
+  n=2 ETH,BNB              ell=   8  surv=0.330  p1=0.308  swept=  8  (0.2s)
+  n=2 ETH,SOL              ell=  11  surv=0.436  p1=0.282  swept= 11  (0.3s)
+  n=2 ETH,DOGE             ell=  10  surv=0.463  p1=0.256  swept= 10  (0.3s)
+  n=2 BNB,SOL              ell=   8  surv=0.329  p1=0.338  swept=  8  (0.2s)
+  n=2 BNB,DOGE             ell=   8  surv=0.349  p1=0.328  swept=  8  (0.2s)
+  n=2 SOL,DOGE             ell=  10  surv=0.465  p1=0.270  swept= 10  (0.3s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.240  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.311  p1=0.499  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   5  surv=0.330  p1=0.500  swept=  5  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.236  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.249  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   5  surv=0.326  p1=0.499  swept=  5  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.249  p1=0.500  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   5  surv=0.264  p1=0.502  swept=  5  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   3  surv=0.345  p1=0.498  swept=  3  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   5  surv=0.261  p1=0.500  swept=  5  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   7  surv=0.191  p1=0.313  swept=  7  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=   9  surv=0.202  p1=0.305  swept=  9  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=   9  surv=0.259  p1=0.292  swept=  9  (0.2s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   6  surv=0.197  p1=0.320  swept=  6  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   7  surv=0.211  p1=0.303  swept=  7  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.168  p1=0.500  swept=  3  (0.1s)
+  month elapsed: 109.3s
+--- month 2025-02 (2/9) ---
+[bars] BTCUSDT-aggTrades-2025-02.csv  seconds_total=2,419,200  with_trades=2,284,102  coverage=0.944
+  loaded BTCUSDT: signs.size=2,419,200  (34.2s)
+[bars] ETHUSDT-aggTrades-2025-02.csv  seconds_total=2,419,200  with_trades=2,171,305  coverage=0.898
+  loaded ETHUSDT: signs.size=2,419,200  (31.6s)
+[bars] BNBUSDT-aggTrades-2025-02.csv  seconds_total=2,419,200  with_trades=1,981,627  coverage=0.819
+  loaded BNBUSDT: signs.size=2,419,200  (11.0s)
+[bars] SOLUSDT-aggTrades-2025-02.csv  seconds_total=2,419,200  with_trades=2,154,962  coverage=0.891
+  loaded SOLUSDT: signs.size=2,419,200  (10.5s)
+[bars] DOGEUSDT-aggTrades-2025-02.csv  seconds_total=2,419,200  with_trades=1,897,530  coverage=0.784
+  loaded DOGEUSDT: signs.size=2,419,200  (9.7s)
+  n=2 BTC,ETH              ell=  10  surv=0.437  p1=0.296  swept= 10  (0.3s)
+  n=2 BTC,BNB              ell=  10  surv=0.369  p1=0.312  swept= 10  (0.2s)
+  n=2 BTC,SOL              ell=   9  surv=0.400  p1=0.304  swept=  9  (0.2s)
+  n=2 BTC,DOGE             ell=  10  surv=0.392  p1=0.285  swept= 10  (0.2s)
+  n=2 ETH,BNB              ell=  10  surv=0.429  p1=0.270  swept= 10  (0.3s)
+  n=2 ETH,SOL              ell=  12  surv=0.469  p1=0.230  swept= 12  (0.4s)
+  n=2 ETH,DOGE             ell=  14  surv=0.465  p1=0.194  swept= 14  (0.4s)
+  n=2 BNB,SOL              ell=  10  surv=0.394  p1=0.278  swept= 10  (0.2s)
+  n=2 BNB,DOGE             ell=  11  surv=0.390  p1=0.253  swept= 11  (0.3s)
+  n=2 SOL,DOGE             ell=  15  surv=0.429  p1=0.195  swept= 15  (0.4s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.297  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.322  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   3  surv=0.323  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.273  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.274  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   3  surv=0.298  p1=0.500  swept=  3  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.320  p1=0.498  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   3  surv=0.323  p1=0.498  swept=  3  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   3  surv=0.354  p1=0.496  swept=  3  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.299  p1=0.499  swept=  3  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   9  surv=0.235  p1=0.281  swept=  9  (0.2s)
+  n=4 BTC,ETH,BNB,DOGE     ell=  10  surv=0.239  p1=0.269  swept= 10  (0.2s)
+  n=4 BTC,ETH,SOL,DOGE     ell=  10  surv=0.259  p1=0.258  swept= 10  (0.2s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   9  surv=0.222  p1=0.270  swept=  9  (0.2s)
+  n=4 ETH,BNB,SOL,DOGE     ell=  10  surv=0.261  p1=0.237  swept= 10  (0.2s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.202  p1=0.499  swept=  3  (0.1s)
+  month elapsed: 102.0s
+--- month 2025-03 (3/9) ---
+[bars] BTCUSDT-aggTrades-2025-03.csv  seconds_total=2,678,400  with_trades=2,539,248  coverage=0.948
+  loaded BTCUSDT: signs.size=2,678,400  (45.2s)
+[bars] ETHUSDT-aggTrades-2025-03.csv  seconds_total=2,678,400  with_trades=2,333,810  coverage=0.871
+  loaded ETHUSDT: signs.size=2,678,400  (26.7s)
+[bars] BNBUSDT-aggTrades-2025-03.csv  seconds_total=2,678,398  with_trades=2,172,787  coverage=0.811
+  loaded BNBUSDT: signs.size=2,678,398  (8.2s)
+[bars] SOLUSDT-aggTrades-2025-03.csv  seconds_total=2,678,399  with_trades=2,175,556  coverage=0.812
+  loaded SOLUSDT: signs.size=2,678,399  (8.5s)
+[bars] DOGEUSDT-aggTrades-2025-03.csv  seconds_total=2,678,397  with_trades=1,896,316  coverage=0.708
+  loaded DOGEUSDT: signs.size=2,678,397  (7.3s)
+  n=2 BTC,ETH              ell=  11  surv=0.436  p1=0.264  swept= 11  (0.3s)
+  n=2 BTC,BNB              ell=  10  surv=0.353  p1=0.324  swept= 10  (0.2s)
+  n=2 BTC,SOL              ell=  10  surv=0.373  p1=0.274  swept= 10  (0.2s)
+  n=2 BTC,DOGE             ell=  12  surv=0.370  p1=0.241  swept= 12  (0.3s)
+  n=2 ETH,BNB              ell=   9  surv=0.362  p1=0.308  swept=  9  (0.2s)
+  n=2 ETH,SOL              ell=  12  surv=0.387  p1=0.237  swept= 12  (0.3s)
+  n=2 ETH,DOGE             ell=  13  surv=0.387  p1=0.195  swept= 13  (0.3s)
+  n=2 BNB,SOL              ell=   9  surv=0.312  p1=0.310  swept=  9  (0.2s)
+  n=2 BNB,DOGE             ell=  10  surv=0.310  p1=0.280  swept= 10  (0.2s)
+  n=2 SOL,DOGE             ell=  14  surv=0.337  p1=0.193  swept= 14  (0.3s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.268  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.291  p1=0.499  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   5  surv=0.296  p1=0.499  swept=  5  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.233  p1=0.499  swept=  3  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.236  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   3  surv=0.259  p1=0.499  swept=  3  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.242  p1=0.498  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   5  surv=0.247  p1=0.499  swept=  5  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   3  surv=0.273  p1=0.496  swept=  3  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.218  p1=0.498  swept=  3  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   8  surv=0.195  p1=0.278  swept=  8  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=   9  surv=0.201  p1=0.264  swept=  9  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=  11  surv=0.222  p1=0.217  swept= 11  (0.2s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   9  surv=0.178  p1=0.260  swept=  9  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   9  surv=0.187  p1=0.251  swept=  9  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.160  p1=0.496  swept=  3  (0.1s)
+  month elapsed: 100.0s
+--- month 2025-04 (4/9) ---
+[bars] BTCUSDT-aggTrades-2025-04.csv  seconds_total=2,592,000  with_trades=2,409,978  coverage=0.930
+  loaded BTCUSDT: signs.size=2,592,000  (28.2s)
+[bars] ETHUSDT-aggTrades-2025-04.csv  seconds_total=2,591,999  with_trades=2,174,932  coverage=0.839
+  loaded ETHUSDT: signs.size=2,591,999  (25.6s)
+[bars] BNBUSDT-aggTrades-2025-04.csv  seconds_total=2,591,996  with_trades=2,016,650  coverage=0.778
+  loaded BNBUSDT: signs.size=2,591,996  (5.9s)
+[bars] SOLUSDT-aggTrades-2025-04.csv  seconds_total=2,591,998  with_trades=2,112,314  coverage=0.815
+  loaded SOLUSDT: signs.size=2,591,998  (7.3s)
+[bars] DOGEUSDT-aggTrades-2025-04.csv  seconds_total=2,592,000  with_trades=1,630,740  coverage=0.629
+  loaded DOGEUSDT: signs.size=2,592,000  (4.9s)
+  n=2 BTC,ETH              ell=  10  surv=0.383  p1=0.282  swept= 10  (0.3s)
+  n=2 BTC,BNB              ell=   8  surv=0.287  p1=0.340  swept=  8  (0.2s)
+  n=2 BTC,SOL              ell=  10  surv=0.331  p1=0.288  swept= 10  (0.3s)
+  n=2 BTC,DOGE             ell=  12  surv=0.300  p1=0.244  swept= 12  (0.3s)
+  n=2 ETH,BNB              ell=   7  surv=0.305  p1=0.333  swept=  7  (0.2s)
+  n=2 ETH,SOL              ell=  11  surv=0.358  p1=0.240  swept= 11  (0.3s)
+  n=2 ETH,DOGE             ell=  13  surv=0.329  p1=0.191  swept= 13  (0.3s)
+  n=2 BNB,SOL              ell=   9  surv=0.265  p1=0.336  swept=  9  (0.2s)
+  n=2 BNB,DOGE             ell=   9  surv=0.240  p1=0.299  swept=  9  (0.2s)
+  n=2 SOL,DOGE             ell=  15  surv=0.286  p1=0.194  swept= 15  (0.3s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.213  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.251  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   3  surv=0.240  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.186  p1=0.502  swept=  3  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.177  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   5  surv=0.210  p1=0.501  swept=  5  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.200  p1=0.501  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   5  surv=0.192  p1=0.500  swept=  5  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   3  surv=0.231  p1=0.499  swept=  3  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.168  p1=0.500  swept=  3  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   9  surv=0.153  p1=0.287  swept=  9  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=  10  surv=0.151  p1=0.268  swept= 10  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=  11  surv=0.181  p1=0.208  swept= 11  (0.2s)
+  n=4 BTC,BNB,SOL,DOGE     ell=  10  surv=0.134  p1=0.261  swept= 10  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   9  surv=0.145  p1=0.260  swept=  9  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.121  p1=0.499  swept=  3  (0.1s)
+  month elapsed: 75.7s
+--- month 2025-05 (5/9) ---
+[bars] BTCUSDT-aggTrades-2025-05.csv  seconds_total=2,678,400  with_trades=2,533,059  coverage=0.946
+  loaded BTCUSDT: signs.size=2,678,400  (23.7s)
+[bars] ETHUSDT-aggTrades-2025-05.csv  seconds_total=2,678,400  with_trades=2,367,910  coverage=0.884
+  loaded ETHUSDT: signs.size=2,678,400  (33.2s)
+[bars] BNBUSDT-aggTrades-2025-05.csv  seconds_total=2,678,400  with_trades=2,027,032  coverage=0.757
+  loaded BNBUSDT: signs.size=2,678,400  (5.7s)
+[bars] SOLUSDT-aggTrades-2025-05.csv  seconds_total=2,678,400  with_trades=2,144,227  coverage=0.801
+  loaded SOLUSDT: signs.size=2,678,400  (7.1s)
+[bars] DOGEUSDT-aggTrades-2025-05.csv  seconds_total=2,678,397  with_trades=1,894,861  coverage=0.707
+  loaded DOGEUSDT: signs.size=2,678,397  (8.0s)
+  n=2 BTC,ETH              ell=   7  surv=0.363  p1=0.340  swept=  7  (0.2s)
+  n=2 BTC,BNB              ell=   6  surv=0.256  p1=0.375  swept=  6  (0.1s)
+  n=2 BTC,SOL              ell=   7  surv=0.294  p1=0.326  swept=  7  (0.1s)
+  n=2 BTC,DOGE             ell=   8  surv=0.312  p1=0.317  swept=  8  (0.2s)
+  n=2 ETH,BNB              ell=   6  surv=0.311  p1=0.350  swept=  6  (0.1s)
+  n=2 ETH,SOL              ell=  10  surv=0.362  p1=0.254  swept= 10  (0.2s)
+  n=2 ETH,DOGE             ell=  12  surv=0.395  p1=0.213  swept= 12  (0.3s)
+  n=2 BNB,SOL              ell=   7  surv=0.253  p1=0.338  swept=  7  (0.1s)
+  n=2 BNB,DOGE             ell=   7  surv=0.270  p1=0.335  swept=  7  (0.1s)
+  n=2 SOL,DOGE             ell=  15  surv=0.321  p1=0.216  swept= 15  (0.3s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.191  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.226  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   3  surv=0.246  p1=0.502  swept=  3  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.159  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.171  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   3  surv=0.205  p1=0.501  swept=  3  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.197  p1=0.502  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   3  surv=0.215  p1=0.503  swept=  3  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   5  surv=0.260  p1=0.503  swept=  5  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.179  p1=0.502  swept=  3  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   7  surv=0.132  p1=0.324  swept=  7  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=   6  surv=0.143  p1=0.329  swept=  6  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=  10  surv=0.174  p1=0.273  swept= 10  (0.1s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   7  surv=0.123  p1=0.311  swept=  7  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   8  surv=0.154  p1=0.295  swept=  8  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.109  p1=0.499  swept=  3  (0.1s)
+  month elapsed: 80.7s
+--- month 2025-06 (6/9) ---
+[bars] BTCUSDT-aggTrades-2025-06.csv  seconds_total=2,592,000  with_trades=2,386,075  coverage=0.921
+  loaded BTCUSDT: signs.size=2,592,000  (22.7s)
+[bars] ETHUSDT-aggTrades-2025-06.csv  seconds_total=2,591,999  with_trades=2,160,433  coverage=0.834
+  loaded ETHUSDT: signs.size=2,591,999  (23.6s)
+[bars] BNBUSDT-aggTrades-2025-06.csv  seconds_total=2,591,998  with_trades=1,727,579  coverage=0.667
+  loaded BNBUSDT: signs.size=2,591,998  (3.8s)
+[bars] SOLUSDT-aggTrades-2025-06.csv  seconds_total=2,592,000  with_trades=1,936,802  coverage=0.747
+  loaded SOLUSDT: signs.size=2,592,000  (5.3s)
+[bars] DOGEUSDT-aggTrades-2025-06.csv  seconds_total=2,591,999  with_trades=1,438,200  coverage=0.555
+  loaded DOGEUSDT: signs.size=2,591,999  (3.9s)
+  n=2 BTC,ETH              ell=   7  surv=0.314  p1=0.351  swept=  7  (0.2s)
+  n=2 BTC,BNB              ell=   6  surv=0.207  p1=0.383  swept=  6  (0.1s)
+  n=2 BTC,SOL              ell=   8  surv=0.259  p1=0.342  swept=  8  (0.1s)
+  n=2 BTC,DOGE             ell=   8  surv=0.226  p1=0.312  swept=  8  (0.1s)
+  n=2 ETH,BNB              ell=   6  surv=0.234  p1=0.359  swept=  6  (0.1s)
+  n=2 ETH,SOL              ell=  10  surv=0.301  p1=0.251  swept= 10  (0.2s)
+  n=2 ETH,DOGE             ell=  13  surv=0.270  p1=0.200  swept= 13  (0.2s)
+  n=2 BNB,SOL              ell=   6  surv=0.193  p1=0.352  swept=  6  (0.1s)
+  n=2 BNB,DOGE             ell=   6  surv=0.171  p1=0.326  swept=  6  (0.1s)
+  n=2 SOL,DOGE             ell=  15  surv=0.230  p1=0.181  swept= 15  (0.3s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.142  p1=0.499  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.184  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   3  surv=0.172  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.119  p1=0.498  swept=  3  (0.0s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.110  p1=0.498  swept=  3  (0.0s)
+  n=3 BTC,SOL,DOGE         ell=   3  surv=0.148  p1=0.500  swept=  3  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.140  p1=0.498  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   3  surv=0.131  p1=0.499  swept=  3  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   3  surv=0.181  p1=0.498  swept=  3  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.114  p1=0.498  swept=  3  (0.0s)
+  n=4 BTC,ETH,BNB,SOL      ell=   7  surv=0.094  p1=0.320  swept=  7  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=   6  surv=0.090  p1=0.307  swept=  6  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=   8  surv=0.123  p1=0.255  swept=  8  (0.1s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   7  surv=0.080  p1=0.293  swept=  7  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   7  surv=0.096  p1=0.281  swept=  7  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.070  p1=0.496  swept=  3  (0.0s)
+  month elapsed: 61.8s
+--- month 2025-07 (7/9) ---
+[bars] BTCUSDT-aggTrades-2025-07.csv  seconds_total=2,678,400  with_trades=2,516,914  coverage=0.940
+  loaded BTCUSDT: signs.size=2,678,400  (18.1s)
+[bars] ETHUSDT-aggTrades-2025-07.csv  seconds_total=2,678,399  with_trades=2,340,592  coverage=0.874
+  loaded ETHUSDT: signs.size=2,678,399  (31.7s)
+[bars] BNBUSDT-aggTrades-2025-07.csv  seconds_total=2,678,400  with_trades=2,044,127  coverage=0.763
+  loaded BNBUSDT: signs.size=2,678,400  (6.7s)
+[bars] SOLUSDT-aggTrades-2025-07.csv  seconds_total=2,678,400  with_trades=2,165,129  coverage=0.808
+  loaded SOLUSDT: signs.size=2,678,400  (7.2s)
+[bars] DOGEUSDT-aggTrades-2025-07.csv  seconds_total=2,678,398  with_trades=1,891,462  coverage=0.706
+  loaded DOGEUSDT: signs.size=2,678,398  (8.6s)
+  n=2 BTC,ETH              ell=   6  surv=0.327  p1=0.367  swept=  6  (0.2s)
+  n=2 BTC,BNB              ell=   6  surv=0.249  p1=0.392  swept=  6  (0.1s)
+  n=2 BTC,SOL              ell=   6  surv=0.277  p1=0.366  swept=  6  (0.1s)
+  n=2 BTC,DOGE             ell=   6  surv=0.292  p1=0.364  swept=  6  (0.1s)
+  n=2 ETH,BNB              ell=   8  surv=0.307  p1=0.340  swept=  8  (0.2s)
+  n=2 ETH,SOL              ell=   9  surv=0.346  p1=0.271  swept=  9  (0.2s)
+  n=2 ETH,DOGE             ell=  10  surv=0.372  p1=0.250  swept= 10  (0.3s)
+  n=2 BNB,SOL              ell=   7  surv=0.263  p1=0.335  swept=  7  (0.1s)
+  n=2 BNB,DOGE             ell=   6  surv=0.282  p1=0.336  swept=  6  (0.1s)
+  n=2 SOL,DOGE             ell=  11  surv=0.322  p1=0.234  swept= 11  (0.2s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.177  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.200  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   3  surv=0.216  p1=0.501  swept=  3  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.153  p1=0.499  swept=  3  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.164  p1=0.499  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   3  surv=0.188  p1=0.499  swept=  3  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.195  p1=0.500  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   3  surv=0.212  p1=0.502  swept=  3  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   3  surv=0.246  p1=0.501  swept=  3  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.187  p1=0.499  swept=  3  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   5  surv=0.120  p1=0.343  swept=  5  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=   6  surv=0.130  p1=0.350  swept=  6  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=   7  surv=0.151  p1=0.318  swept=  7  (0.1s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   6  surv=0.116  p1=0.342  swept=  6  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   7  surv=0.151  p1=0.299  swept=  7  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.098  p1=0.499  swept=  3  (0.1s)
+  month elapsed: 75.2s
+--- month 2025-08 (8/9) ---
+[bars] BTCUSDT-aggTrades-2025-08.csv  seconds_total=2,678,400  with_trades=2,481,047  coverage=0.926
+  loaded BTCUSDT: signs.size=2,678,400  (17.6s)
+[bars] ETHUSDT-aggTrades-2025-08.csv  seconds_total=2,678,400  with_trades=2,420,518  coverage=0.904
+  loaded ETHUSDT: signs.size=2,678,400  (38.6s)
+[bars] BNBUSDT-aggTrades-2025-08.csv  seconds_total=2,678,400  with_trades=2,081,788  coverage=0.777
+  loaded BNBUSDT: signs.size=2,678,400  (7.0s)
+[bars] SOLUSDT-aggTrades-2025-08.csv  seconds_total=2,678,400  with_trades=2,251,646  coverage=0.841
+  loaded SOLUSDT: signs.size=2,678,400  (10.2s)
+[bars] DOGEUSDT-aggTrades-2025-08.csv  seconds_total=2,678,399  with_trades=1,984,535  coverage=0.741
+  loaded DOGEUSDT: signs.size=2,678,399  (7.3s)
+  n=2 BTC,ETH              ell=   6  surv=0.343  p1=0.357  swept=  6  (0.2s)
+  n=2 BTC,BNB              ell=   6  surv=0.262  p1=0.362  swept=  6  (0.1s)
+  n=2 BTC,SOL              ell=   6  surv=0.302  p1=0.357  swept=  6  (0.1s)
+  n=2 BTC,DOGE             ell=   7  surv=0.301  p1=0.349  swept=  7  (0.2s)
+  n=2 ETH,BNB              ell=   8  surv=0.334  p1=0.313  swept=  8  (0.2s)
+  n=2 ETH,SOL              ell=  10  surv=0.391  p1=0.254  swept= 10  (0.3s)
+  n=2 ETH,DOGE             ell=  11  surv=0.397  p1=0.220  swept= 11  (0.3s)
+  n=2 BNB,SOL              ell=   7  surv=0.296  p1=0.312  swept=  7  (0.2s)
+  n=2 BNB,DOGE             ell=   9  surv=0.298  p1=0.298  swept=  9  (0.2s)
+  n=2 SOL,DOGE             ell=  15  surv=0.353  p1=0.207  swept= 15  (0.3s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.195  p1=0.500  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.226  p1=0.498  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   3  surv=0.230  p1=0.498  swept=  3  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   5  surv=0.175  p1=0.498  swept=  5  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.177  p1=0.499  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   3  surv=0.206  p1=0.496  swept=  3  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.227  p1=0.502  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   3  surv=0.232  p1=0.503  swept=  3  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   3  surv=0.276  p1=0.499  swept=  3  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.210  p1=0.503  swept=  3  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   7  surv=0.142  p1=0.321  swept=  7  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=   8  surv=0.145  p1=0.316  swept=  8  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=   7  surv=0.170  p1=0.307  swept=  7  (0.1s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   7  surv=0.133  p1=0.310  swept=  7  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   8  surv=0.175  p1=0.266  swept=  8  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.115  p1=0.498  swept=  3  (0.1s)
+  month elapsed: 83.8s
+--- month 2025-09 (9/9) ---
+[bars] BTCUSDT-aggTrades-2025-09.csv  seconds_total=2,592,000  with_trades=2,353,276  coverage=0.908
+  loaded BTCUSDT: signs.size=2,592,000  (13.3s)
+[bars] ETHUSDT-aggTrades-2025-09.csv  seconds_total=2,592,000  with_trades=2,149,682  coverage=0.829
+  loaded ETHUSDT: signs.size=2,592,000  (19.3s)
+[bars] BNBUSDT-aggTrades-2025-09.csv  seconds_total=2,591,997  with_trades=2,120,781  coverage=0.818
+  loaded BNBUSDT: signs.size=2,591,997  (7.5s)
+[bars] SOLUSDT-aggTrades-2025-09.csv  seconds_total=2,592,000  with_trades=2,123,722  coverage=0.819
+  loaded SOLUSDT: signs.size=2,592,000  (8.3s)
+[bars] DOGEUSDT-aggTrades-2025-09.csv  seconds_total=2,591,999  with_trades=1,733,298  coverage=0.669
+  loaded DOGEUSDT: signs.size=2,591,999  (6.2s)
+  n=2 BTC,ETH              ell=   6  surv=0.279  p1=0.365  swept=  6  (0.1s)
+  n=2 BTC,BNB              ell=   5  surv=0.239  p1=0.404  swept=  5  (0.1s)
+  n=2 BTC,SOL              ell=   7  surv=0.271  p1=0.376  swept=  7  (0.2s)
+  n=2 BTC,DOGE             ell=   7  surv=0.255  p1=0.363  swept=  7  (0.2s)
+  n=2 ETH,BNB              ell=   6  surv=0.264  p1=0.359  swept=  6  (0.1s)
+  n=2 ETH,SOL              ell=   9  surv=0.308  p1=0.287  swept=  9  (0.2s)
+  n=2 ETH,DOGE             ell=  10  surv=0.294  p1=0.263  swept= 10  (0.2s)
+  n=2 BNB,SOL              ell=   6  surv=0.258  p1=0.365  swept=  6  (0.1s)
+  n=2 BNB,DOGE             ell=   7  surv=0.245  p1=0.347  swept=  7  (0.2s)
+  n=2 SOL,DOGE             ell=  12  surv=0.294  p1=0.238  swept= 12  (0.3s)
+  n=3 BTC,ETH,BNB          ell=   3  surv=0.149  p1=0.498  swept=  3  (0.1s)
+  n=3 BTC,ETH,SOL          ell=   3  surv=0.175  p1=0.497  swept=  3  (0.1s)
+  n=3 BTC,ETH,DOGE         ell=   3  surv=0.169  p1=0.495  swept=  3  (0.1s)
+  n=3 BTC,BNB,SOL          ell=   3  surv=0.144  p1=0.498  swept=  3  (0.1s)
+  n=3 BTC,BNB,DOGE         ell=   3  surv=0.139  p1=0.497  swept=  3  (0.1s)
+  n=3 BTC,SOL,DOGE         ell=   3  surv=0.167  p1=0.497  swept=  3  (0.1s)
+  n=3 ETH,BNB,SOL          ell=   3  surv=0.167  p1=0.503  swept=  3  (0.1s)
+  n=3 ETH,BNB,DOGE         ell=   3  surv=0.163  p1=0.502  swept=  3  (0.1s)
+  n=3 ETH,SOL,DOGE         ell=   5  surv=0.200  p1=0.501  swept=  5  (0.1s)
+  n=3 BNB,SOL,DOGE         ell=   3  surv=0.162  p1=0.501  swept=  3  (0.1s)
+  n=4 BTC,ETH,BNB,SOL      ell=   5  surv=0.102  p1=0.352  swept=  5  (0.1s)
+  n=4 BTC,ETH,BNB,DOGE     ell=   6  surv=0.100  p1=0.343  swept=  6  (0.1s)
+  n=4 BTC,ETH,SOL,DOGE     ell=   6  surv=0.123  p1=0.306  swept=  6  (0.1s)
+  n=4 BTC,BNB,SOL,DOGE     ell=   5  surv=0.098  p1=0.346  swept=  5  (0.1s)
+  n=4 ETH,BNB,SOL,DOGE     ell=   6  surv=0.119  p1=0.302  swept=  6  (0.1s)
+  n=5 BTC,ETH,BNB,SOL,DOGE ell=   3  surv=0.077  p1=0.495  swept=  3  (0.0s)
+  month elapsed: 57.5s
+
+--- loading witness month 2025-09 ---
+[bars] BTCUSDT-aggTrades-2025-09.csv  seconds_total=2,592,000  with_trades=2,353,276  coverage=0.908
+[bars] ETHUSDT-aggTrades-2025-09.csv  seconds_total=2,592,000  with_trades=2,149,682  coverage=0.829
+[bars] BNBUSDT-aggTrades-2025-09.csv  seconds_total=2,591,997  with_trades=2,120,781  coverage=0.818
+[bars] SOLUSDT-aggTrades-2025-09.csv  seconds_total=2,592,000  with_trades=2,123,722  coverage=0.819
+[bars] DOGEUSDT-aggTrades-2025-09.csv  seconds_total=2,591,999  with_trades=1,733,298  coverage=0.669
+
+=== all-subsets calibration summary (26 subsets) ===
+   n  subset                               ell_n  pass  surv_med  p1_med     bits/mo  witness
+  --------------------------------------------------------------------------------------------
+   2  ETHUSDT-BNBUSDT                          9     9     0.311   0.333      92,532        0
+   2  BNBUSDT-SOLUSDT                          9     9     0.265   0.336      78,314        6
+   2  BTCUSDT-ETHUSDT                         10     9     0.363   0.340      97,164        1
+   2  BTCUSDT-SOLUSDT                         10     9     0.302   0.328      80,888        5
+   2  BNBUSDT-DOGEUSDT                        10     9     0.282   0.326      75,467        9
+   2  BTCUSDT-BNBUSDT                         10     9     0.262   0.362      70,219        6
+   2  ETHUSDT-SOLUSDT                         12     9     0.362   0.254      80,889        4
+   2  BTCUSDT-DOGEUSDT                        12     9     0.301   0.312      67,107        1
+   2  ETHUSDT-DOGEUSDT                        13     9     0.387   0.213      79,650        8
+   2  SOLUSDT-DOGEUSDT                        15     9     0.322   0.207      57,429        2
+   3  BTCUSDT-ETHUSDT-SOLUSDT                  3     9     0.226   0.500     201,950        0
+   3  ETHUSDT-BNBUSDT-SOLUSDT                  3     9     0.200   0.500     175,462        1
+   3  BTCUSDT-ETHUSDT-BNBUSDT                  3     9     0.195   0.500     174,497        0
+   3  BNBUSDT-SOLUSDT-DOGEUSDT                 3     9     0.187   0.500     166,881        0
+   3  BTCUSDT-BNBUSDT-SOLUSDT                  3     9     0.175   0.499     156,022        1
+   3  BTCUSDT-BNBUSDT-DOGEUSDT                 3     9     0.177   0.500     152,526        1
+   3  ETHUSDT-SOLUSDT-DOGEUSDT                 5     9     0.260   0.499     139,510        0
+   3  BTCUSDT-ETHUSDT-DOGEUSDT                 5     9     0.240   0.500     124,634        4
+   3  ETHUSDT-BNBUSDT-DOGEUSDT                 5     9     0.215   0.502     115,206        2
+   3  BTCUSDT-SOLUSDT-DOGEUSDT                 5     9     0.206   0.499     109,732        2
+   4  ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT         9     9     0.154   0.281      45,711        1
+   4  BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT          9     9     0.142   0.320      42,236        1
+   4  BTCUSDT-BNBUSDT-SOLUSDT-DOGEUSDT         9     9     0.133   0.310      38,511        1
+   4  BTCUSDT-ETHUSDT-BNBUSDT-DOGEUSDT        10     9     0.145   0.307      38,895        4
+   4  BTCUSDT-ETHUSDT-SOLUSDT-DOGEUSDT        11     9     0.174   0.273      42,430        5
+   5  BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT 3     9     0.115   0.499     102,859        0
+
+summary CSV : data/start1/calibration_all_subsets/all_subsets_summary.csv
+elapsed     : 804.1s
+=== STAGE 2/3: validation ===
+=== exp4 validation ===
+n values        : [2, 3, 4, 5]
+validation months: 2025-10..2026-03 (6 months)
+calibration root: data/start1/calibration_all_subsets
+sanity matrix   : data/processed/experiment3/sanity_check/sanity_validity_matrix-k1000.csv  (174 entries)
+input root      : /Users/liuyujia/OthersProject/DATA/CryptoEntropy-RNG/raw/binance/spot/aggTrades
+output root     : data/start1/validation
+all assets needed: ['BNBUSDT', 'BTCUSDT', 'DOGEUSDT', 'ETHUSDT', 'SOLUSDT']
+
+subset picks (throughput-best per n from calibration_all_subsets):
+  n=2: BTCUSDT-ETHUSDT  ell*=10  witness=1  calib_estimated_bits/mo=97,164
+  n=3: BTCUSDT-ETHUSDT-SOLUSDT  ell*=3  witness=0  calib_estimated_bits/mo=201,950
+  n=4: ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT  ell*=9  witness=1  calib_estimated_bits/mo=45,711
+  n=5: BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT  ell*=3  witness=0  calib_estimated_bits/mo=102,859
+
+--- month 2025-10 (1/6) ---
+[bars] BNBUSDT-aggTrades-2025-10.csv  seconds_total=2,678,400  with_trades=2,414,349  coverage=0.901
+  loaded BNBUSDT: signs.size=2,678,400  (25.2s)
+[bars] BTCUSDT-aggTrades-2025-10.csv  seconds_total=2,678,400  with_trades=2,504,645  coverage=0.935
+  loaded BTCUSDT: signs.size=2,678,400  (30.7s)
+[bars] DOGEUSDT-aggTrades-2025-10.csv  seconds_total=2,678,396  with_trades=1,801,314  coverage=0.673
+  loaded DOGEUSDT: signs.size=2,678,396  (7.5s)
+[bars] ETHUSDT-aggTrades-2025-10.csv  seconds_total=2,678,400  with_trades=2,311,997  coverage=0.863
+  loaded ETHUSDT: signs.size=2,678,400  (40.7s)
+[bars] SOLUSDT-aggTrades-2025-10.csv  seconds_total=2,678,400  with_trades=2,235,802  coverage=0.835
+  loaded SOLUSDT: signs.size=2,678,400  (10.4s)
+  n=2 BTCUSDT-ETHUSDT: verdict PASS=28/FAIL=0/INVALID=1/NOT_RUN=0  bits=97,674  (14.5s)
+  n=3 BTCUSDT-ETHUSDT-SOLUSDT: verdict PASS=28/FAIL=1/INVALID=0/NOT_RUN=0  bits=228,069  (10.2s)
+  n=4 ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=26/FAIL=2/INVALID=0/NOT_RUN=1  bits=64,842  (8.8s)
+  n=5 BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=26/FAIL=3/INVALID=0/NOT_RUN=0  bits=145,465  (6.5s)
+  month elapsed: 154.4s
+--- month 2025-11 (2/6) ---
+[bars] BNBUSDT-aggTrades-2025-11.csv  seconds_total=2,592,000  with_trades=2,096,916  coverage=0.809
+  loaded BNBUSDT: signs.size=2,592,000  (12.3s)
+[bars] BTCUSDT-aggTrades-2025-11.csv  seconds_total=2,592,000  with_trades=2,437,831  coverage=0.941
+  loaded BTCUSDT: signs.size=2,592,000  (30.5s)
+[bars] DOGEUSDT-aggTrades-2025-11.csv  seconds_total=2,591,998  with_trades=1,523,217  coverage=0.588
+  loaded DOGEUSDT: signs.size=2,591,998  (4.3s)
+[bars] ETHUSDT-aggTrades-2025-11.csv  seconds_total=2,592,000  with_trades=2,179,639  coverage=0.841
+  loaded ETHUSDT: signs.size=2,592,000  (37.9s)
+[bars] SOLUSDT-aggTrades-2025-11.csv  seconds_total=2,592,000  with_trades=2,071,363  coverage=0.799
+  loaded SOLUSDT: signs.size=2,592,000  (8.0s)
+  n=2 BTCUSDT-ETHUSDT: verdict PASS=29/FAIL=0/INVALID=0/NOT_RUN=0  bits=106,379  (15.5s)
+  n=3 BTCUSDT-ETHUSDT-SOLUSDT: verdict PASS=29/FAIL=0/INVALID=0/NOT_RUN=0  bits=240,414  (10.7s)
+  n=4 ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=12/FAIL=16/INVALID=0/NOT_RUN=1  bits=56,870  (7.6s)
+  n=5 BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=28/FAIL=1/INVALID=0/NOT_RUN=0  bits=142,537  (6.4s)
+  month elapsed: 133.3s
+--- month 2025-12 (3/6) ---
+[bars] BNBUSDT-aggTrades-2025-12.csv  seconds_total=2,678,400  with_trades=2,135,868  coverage=0.797
+  loaded BNBUSDT: signs.size=2,678,400  (9.5s)
+[bars] BTCUSDT-aggTrades-2025-12.csv  seconds_total=2,678,400  with_trades=2,432,330  coverage=0.908
+  loaded BTCUSDT: signs.size=2,678,400  (26.3s)
+[bars] DOGEUSDT-aggTrades-2025-12.csv  seconds_total=2,678,400  with_trades=1,180,373  coverage=0.441
+  loaded DOGEUSDT: signs.size=2,678,400  (2.6s)
+[bars] ETHUSDT-aggTrades-2025-12.csv  seconds_total=2,678,400  with_trades=2,005,876  coverage=0.749
+  loaded ETHUSDT: signs.size=2,678,400  (25.0s)
+[bars] SOLUSDT-aggTrades-2025-12.csv  seconds_total=2,678,399  with_trades=1,862,242  coverage=0.695
+  loaded SOLUSDT: signs.size=2,678,399  (6.1s)
+  n=2 BTCUSDT-ETHUSDT: verdict PASS=28/FAIL=0/INVALID=1/NOT_RUN=0  bits=82,469  (12.1s)
+  n=3 BTCUSDT-ETHUSDT-SOLUSDT: verdict PASS=27/FAIL=2/INVALID=0/NOT_RUN=0  bits=159,138  (7.3s)
+  n=4 ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=19/FAIL=9/INVALID=0/NOT_RUN=1  bits=29,709  (4.1s)
+  n=5 BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=28/FAIL=0/INVALID=1/NOT_RUN=0  bits=75,669  (3.5s)
+  month elapsed: 96.4s
+--- month 2026-01 (4/6) ---
+[bars] BNBUSDT-aggTrades-2026-01.csv  seconds_total=2,678,400  with_trades=1,906,784  coverage=0.712
+  loaded BNBUSDT: signs.size=2,678,400  (6.8s)
+[bars] BTCUSDT-aggTrades-2026-01.csv  seconds_total=2,678,400  with_trades=2,433,439  coverage=0.909
+  loaded BTCUSDT: signs.size=2,678,400  (23.8s)
+[bars] DOGEUSDT-aggTrades-2026-01.csv  seconds_total=2,678,400  with_trades=1,254,466  coverage=0.468
+  loaded DOGEUSDT: signs.size=2,678,400  (3.5s)
+[bars] ETHUSDT-aggTrades-2026-01.csv  seconds_total=2,678,399  with_trades=1,970,194  coverage=0.736
+  loaded ETHUSDT: signs.size=2,678,399  (23.0s)
+[bars] SOLUSDT-aggTrades-2026-01.csv  seconds_total=2,678,400  with_trades=1,891,875  coverage=0.706
+  loaded SOLUSDT: signs.size=2,678,400  (5.6s)
+  n=2 BTCUSDT-ETHUSDT: verdict PASS=28/FAIL=0/INVALID=1/NOT_RUN=0  bits=75,369  (11.1s)
+  n=3 BTCUSDT-ETHUSDT-SOLUSDT: verdict PASS=29/FAIL=0/INVALID=0/NOT_RUN=0  bits=140,164  (6.3s)
+  n=4 ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=25/FAIL=3/INVALID=0/NOT_RUN=1  bits=24,350  (3.3s)
+  n=5 BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=26/FAIL=2/INVALID=0/NOT_RUN=1  bits=60,632  (2.7s)
+  month elapsed: 86.1s
+--- month 2026-02 (5/6) ---
+[bars] BNBUSDT-aggTrades-2026-02.csv  seconds_total=2,419,197  with_trades=1,710,327  coverage=0.707
+  loaded BNBUSDT: signs.size=2,419,197  (9.2s)
+[bars] BTCUSDT-aggTrades-2026-02.csv  seconds_total=2,419,200  with_trades=2,293,183  coverage=0.948
+  loaded BTCUSDT: signs.size=2,419,200  (45.6s)
+[bars] DOGEUSDT-aggTrades-2026-02.csv  seconds_total=2,419,199  with_trades=1,231,505  coverage=0.509
+  loaded DOGEUSDT: signs.size=2,419,199  (3.4s)
+[bars] ETHUSDT-aggTrades-2026-02.csv  seconds_total=2,419,199  with_trades=1,966,836  coverage=0.813
+  loaded ETHUSDT: signs.size=2,419,199  (35.7s)
+[bars] SOLUSDT-aggTrades-2026-02.csv  seconds_total=2,419,199  with_trades=1,775,008  coverage=0.734
+  loaded SOLUSDT: signs.size=2,419,199  (5.4s)
+  n=2 BTCUSDT-ETHUSDT: verdict PASS=25/FAIL=4/INVALID=0/NOT_RUN=0  bits=105,614  (15.8s)
+  n=3 BTCUSDT-ETHUSDT-SOLUSDT: verdict PASS=24/FAIL=5/INVALID=0/NOT_RUN=0  bits=215,194  (9.9s)
+  n=4 ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=11/FAIL=17/INVALID=0/NOT_RUN=1  bits=41,457  (5.6s)
+  n=5 BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=27/FAIL=2/INVALID=0/NOT_RUN=0  bits=114,567  (5.1s)
+  month elapsed: 135.8s
+--- month 2026-03 (6/6) ---
+[bars] BNBUSDT-aggTrades-2026-03.csv  seconds_total=2,678,397  with_trades=1,724,667  coverage=0.644
+  loaded BNBUSDT: signs.size=2,678,397  (5.8s)
+[bars] BTCUSDT-aggTrades-2026-03.csv  seconds_total=2,678,400  with_trades=2,399,256  coverage=0.896
+  loaded BTCUSDT: signs.size=2,678,400  (29.7s)
+[bars] DOGEUSDT-aggTrades-2026-03.csv  seconds_total=2,678,400  with_trades=1,260,916  coverage=0.471
+  loaded DOGEUSDT: signs.size=2,678,400  (2.8s)
+[bars] ETHUSDT-aggTrades-2026-03.csv  seconds_total=2,678,400  with_trades=1,976,587  coverage=0.738
+  loaded ETHUSDT: signs.size=2,678,400  (23.4s)
+[bars] SOLUSDT-aggTrades-2026-03.csv  seconds_total=2,678,399  with_trades=1,747,453  coverage=0.652
+  loaded SOLUSDT: signs.size=2,678,399  (4.1s)
+  n=2 BTCUSDT-ETHUSDT: verdict PASS=24/FAIL=4/INVALID=1/NOT_RUN=0  bits=93,571  (13.8s)
+  n=3 BTCUSDT-ETHUSDT-SOLUSDT: verdict PASS=23/FAIL=6/INVALID=0/NOT_RUN=0  bits=168,465  (7.5s)
+  n=4 ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=10/FAIL=18/INVALID=0/NOT_RUN=1  bits=26,815  (3.6s)
+  n=5 BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT: verdict PASS=28/FAIL=0/INVALID=1/NOT_RUN=0  bits=73,359  (3.4s)
+  month elapsed: 94.1s
+
+
+=== validation summary ===
+  n | subset                                    | ell* | D_adapt |    D_k2 | Monobit |    Runs |    ApEn | BlockFr | CumSum_ | CumSum_ | Longest |     DFT | Serial_ | Serial_ | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | Alphabi | bits_med | h/256-bit
+  -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+  2 | BTCUSDT-ETHUSDT                            |   10 | 6/0/0/0 | 6/0/0/0 | 4/2/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 4/2/0/0 | 4/2/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 4/2/0/0 | 6/0/0/0 | 6/0/0/0 | 2/0/4/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 |   95,622 |   1.99 h
+  3 | BTCUSDT-ETHUSDT-SOLUSDT                    |    3 | 6/0/0/0 | 4/2/0/0 | 6/0/0/0 | 4/2/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 5/1/0/0 | 5/1/0/0 | 4/2/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 5/1/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 |  191,830 |   0.98 h
+  4 | ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT           |    9 | 6/0/0/0 | 6/0/0/0 | 0/6/0/0 | 6/0/0/0 | 2/4/0/0 | 3/3/0/0 | 2/4/0/0 | 0/6/0/0 | 6/0/0/0 | 6/0/0/0 | 2/4/0/0 | 6/0/0/0 | 2/4/0/0 | 1/5/0/0 | 3/3/0/0 | 0/0/0/6 | 3/3/0/0 | 4/2/0/0 | 4/2/0/0 | 3/3/0/0 | 3/3/0/0 | 3/3/0/0 | 6/0/0/0 | 6/0/0/0 | 2/4/0/0 | 3/3/0/0 | 3/3/0/0 | 6/0/0/0 | 6/0/0/0 |   35,583 |   5.28 h
+  5 | BTCUSDT-ETHUSDT-BNBUSDT-SOLUSDT-DOGEUSDT   |    3 | 6/0/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 5/1/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 | 3/0/2/1 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 5/1/0/0 | 6/0/0/0 | 6/0/0/0 | 6/0/0/0 |   95,118 |   2.01 h
+
+verdict counts per sub-test: PASS/FAIL/INVALID/NOT_RUN across 6 validation months
+top-level summary: data/start1/validation/validation_summary.json
+text summary     : data/start1/validation/validation_summary.txt
+elapsed: 700.2s
+=== STAGE 3/3: min_entropy ===
+=== exp4 min-entropy assessment ===
+validation root : data/start1/validation
+n values        : [2, 3, 4, 5]
+months          : 2025-10..2026-03 (6 months)
+target security : 256 bits
+estimators      : NIST SP 800-90B MCV (6.3.1) + Markov (6.3.3)
+
+  n=2 2025-10: bits=  97,674  MCV=0.9881  Markov=0.9961  H_inf=0.9881 (MCV)  IKM>=33B
+  n=2 2025-11: bits= 106,379  MCV=0.9803  Markov=0.9895  H_inf=0.9803 (MCV)  IKM>=33B
+  n=2 2025-12: bits=  82,469  MCV=0.9839  Markov=0.9918  H_inf=0.9839 (MCV)  IKM>=33B
+  n=2 2026-01: bits=  75,369  MCV=0.9774  Markov=0.9933  H_inf=0.9774 (MCV)  IKM>=33B
+  n=2 2026-02: bits= 105,614  MCV=0.9752  Markov=0.9898  H_inf=0.9752 (MCV)  IKM>=33B
+  n=2 2026-03: bits=  93,571  MCV=0.9782  Markov=0.9829  H_inf=0.9782 (MCV)  IKM>=33B
+  n=3 2025-10: bits= 228,069  MCV=0.9914  Markov=0.9934  H_inf=0.9914 (MCV)  IKM>=33B
+  n=3 2025-11: bits= 240,414  MCV=0.9879  Markov=0.9896  H_inf=0.9879 (MCV)  IKM>=33B
+  n=3 2025-12: bits= 159,138  MCV=0.9898  Markov=0.9953  H_inf=0.9898 (MCV)  IKM>=33B
+  n=3 2026-01: bits= 140,164  MCV=0.9878  Markov=0.9976  H_inf=0.9878 (MCV)  IKM>=33B
+  n=3 2026-02: bits= 215,194  MCV=0.9890  Markov=0.9957  H_inf=0.9890 (MCV)  IKM>=33B
+  n=3 2026-03: bits= 168,465  MCV=0.9843  Markov=0.9824  H_inf=0.9824 (Markov)  IKM>=33B
+  n=4 2025-10: bits=  64,842  MCV=0.9769  Markov=0.9872  H_inf=0.9769 (MCV)  IKM>=33B
+  n=4 2025-11: bits=  56,870  MCV=0.9453  Markov=0.9543  H_inf=0.9453 (MCV)  IKM>=34B
+  n=4 2025-12: bits=  29,709  MCV=0.9414  Markov=0.9464  H_inf=0.9414 (MCV)  IKM>=34B
+  n=4 2026-01: bits=  24,350  MCV=0.9610  Markov=0.9864  H_inf=0.9610 (MCV)  IKM>=34B
+  n=4 2026-02: bits=  41,457  MCV=0.9035  Markov=0.9259  H_inf=0.9035 (MCV)  IKM>=36B
+  n=4 2026-03: bits=  26,815  MCV=0.9072  Markov=0.9251  H_inf=0.9072 (MCV)  IKM>=36B
+  n=5 2025-10: bits= 145,465  MCV=0.9795  Markov=0.9872  H_inf=0.9795 (MCV)  IKM>=33B
+  n=5 2025-11: bits= 142,537  MCV=0.9890  Markov=0.9986  H_inf=0.9890 (MCV)  IKM>=33B
+  n=5 2025-12: bits=  75,669  MCV=0.9833  Markov=0.9968  H_inf=0.9833 (MCV)  IKM>=33B
+  n=5 2026-01: bits=  60,632  MCV=0.9809  Markov=0.9954  H_inf=0.9809 (MCV)  IKM>=33B
+  n=5 2026-02: bits= 114,567  MCV=0.9789  Markov=0.9811  H_inf=0.9789 (MCV)  IKM>=33B
+  n=5 2026-03: bits=  73,359  MCV=0.9836  Markov=0.9902  H_inf=0.9836 (MCV)  IKM>=33B
+
+=== per-n summary ===
+   n  subset                       MCV_med   Mkv_med   Hinf_med   Hinf_wst   IKM_med   IKM_wst
+  --------------------------------------------------------------------------------------------
+   2  BTCUSDT+ETHUSDT               0.9792    0.9908     0.9792     0.9752       33B       33B
+   3  BTCUSDT+ETHUSDT+SOLUSDT       0.9884    0.9944     0.9884     0.9824       33B       33B
+   4  ETHUSDT+BNBUSDT+SOLUSDT+DOGEUSDT    0.9434    0.9504     0.9434     0.9035       34B       36B
+   5  BTCUSDT+ETHUSDT+BNBUSDT+SOLUSDT+DOGEUSDT    0.9821    0.9928     0.9821     0.9789       33B       33B
+
+overall worst-month H_inf : 0.9035 bit/bit
+global worst-case IKM     : 36 bytes for 256-bit security
+
+outputs:
+  data/start1/min_entropy/min_entropy_per_cell.csv
+  data/start1/min_entropy/min_entropy_summary.json
+=== ALL DONE Fri May 29 07:25:33 CEST 2026 ===

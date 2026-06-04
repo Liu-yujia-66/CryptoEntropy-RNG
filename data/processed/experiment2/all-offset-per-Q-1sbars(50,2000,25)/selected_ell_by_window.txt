@@ -1,0 +1,145 @@
+1-second bars coverage summary.
+
+AGG_START = 50
+AGG_STOP = 2000
+AGG_STEP = 25
+
+Selected ell per window (PASS_RATE_THRESHOLD = 0.8, ALPHA = 0.01)
+
+Gate: predictability + monobit
+Window            | BNB | BTC | DOGE | ETH  | SOL 
+------------------+-----+-----+------+------+-----
+3month-2025.01-03 | 125 | 575 | 100  | 775  | 75  
+3month-2025.04-06 | 750 | 75  | 50   | 1500 | 450 
+3month-2025.07-09 | -   | 125 | 75   | 125  | 150 
+3month-2025.10-12 | 125 | 725 | 1250 | 1200 | 1025
+3month-2026.01-03 | -   | -   | -    | -    | 1575
+
+Gate: predictability + monobit + runs
+Window            | BNB  | BTC  | DOGE | ETH | SOL 
+------------------+------+------+------+-----+-----
+3month-2025.01-03 | 125  | 950  | 100  | -   | 75  
+3month-2025.04-06 | 1100 | 100  | 50   | -   | 1050
+3month-2025.07-09 | -    | 225  | 75   | 175 | 150 
+3month-2025.10-12 | 225  | 1850 | -    | -   | 1325
+3month-2026.01-03 | -    | -    | -    | -   | -   
+
+Gate: predictability + monobit + runs + apen
+Window            | BNB  | BTC  | DOGE | ETH | SOL 
+------------------+------+------+------+-----+-----
+3month-2025.01-03 | 125  | 950  | 175  | -   | 75  
+3month-2025.04-06 | 1250 | 125  | 50   | -   | 1050
+3month-2025.07-09 | -    | 225  | 100  | 175 | 150 
+3month-2025.10-12 | 225  | 1850 | -    | -   | 1325
+3month-2026.01-03 | -    | -    | -    | -   | -   
+
+Bars coverage (per month):
+  seconds_total = calendar seconds in the month (shown in header)
+  with_trades   = seconds containing >=1 trade
+  coverage      = with_trades / seconds_total
+  empty seconds are forward-filled and produce zero deltas (filtered out)
+
+== 2025-01 ==  seconds_total = 2,678,400
+  BNB    with_trades = 2,104,707   coverage = 0.786
+  BTC    with_trades = 2,564,364   coverage = 0.957
+  DOGE   with_trades = 2,352,716   coverage = 0.878
+  ETH    with_trades = 2,365,518   coverage = 0.883
+  SOL    with_trades = 2,447,005   coverage = 0.914
+
+== 2025-02 ==  seconds_total = 2,419,200
+  BNB    with_trades = 1,981,627   coverage = 0.819
+  BTC    with_trades = 2,284,102   coverage = 0.944
+  DOGE   with_trades = 1,897,530   coverage = 0.784
+  ETH    with_trades = 2,171,305   coverage = 0.898
+  SOL    with_trades = 2,154,962   coverage = 0.891
+
+== 2025-03 ==  seconds_total = 2,678,398
+  BNB    with_trades = 2,172,787   coverage = 0.811
+  BTC    with_trades = 2,539,248   coverage = 0.948
+  DOGE   with_trades = 1,896,316   coverage = 0.708
+  ETH    with_trades = 2,333,810   coverage = 0.871
+  SOL    with_trades = 2,175,556   coverage = 0.812
+
+== 2025-04 ==  seconds_total = 2,591,996
+  BNB    with_trades = 2,016,650   coverage = 0.778
+  BTC    with_trades = 2,409,978   coverage = 0.930
+  DOGE   with_trades = 1,630,740   coverage = 0.629
+  ETH    with_trades = 2,174,932   coverage = 0.839
+  SOL    with_trades = 2,112,314   coverage = 0.815
+
+== 2025-05 ==  seconds_total = 2,678,400
+  BNB    with_trades = 2,027,032   coverage = 0.757
+  BTC    with_trades = 2,533,059   coverage = 0.946
+  DOGE   with_trades = 1,894,861   coverage = 0.707
+  ETH    with_trades = 2,367,910   coverage = 0.884
+  SOL    with_trades = 2,144,227   coverage = 0.801
+
+== 2025-06 ==  seconds_total = 2,591,998
+  BNB    with_trades = 1,727,579   coverage = 0.667
+  BTC    with_trades = 2,386,075   coverage = 0.921
+  DOGE   with_trades = 1,438,200   coverage = 0.555
+  ETH    with_trades = 2,160,433   coverage = 0.834
+  SOL    with_trades = 1,936,802   coverage = 0.747
+
+== 2025-07 ==  seconds_total = 2,678,400
+  BNB    with_trades = 2,044,127   coverage = 0.763
+  BTC    with_trades = 2,516,914   coverage = 0.940
+  DOGE   with_trades = 1,891,462   coverage = 0.706
+  ETH    with_trades = 2,340,592   coverage = 0.874
+  SOL    with_trades = 2,165,129   coverage = 0.808
+
+== 2025-08 ==  seconds_total = 2,678,400
+  BNB    with_trades = 2,081,788   coverage = 0.777
+  BTC    with_trades = 2,481,047   coverage = 0.926
+  DOGE   with_trades = 1,984,535   coverage = 0.741
+  ETH    with_trades = 2,420,518   coverage = 0.904
+  SOL    with_trades = 2,251,646   coverage = 0.841
+
+== 2025-09 ==  seconds_total = 2,591,997
+  BNB    with_trades = 2,120,781   coverage = 0.818
+  BTC    with_trades = 2,353,276   coverage = 0.908
+  DOGE   with_trades = 1,733,298   coverage = 0.669
+  ETH    with_trades = 2,149,682   coverage = 0.829
+  SOL    with_trades = 2,123,722   coverage = 0.819
+
+== 2025-10 ==  seconds_total = 2,678,396
+  BNB    with_trades = 2,414,349   coverage = 0.901
+  BTC    with_trades = 2,504,645   coverage = 0.935
+  DOGE   with_trades = 1,801,314   coverage = 0.673
+  ETH    with_trades = 2,311,997   coverage = 0.863
+  SOL    with_trades = 2,235,802   coverage = 0.835
+
+== 2025-11 ==  seconds_total = 2,591,998
+  BNB    with_trades = 2,096,916   coverage = 0.809
+  BTC    with_trades = 2,437,831   coverage = 0.941
+  DOGE   with_trades = 1,523,217   coverage = 0.588
+  ETH    with_trades = 2,179,639   coverage = 0.841
+  SOL    with_trades = 2,071,363   coverage = 0.799
+
+== 2025-12 ==  seconds_total = 2,678,400
+  BNB    with_trades = 2,135,868   coverage = 0.797
+  BTC    with_trades = 2,432,330   coverage = 0.908
+  DOGE   with_trades = 1,180,373   coverage = 0.441
+  ETH    with_trades = 2,005,876   coverage = 0.749
+  SOL    with_trades = 1,862,242   coverage = 0.695
+
+== 2026-01 ==  seconds_total = 2,678,400
+  BNB    with_trades = 1,906,784   coverage = 0.712
+  BTC    with_trades = 2,433,439   coverage = 0.909
+  DOGE   with_trades = 1,254,466   coverage = 0.468
+  ETH    with_trades = 1,970,194   coverage = 0.736
+  SOL    with_trades = 1,891,875   coverage = 0.706
+
+== 2026-02 ==  seconds_total = 2,419,199
+  BNB    with_trades = 1,710,327   coverage = 0.707
+  BTC    with_trades = 2,293,183   coverage = 0.948
+  DOGE   with_trades = 1,231,505   coverage = 0.509
+  ETH    with_trades = 1,966,836   coverage = 0.813
+  SOL    with_trades = 1,775,008   coverage = 0.734
+
+== 2026-03 ==  seconds_total = 2,678,400
+  BNB    with_trades = 1,724,667   coverage = 0.644
+  BTC    with_trades = 2,399,256   coverage = 0.896
+  DOGE   with_trades = 1,260,916   coverage = 0.471
+  ETH    with_trades = 1,976,587   coverage = 0.738
+  SOL    with_trades = 1,747,453   coverage = 0.652

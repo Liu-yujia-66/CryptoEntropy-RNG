@@ -1,0 +1,30 @@
+{
+  "generated_utc": "2026-05-24T00:48:45Z",
+  "charset": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*",
+  "charset_size": 70,
+  "max_valid": 210,
+  "acceptance_rate": 0.8203,
+  "ikm_bytes_per_password": 33,
+  "info_base": "CryptoEntropy-Password-v1",
+  "expand_len": 32,
+  "password_length": 16,
+  "hash": "SHA-256",
+  "hkdf": "RFC 5869 (HMAC-SHA256), Extract-then-Expand, per-password Extract",
+  "hkdf_selftest": "PASS (RFC 5869 Appendix A, Test Case 1, SHA-256)",
+  "salt_path": "data/processed/prototype/salt.bin",
+  "salt_sha256": "d83ed69b18c5392194bf4b327042e8cd0e39388ee05fecc5acd1ed2ce8dba8ea",
+  "fusion_n": [
+    2,
+    3,
+    5
+  ],
+  "months": [
+    "2025-10",
+    "2025-11",
+    "2025-12",
+    "2026-01",
+    "2026-02",
+    "2026-03"
+  ],
+  "n_passwords_per_cell": 100
+}

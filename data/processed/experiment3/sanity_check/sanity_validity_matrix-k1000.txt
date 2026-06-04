@@ -1,0 +1,66 @@
+Exp 3 sanity validity matrix (k = 1000 IID null trials per cell)
+====================================================================================================
+Source : data/processed/experiment3/sanity_check/sanity_validity_matrix-k1000.csv
+Shape  : 29 sub-tests x 6 length brackets = 174 cells
+Result : passed_sanity True = 164, False = 10  (of which failed = 1, not_run = 9)
+Cell legend:
+  P<rate> = passed sanity (observed type-I rate at alpha=0.01, inside [0.001, 0.03] band)
+  X<rate> = failed sanity (rate outside band; sub-test unreliable on this length bracket)
+  N/R    = not_run (TestU01 length-skip or zero admissible inputs)
+
+--- validity grid (rows: sub_tests, cols: length brackets) ---
+  sub_test                                    5K     10K     25K     50K    100K    200K
+  --------------------------------------------------------------------------------------
+  D_adaptive                             P0.014 P0.011 P0.004 P0.009 P0.010 P0.010
+  D_k2                                   P0.008 P0.013 P0.008 P0.008 P0.011 P0.010
+  Monobit                                P0.011 P0.006 P0.010 P0.011 P0.007 P0.012
+  Runs                                   P0.008 P0.013 P0.009 P0.008 P0.011 P0.010
+  ApEn                                   P0.015 P0.010 P0.008 P0.011 P0.010 P0.010
+  BlockFrequency                         P0.006 P0.007 P0.009 P0.009 P0.010 P0.007
+  CumSum_forward                         P0.011 P0.005 P0.013 P0.010 P0.009 P0.010
+  CumSum_backward                        P0.012 P0.006 P0.010 P0.010 P0.009 P0.008
+  LongestRun                             X0.122 P0.015 P0.009 P0.020 P0.014 P0.015
+  DFT                                    P0.013 P0.009 P0.006 P0.013 P0.012 P0.010
+  Serial_m                               P0.008 P0.009 P0.007 P0.009 P0.009 P0.015
+  Serial_m_minus_1                       P0.011 P0.010 P0.011 P0.010 P0.008 P0.009
+  Alphabit_MultinomialBitsOver_L2        P0.008 P0.012 P0.007 P0.010 P0.006 P0.011
+  Alphabit_MultinomialBitsOver_L4        P0.008 P0.010 P0.007 P0.008 P0.009 P0.015
+  Alphabit_MultinomialBitsOver_L8        P0.011 P0.014 P0.009 P0.018 P0.009 P0.013
+  Alphabit_MultinomialBitsOver_L16        N/R   N/R   N/R   N/R  P0.004 P0.010
+  Alphabit_HammingIndep_L16              P0.008 P0.018 P0.011 P0.008 P0.007 P0.007
+  Alphabit_HammingIndep_L32              P0.008 P0.002 P0.007 P0.009 P0.016 P0.012
+  Alphabit_HammingCorr_L32               P0.011 P0.010 P0.007 P0.011 P0.008 P0.007
+  Alphabit_RandomWalk1_L64_H             P0.011 P0.011 P0.009 P0.013 P0.008 P0.010
+  Alphabit_RandomWalk1_L64_M             P0.009 P0.008 P0.009 P0.007 P0.008 P0.014
+  Alphabit_RandomWalk1_L64_J             P0.011 P0.008 P0.010 P0.009 P0.015 P0.013
+  Alphabit_RandomWalk1_L64_R             P0.006 P0.006 P0.017 P0.006 P0.010 P0.010
+  Alphabit_RandomWalk1_L64_C             P0.011 P0.006 P0.007 P0.014 P0.010 P0.011
+  Alphabit_RandomWalk1_L320_H             N/R  P0.003 P0.011 P0.003 P0.008 P0.012
+  Alphabit_RandomWalk1_L320_M             N/R  P0.004 P0.008 P0.012 P0.016 P0.008
+  Alphabit_RandomWalk1_L320_J             N/R  P0.006 P0.012 P0.007 P0.014 P0.011
+  Alphabit_RandomWalk1_L320_R             N/R  P0.008 P0.013 P0.012 P0.015 P0.011
+  Alphabit_RandomWalk1_L320_C             N/R  P0.004 P0.016 P0.010 P0.010 P0.007
+
+--- invalid cells (10) ---
+  sub_test                                bracket    status   n_ran  n_fail   type_I
+  ------------------------------------------------------------------------------------
+  LongestRun                                   5K    failed    1000     122   0.1220
+  Alphabit_MultinomialBitsOver_L16             5K   not_run       0       0      nan
+  Alphabit_RandomWalk1_L320_H                  5K   not_run       0       0      nan
+  Alphabit_RandomWalk1_L320_M                  5K   not_run       0       0      nan
+  Alphabit_RandomWalk1_L320_J                  5K   not_run       0       0      nan
+  Alphabit_RandomWalk1_L320_R                  5K   not_run       0       0      nan
+  Alphabit_RandomWalk1_L320_C                  5K   not_run       0       0      nan
+  Alphabit_MultinomialBitsOver_L16            10K   not_run       0       0      nan
+  Alphabit_MultinomialBitsOver_L16            25K   not_run       0       0      nan
+  Alphabit_MultinomialBitsOver_L16            50K   not_run       0       0      nan
+
+--- per-bracket coverage (how many sub-tests are valid in each bracket) ---
+  bracket  valid  invalid  not_run  total
+  ------------------------------------------
+       5K     22        1        6     29
+      10K     28        0        1     29
+      25K     28        0        1     29
+      50K     28        0        1     29
+     100K     29        0        0     29
+     200K     29        0        0     29

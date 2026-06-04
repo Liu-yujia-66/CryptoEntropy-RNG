@@ -1,0 +1,159 @@
+Experiment 4 validation — per-n summary
+==============================================================================================================
+Source         : data/processed/experiment4/validation/validation_summary.json
+Months         : 2025-10..2026-03 (6 months)
+Calibration src: data/processed/experiment4/calibration_all_subsets
+Gate           : alpha=0.01  pass_rate_threshold=0.8  min_bit_count=2000  sub_tests=29
+Verdict per sub-test per month: PASS if pass_rate >= 0.8 on >= 80% of valid offsets; INVALID if too few valid offsets; NOT_RUN if the +Alphabit sanity matrix excludes that (ell, sub_test) cell.
+
+--- per-n picks and median throughput ---
+   n  subset                  ell*  witness   out_bits/mo    sec/256   hr/256
+  ----------------------------------------------------------------------------
+   2  BTC+ETH                   10        1        95,622      7,174    1.993
+   3  BTC+ETH+SOL                3        0       191,830      3,538    0.983
+   4  ETH+BNB+SOL+DOGE           9        1        35,583     19,009    5.280
+   5  BTC+ETH+BNB+SOL+DOGE       3        0        95,118      7,234    2.009
+
+--- n = 2  subset = BTC+ETH  (ell*=10, witness=1) ---
+  sub-test                                 PASS   FAIL    INV    N/R  verdict
+  ------------------------------------------------------------------------------
+  D_adaptive                                  6      0      0      0  PASS
+  D_k2                                        6      0      0      0  PASS
+  Monobit                                     4      2      0      0  FAIL (2/6)
+  Runs                                        6      0      0      0  PASS
+  ApEn                                        6      0      0      0  PASS
+  BlockFrequency                              6      0      0      0  PASS
+  CumSum_forward                              4      2      0      0  FAIL (2/6)
+  CumSum_backward                             4      2      0      0  FAIL (2/6)
+  LongestRun                                  6      0      0      0  PASS
+  DFT                                         6      0      0      0  PASS
+  Serial_m                                    6      0      0      0  PASS
+  Serial_m_minus_1                            6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L2             4      2      0      0  FAIL (2/6)
+  Alphabit_MultinomialBitsOver_L4             6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L8             6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L16            2      0      4      0  PASS
+  Alphabit_HammingIndep_L16                   6      0      0      0  PASS
+  Alphabit_HammingIndep_L32                   6      0      0      0  PASS
+  Alphabit_HammingCorr_L32                    6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_H                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_M                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_J                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_R                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_C                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_H                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_M                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_J                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_R                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_C                 6      0      0      0  PASS
+  -> 4/29 sub-tests FAIL at least once across the 6 months.
+
+--- n = 3  subset = BTC+ETH+SOL  (ell*=3, witness=0) ---
+  sub-test                                 PASS   FAIL    INV    N/R  verdict
+  ------------------------------------------------------------------------------
+  D_adaptive                                  6      0      0      0  PASS
+  D_k2                                        4      2      0      0  FAIL (2/6)
+  Monobit                                     6      0      0      0  PASS
+  Runs                                        4      2      0      0  FAIL (2/6)
+  ApEn                                        6      0      0      0  PASS
+  BlockFrequency                              5      1      0      0  FAIL (1/6)
+  CumSum_forward                              6      0      0      0  PASS
+  CumSum_backward                             6      0      0      0  PASS
+  LongestRun                                  5      1      0      0  FAIL (1/6)
+  DFT                                         6      0      0      0  PASS
+  Serial_m                                    5      1      0      0  FAIL (1/6)
+  Serial_m_minus_1                            5      1      0      0  FAIL (1/6)
+  Alphabit_MultinomialBitsOver_L2             4      2      0      0  FAIL (2/6)
+  Alphabit_MultinomialBitsOver_L4             5      1      0      0  FAIL (1/6)
+  Alphabit_MultinomialBitsOver_L8             6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L16            6      0      0      0  PASS
+  Alphabit_HammingIndep_L16                   6      0      0      0  PASS
+  Alphabit_HammingIndep_L32                   6      0      0      0  PASS
+  Alphabit_HammingCorr_L32                    6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_H                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_M                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_J                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_R                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_C                  5      1      0      0  FAIL (1/6)
+  Alphabit_RandomWalk1_L320_H                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_M                 5      1      0      0  FAIL (1/6)
+  Alphabit_RandomWalk1_L320_J                 5      1      0      0  FAIL (1/6)
+  Alphabit_RandomWalk1_L320_R                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_C                 6      0      0      0  PASS
+  -> 11/29 sub-tests FAIL at least once across the 6 months.
+
+--- n = 4  subset = ETH+BNB+SOL+DOGE  (ell*=9, witness=1) ---
+  sub-test                                 PASS   FAIL    INV    N/R  verdict
+  ------------------------------------------------------------------------------
+  D_adaptive                                  6      0      0      0  PASS
+  D_k2                                        6      0      0      0  PASS
+  Monobit                                     0      6      0      0  FAIL (6/6)
+  Runs                                        6      0      0      0  PASS
+  ApEn                                        2      4      0      0  FAIL (4/6)
+  BlockFrequency                              3      3      0      0  FAIL (3/6)
+  CumSum_forward                              2      4      0      0  FAIL (4/6)
+  CumSum_backward                             0      6      0      0  FAIL (6/6)
+  LongestRun                                  6      0      0      0  PASS
+  DFT                                         6      0      0      0  PASS
+  Serial_m                                    2      4      0      0  FAIL (4/6)
+  Serial_m_minus_1                            6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L2             2      4      0      0  FAIL (4/6)
+  Alphabit_MultinomialBitsOver_L4             1      5      0      0  FAIL (5/6)
+  Alphabit_MultinomialBitsOver_L8             3      3      0      0  FAIL (3/6)
+  Alphabit_MultinomialBitsOver_L16            0      0      0      6  N/A
+  Alphabit_HammingIndep_L16                   3      3      0      0  FAIL (3/6)
+  Alphabit_HammingIndep_L32                   4      2      0      0  FAIL (2/6)
+  Alphabit_HammingCorr_L32                    4      2      0      0  FAIL (2/6)
+  Alphabit_RandomWalk1_L64_H                  3      3      0      0  FAIL (3/6)
+  Alphabit_RandomWalk1_L64_M                  3      3      0      0  FAIL (3/6)
+  Alphabit_RandomWalk1_L64_J                  3      3      0      0  FAIL (3/6)
+  Alphabit_RandomWalk1_L64_R                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_C                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_H                 2      4      0      0  FAIL (4/6)
+  Alphabit_RandomWalk1_L320_M                 3      3      0      0  FAIL (3/6)
+  Alphabit_RandomWalk1_L320_J                 3      3      0      0  FAIL (3/6)
+  Alphabit_RandomWalk1_L320_R                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_C                 6      0      0      0  PASS
+  -> 18/29 sub-tests FAIL at least once across the 6 months.
+
+--- n = 5  subset = BTC+ETH+BNB+SOL+DOGE  (ell*=3, witness=0) ---
+  sub-test                                 PASS   FAIL    INV    N/R  verdict
+  ------------------------------------------------------------------------------
+  D_adaptive                                  6      0      0      0  PASS
+  D_k2                                        6      0      0      0  PASS
+  Monobit                                     5      1      0      0  FAIL (1/6)
+  Runs                                        6      0      0      0  PASS
+  ApEn                                        6      0      0      0  PASS
+  BlockFrequency                              6      0      0      0  PASS
+  CumSum_forward                              5      1      0      0  FAIL (1/6)
+  CumSum_backward                             5      1      0      0  FAIL (1/6)
+  LongestRun                                  6      0      0      0  PASS
+  DFT                                         6      0      0      0  PASS
+  Serial_m                                    6      0      0      0  PASS
+  Serial_m_minus_1                            6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L2             5      1      0      0  FAIL (1/6)
+  Alphabit_MultinomialBitsOver_L4             6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L8             6      0      0      0  PASS
+  Alphabit_MultinomialBitsOver_L16            3      0      2      1  PASS
+  Alphabit_HammingIndep_L16                   6      0      0      0  PASS
+  Alphabit_HammingIndep_L32                   5      1      0      0  FAIL (1/6)
+  Alphabit_HammingCorr_L32                    6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_H                  5      1      0      0  FAIL (1/6)
+  Alphabit_RandomWalk1_L64_M                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_J                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_R                  6      0      0      0  PASS
+  Alphabit_RandomWalk1_L64_C                  5      1      0      0  FAIL (1/6)
+  Alphabit_RandomWalk1_L320_H                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_M                 5      1      0      0  FAIL (1/6)
+  Alphabit_RandomWalk1_L320_J                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_R                 6      0      0      0  PASS
+  Alphabit_RandomWalk1_L320_C                 6      0      0      0  PASS
+  -> 8/29 sub-tests FAIL at least once across the 6 months.
+
+--- per-month overall pass count (sub-tests that PASS that month, out of those that ran) ---
+   n  subset                    2025-10    2025-11    2025-12    2026-01    2026-02    2026-03
+  ----------------------------------------------------------------------------------------------
+   2  BTC+ETH                 28/28      29/29      28/28      28/28      25/29      24/28    
+   3  BTC+ETH+SOL             28/29      29/29      27/29      29/29      24/29      23/29    
+   4  ETH+BNB+SOL+DOGE        26/28      12/28      19/28      25/28      11/28      10/28    
+   5  BTC+ETH+BNB+SOL+DOGE    26/29      28/29      28/28      26/28      27/29      28/28    

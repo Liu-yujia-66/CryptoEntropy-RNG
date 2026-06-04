@@ -1,0 +1,57 @@
+{
+  "target_security_bits": 256,
+  "estimators": [
+    "NIST SP800-90B 6.3.1 MCV",
+    "NIST SP800-90B 6.3.3 Markov"
+  ],
+  "h_inf_rule": "min(MCV, Markov) per cell; conservative lower bound",
+  "per_n_summary": {
+    "2": {
+      "n": 2,
+      "subset": "BTCUSDT+ETHUSDT",
+      "h_inf_mcv_median": 0.9792463195684356,
+      "h_inf_markov_median": 0.9908015080970725,
+      "h_inf_min_median": 0.9792463195684356,
+      "h_inf_min_worst_month": 0.9752020109740688,
+      "ikm_bytes_median_case": 33,
+      "ikm_bytes_worst_case": 33,
+      "n_months": 6
+    },
+    "3": {
+      "n": 3,
+      "subset": "BTCUSDT+ETHUSDT+SOLUSDT",
+      "h_inf_mcv_median": 0.988424991746965,
+      "h_inf_markov_median": 0.9943678680316861,
+      "h_inf_min_median": 0.988424991746965,
+      "h_inf_min_worst_month": 0.9823796252958603,
+      "ikm_bytes_median_case": 33,
+      "ikm_bytes_worst_case": 33,
+      "n_months": 6
+    },
+    "4": {
+      "n": 4,
+      "subset": "ETHUSDT+BNBUSDT+SOLUSDT+DOGEUSDT",
+      "h_inf_mcv_median": 0.9433873421374487,
+      "h_inf_markov_median": 0.9503648271772855,
+      "h_inf_min_median": 0.9433873421374487,
+      "h_inf_min_worst_month": 0.9034749508714814,
+      "ikm_bytes_median_case": 34,
+      "ikm_bytes_worst_case": 36,
+      "n_months": 6
+    },
+    "5": {
+      "n": 5,
+      "subset": "BTCUSDT+ETHUSDT+BNBUSDT+SOLUSDT+DOGEUSDT",
+      "h_inf_mcv_median": 0.9820971096958246,
+      "h_inf_markov_median": 0.9928164322616484,
+      "h_inf_min_median": 0.9820971096958246,
+      "h_inf_min_worst_month": 0.9788885056754429,
+      "ikm_bytes_median_case": 33,
+      "ikm_bytes_worst_case": 33,
+      "n_months": 6
+    }
+  },
+  "overall_h_inf_min_worst": 0.9034749508714814,
+  "overall_h_inf_min_median": 0.9806041734618869,
+  "recommended_ikm_bytes_global_worst": 36
+}
