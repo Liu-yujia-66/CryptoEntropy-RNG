@@ -10,7 +10,7 @@ et al. (2025) [paper 7], each figure is a "small-multiples" grid:
 
 Each cell is an independent panel — no asset overlay. Within a single cell,
 the two test statistics (D adaptive k, Monobit) are drawn with column-specific
-colours. The relaxed-gate figure shows a single joint statistic (n_pass) per
+    colours. The relaxed-criterion figure shows a single joint statistic (n_pass) per
 cell instead.
 
 Figures 4.2, 4.3, and 4.5 produce two figures — one per quarter — for the
@@ -50,7 +50,7 @@ import matplotlib.pyplot as plt
 from matplotlib.artist import Artist
 from matplotlib.offsetbox import AnchoredOffsetbox, VPacker, TextArea
 
-from src.utils import ASSET_COLORS  # kept for Fig 4.4 (single-test relaxed gate)
+from src.utils import ASSET_COLORS  # kept for Fig 4.4 (single-test relaxed criterion)
 
 # (D-colour, Monobit-colour) pairs per column for Fig 4.2 / 4.3 / 4.5.
 # Each month column uses its own contrasting pair; both lines are solid.
@@ -249,13 +249,13 @@ def plot_fig_4_2(
         axes[0, col].legend(loc="upper right", fontsize=7, framealpha=0.85)
 
     fig.suptitle(
-        f"Experiment 2 · Single-offset · {quarter_label}"
-        "  (rows = assets; $D$ and Monobit solid, colour pair per column; "
+        f"Experiment 2 · Single-offset · {quarter_label}\n"
+        "(rows = assets; $D$ and Monobit solid, colour pair per column; "
         "red dotted = $-\\log_{10}\\alpha$)",
         fontsize=11,
         y=0.995,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    fig.tight_layout(rect=(0, 0, 1, 0.955))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
@@ -306,13 +306,13 @@ def plot_pass_rate_figure(
         axes[0, col].legend(loc="lower right", fontsize=7, framealpha=0.85)
 
     fig.suptitle(
-        f"{fig_title} · {quarter_label}"
-        "  (rows = assets; $D$ and Monobit solid, colour pair per column; "
+        f"{fig_title} · {quarter_label}\n"
+        "(rows = assets; $D$ and Monobit solid, colour pair per column; "
         "red dotted = 0.80 threshold)",
         fontsize=11,
         y=0.995,
     )
-    fig.tight_layout(rect=(0, 0, 1, 0.97))
+    fig.tight_layout(rect=(0, 0, 1, 1))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=150)
     plt.close(fig)
@@ -492,7 +492,7 @@ def plot_fig_4_4_combined(
         )
 
     fig.suptitle(
-        "Experiment 2 · All-offset, relaxed gate · "
+        "Experiment 2 · All-offset, relaxed criterion · "
         "2025 Q1 (top) / 2026 Q1, Q5 (bottom)"
         "  (★ = selected $\\ell^*$)",
         fontsize=11,
@@ -553,7 +553,7 @@ def main() -> None:
             quarter_label=label,
             output_path=args.output_dir
             / f"exp2_fig_4_3{panel}_all_offset_strict_{qsuffix}.png",
-            fig_title="Experiment 2 · All-offset, strict gate",
+            fig_title="Experiment 2 · All-offset, strict criterion",
             xlabel=r"$\ell$ (trades)",
         )
 

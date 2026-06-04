@@ -94,9 +94,24 @@ Key source modules:
 | `src/testu01_alphabit.py` | Python wrapper for the TestU01 Alphabit driver |
 | `src/battery.py` | shared 29-sub-test battery orchestration |
 | `src/fusion.py` | multi-asset 1-second sign-bit XOR combination |
-| `src/calibration.py` | Exp 4 subset search, `ell*` selection, witness offset selection |
+| `src/calibration.py` | Exp 4 subset search, `ell*` selection, selected output offset selection |
 | `src/min_entropy.py` | MCV and Markov min-entropy estimators |
 | `src/prototype.py` | HKDF-SHA256 password prototype and baselines |
+
+## Terminology Note
+
+The thesis prose uses the final terminology agreed for the manuscript:
+
+| Thesis term | Older code/output term | Meaning |
+|---|---|---|
+| `criterion` | `gate` | A pass/fail selection rule, such as the strict, relaxed, base, or +Runs criterion. |
+| `selected output offset` | `witness offset` | The fixed offset chosen during calibration to define the output stream used for throughput and prototype input. |
+| `combined stream` | `fused_stream.bin`, `fused_p1`, `fusion_n` | The multi-asset XOR output stream. |
+
+Some code, command-line options, JSON/CSV columns, and historical paths still use
+the older names (`gate`, `witness`, `fused`). They are kept for compatibility with
+existing processed outputs. In the thesis text and figures, these correspond to
+`criterion`, `selected output offset`, and `combined stream`.
 
 ## Reproducing the Pipeline
 
@@ -143,25 +158,25 @@ data/processed/experiment1/
 
 Experiment 2 compares transaction-time aggregation and 1-second-bar
 physical-time aggregation. It also compares single-offset, strict all-offset,
-relaxed all-offset, and 1-second-bar gates.
+relaxed all-offset, and 1-second-bar criteria.
 
 ```bash
 # Single-offset diagnostic
 python scripts/runner_exp2_single_offset.py
 python scripts/plot_exp2_single_offset.py --summary-dir <summary-dir>
 
-# Strict all-offset gate
+# Strict all-offset criterion
 python scripts/runner_exp2_all_offset.py
 python scripts/plot_exp2_all_offset_optimized.py --summary-dir <summary-dir>
 
-# Relaxed all-offset gate
+# Relaxed all-offset criterion
 python scripts/runner_exp2_all_offset_relaxed.py
 
-# 1-second-bar all-offset gate
+# 1-second-bar all-offset criterion
 python scripts/runner_exp2_all_offset_1sbars.py
 python scripts/plot_exp2_all_offset_1sbars.py --summary-dir <summary-dir>
 
-# Select ell* under base / +Runs / +Runs+ApEn gates
+# Select ell* under base / +Runs / +Runs+ApEn criteria
 python scripts/select_ell_exp2_1sbars.py --summary-dir <summary-dir>
 ```
 
@@ -222,7 +237,9 @@ data/processed/experiment3/
         └── length_vs_pvalue.png
 ```
 
-The default `GATES` setting in `runner_exp3_battery.py` is `["base", "runs"]`.
+The default `GATES` setting in `runner_exp3_battery.py` is `["base", "runs"]`;
+in thesis terminology these are the base and +Runs criteria. The
+`{base-gate,runs-gate}` directory names are historical output paths.
 
 ### 4. Experiment 4: Multi-Asset XOR Combination
 

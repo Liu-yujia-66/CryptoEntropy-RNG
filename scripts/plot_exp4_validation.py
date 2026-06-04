@@ -7,13 +7,13 @@ Produces two thesis-ready figures from the validation outputs:
     4x1 panel of cell-level verdict matrices, one panel per n.
     Each panel is 6 validation months (rows) x 12 sub-tests (cols),
     colour-coded PASS (green) / FAIL (red) / INVALID (grey).
-    Panel title carries n + subset + ell* + witness offset.
+    Panel title carries n + subset + ell* + selected output offset.
 
   Figure 2 — exp4_validation_tradeoff.png
     3x1 panel of n-axis trade-offs:
       (a) bits/month — calibration estimate vs validation median
       (b) ell*_n      — exposes the odd/even-n effect
-      (c) fused_p1 median — confirms the moment-cancellation result
+      (c) combined p(1) median — confirms the moment-cancellation result
                             (odd n at 0.5, even n drifts)
 
 Reads:
@@ -177,7 +177,7 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
         ax.set_title(
             f"n={n}: {_short_subset(pick['subset'])}  "
             f"ell*={pick['ell_star_n']}  "
-            f"witness={pick['witness_offset']}",
+            f"selected output offset={pick['witness_offset']}",
             fontsize=10,
         )
         # Optionally annotate FAIL cells with pass_rate from the CSV
@@ -356,7 +356,7 @@ def _plot_tradeoff(
             ax.axvspan(row["n"] - 0.4, row["n"] + 0.4, alpha=0.08, color="#2ca02c")
     ax.set_ylim(0, max(df["ell_star_n"]) * 1.3 + 1)
 
-    # ---- Panel (c): fused_p1 vs n ----
+    # ---- Panel (c): combined p(1) vs n ----
     ax = axes[2]
     ax.errorbar(
         df["n"],
@@ -370,12 +370,12 @@ def _plot_tradeoff(
         capsize=4,
         linewidth=2,
         color="#3182bd",
-        label="fused p(1) median [min, max]",
+        label="combined p(1) median [min, max]",
     )
     ax.axhline(0.5, linestyle="--", color="gray", linewidth=1, label="0.5 (uniform)")
     ax.set_xticks(df["n"])
     ax.set_xticklabels([f"n={n}" for n in df["n"]], fontsize=8)
-    ax.set_ylabel("fused stream p(1)")
+    ax.set_ylabel("combined stream p(1)")
     ax.set_title("(c) marginal bias (moment-cancellation)")
     ax.legend(fontsize=8, loc="lower right")
     ax.grid(linestyle=":", alpha=0.5)
@@ -385,7 +385,7 @@ def _plot_tradeoff(
     ax.set_ylim(0.20, 0.55)
 
     fig.suptitle(
-        "Experiment 4 validation — trade-offs across fusion size",
+        "Experiment 4 validation — trade-offs across combination size",
         fontsize=12,
     )
     output_path.parent.mkdir(parents=True, exist_ok=True)

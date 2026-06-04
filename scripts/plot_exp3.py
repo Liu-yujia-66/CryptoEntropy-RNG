@@ -3,7 +3,7 @@ from __future__ import annotations
 """
 Plot Experiment 3 figures (per plan §1.6).
 
-Path layout (per-gate subdir under data/processed/experiment3/):
+Path layout (per-criterion subdir under data/processed/experiment3/):
 
     experiment3/{gate}-gate/
         per_cell_pvalues.csv     <- read
@@ -60,6 +60,14 @@ ASSET_SHORT = {
     "BTCUSDT": "BTC", "ETHUSDT": "ETH", "BNBUSDT": "BNB",
     "SOLUSDT": "SOL", "DOGEUSDT": "DOGE",
 }
+
+
+def _criterion_label(gate: str) -> str:
+    return {
+        "base": "base criterion",
+        "runs": "+Runs criterion",
+        "apen": "+Runs + ApEn criterion",
+    }.get(gate, f"{gate} criterion")
 
 
 def _paths_for_gate(gate: str) -> tuple[Path, Path, Path, Path]:
@@ -122,8 +130,9 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
     ax.set_yticklabels(ALL_SUB_TESTS)
     ax.set_xlabel("asset")
     ax.set_ylabel("sub-test")
+    criterion_label = _criterion_label(gate)
     ax.set_title(
-        f"Experiment 3 — per-asset × sub-test pass rate (GATE={gate!r})\n"
+        f"Experiment 3 — per-asset × sub-test pass rate ({criterion_label})\n"
         f"cell-level verdict: pass_rate ≥ 0.80 at α = {ALPHA};  "
         f"annotation: X / Y where Y = sanity-admissible months",
         fontsize=10,
@@ -151,7 +160,7 @@ def plot_length_vs_pvalue(pvalues: pd.DataFrame, out_path: Path, gate: str) -> N
       y = median -log10(p_value) across sanity-valid offsets only
 
     Cells with zero sanity-valid offsets (e.g. LongestRun on 5K-bracket cells,
-    or ETH 2025-05 on the base gate where ℓ\* falls under 5K) contribute no
+    or ETH 2025-05 on the base criterion where ℓ\* falls under 5K) contribute no
     point — they are documented as INVALID in the per_cell_verdict CSV but
     not on this figure.
 
@@ -167,6 +176,7 @@ def plot_length_vs_pvalue(pvalues: pd.DataFrame, out_path: Path, gate: str) -> N
     grid is too coarse and should be revisited in Future Work (§5 #5/#6
     decision says: not in this thesis).
     """
+    criterion_label = _criterion_label(gate)
     # -log10(p_value) per offset, clipped to avoid -inf
     pvalues = pvalues.copy()
     pvalues["neg_log_p"] = -np.log10(np.clip(pvalues["p_value"].to_numpy(), 1e-10, 1.0))
@@ -239,7 +249,7 @@ def plot_length_vs_pvalue(pvalues: pd.DataFrame, out_path: Path, gate: str) -> N
     n_cells = per_cell.groupby("sub_test").size().median()
     fig.suptitle(
         f"Experiment 3 — per-cell median (bit length, $-\\log_{{10}}(p)$) "
-        f"by sub-test (GATE={gate!r})\n"
+        f"by sub-test ({criterion_label})\n"
         f"each point = one (asset, month) cell; ~{int(n_cells)} cells per panel; "
         f"aggregation over sanity-valid offsets only",
         fontsize=11,
@@ -281,7 +291,7 @@ def main() -> None:
     if not per_cell_path.exists():
         raise FileNotFoundError(
             f"Missing {per_cell_path}; "
-            f"run `python scripts/runner_exp3_battery.py` (with GATE={gate!r}) first."
+            f"run `python scripts/runner_exp3_battery.py` with criterion={gate!r} first."
         )
 
     summary = pd.read_csv(per_asset_path)
