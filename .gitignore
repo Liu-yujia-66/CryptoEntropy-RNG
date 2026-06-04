@@ -16,6 +16,8 @@ data/processed/
 notes/
 
 vendor/
+uu-Thesis-Templates-for-Typst-main/
+Template in English - HISTORISKA INSTITUTIONEN.docx
 
 # TestU01 driver binaries (Mach-O); rebuild with `make -C tools`.
 tools/alphabit_probe

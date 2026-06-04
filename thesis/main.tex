@@ -6,6 +6,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[british]{babel}
 \usepackage{graphicx}
+\usepackage{svg}
 \usepackage[dvipsnames]{xcolor}
 \usepackage[sb]{libertine}
 \usepackage[scale=0.9]{inconsolata}
@@ -32,6 +33,7 @@
 \usepackage{url}
 \usepackage{booktabs}
 \usepackage{float}
+\usepackage{eso-pic}
 \usepackage{hyperref}
 \usepackage[labelfont=sf]{caption}
 \usepackage[capitalise]{cleveref}
@@ -91,13 +93,74 @@
 \newcommand{\eg}{\emph{e.g.,}}
 \newcommand{\etal}{\emph{et~al.}}
 
+%% Title-page metadata.
+\newcommand{\ThesisTitle}{Random Number Generator from Aggregated Cryptocurrency Prices}
+\newcommand{\ThesisSubtitle}{with an Application to Secure Password Generation}
+\newcommand{\ThesisAuthor}{Yujia (Kira) Liu}
+\newcommand{\ThesisCredits}{30}
+\newcommand{\ThesisProgramme}{Master's Programme in Computer Science}
+\newcommand{\ThesisDepartment}{Department of Information Technology}
+\newcommand{\ThesisSupervisor}{Andrey Shternshis}
+\newcommand{\ThesisReviewer}{Parosh Abdulla}
+\newcommand{\ThesisSerial}{}
+\newcommand{\ThesisDate}{June 2026}
+
+\newcommand{\makeuutitlepage}{%
+  \newgeometry{top=28mm,bottom=28mm,left=28mm,right=28mm}
+  \begin{titlepage}
+    \thispagestyle{empty}
+    \AddToShipoutPictureBG*{%
+      \AtPageLowerLeft{%
+        \put(\LenToUnit{\dimexpr\paperwidth-8cm\relax},\LenToUnit{-1.2cm}){%
+          \includesvg[inkscapelatex=false,width=10cm]{figures/uppsala_logo_side}%
+        }%
+      }%
+    }%
+    \AddToShipoutPictureFG*{%
+      \AtPageUpperLeft{%
+        \put(\LenToUnit{28mm},\LenToUnit{-62mm}){%
+          \includegraphics[width=4.8cm]{figures/uppsala_logo.png}%
+        }%
+        \put(\LenToUnit{\dimexpr\paperwidth-70mm\relax},\LenToUnit{-42mm}){%
+          \parbox[t]{50mm}{%
+            \raggedleft\sffamily
+            \if\relax\detokenize\expandafter{\ThesisSerial}\relax\else
+              {\small\color{gray}\ThesisSerial\par}
+            \fi
+            {\large Degree project \ThesisCredits{} credits\par}
+            {\large\color{gray}\ThesisDate\par}
+          }%
+        }%
+      }%
+    }%
+    \sffamily
+    \vspace*{6cm}
+    \begin{minipage}{0.9\textwidth}
+      \raggedright
+      {\fontsize{26}{31}\selectfont\ThesisTitle\par}
+      \vspace{0.35cm}
+      {\Large\color{gray}\ThesisSubtitle\par}
+      \vspace{0.65cm}
+      {\Large\ThesisAuthor\par}
+      \vspace{0.45cm}
+      {\large\color{gray}Supervisor: \ThesisSupervisor\par}
+      {\large\color{gray}Reviewer: \ThesisReviewer\par}
+    \end{minipage}
+
+    \vfill
+    \noindent
+    \begin{minipage}[b]{0.82\textwidth}
+      \raggedright
+      {\large\color{gray}\ThesisProgramme\par}
+      {\large\color{gray}\ThesisDepartment\par}
+    \end{minipage}
+  \end{titlepage}
+  \restoregeometry
+}
+
 \begin{document}
 \frontmatter
-\title{Random Number Generator from Aggregated Cryptocurrency Prices \\ with an Application to Secure Password Generation}
-\author{Yujia Liu \\ Uppsala University}
-\date{\today}
-
-\maketitle
+\makeuutitlepage
 
 \vspace*{3cm}
 \section*{Abstract}
