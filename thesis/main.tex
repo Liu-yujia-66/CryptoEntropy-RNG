@@ -1,7 +1,7 @@
-% \documentclass[11pt,titlepage,openright]{book}
-\documentclass[11pt,titlepage,openany]{book}  % screen-only PDF: chapters start on any page (no blank-page padding)
+\documentclass[11pt,titlepage,openany,oneside]{book}  % screen-only PDF: chapters start on any page (no blank-page padding)
 \let\cleardoublepage\clearpage
 
+%% Encoding, language, fonts, and graphics.
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[british]{babel}
@@ -10,44 +10,37 @@
 \usepackage[sb]{libertine}
 \usepackage[scale=0.9]{inconsolata}
 
+%% Section headings.
 \usepackage[sf]{titlesec}
-%% Force all sections and subsections (numbered and starred) to render in bold sans-serif.
 \titleformat{\section}{\sffamily\Large\bfseries}{\thesection}{1em}{}
 \titleformat{name=\section,numberless}{\sffamily\Large\bfseries}{}{0pt}{}
 \titleformat{\subsection}{\sffamily\large\bfseries}{\thesubsection}{1em}{}
 \titleformat{name=\subsection,numberless}{\sffamily\large\bfseries}{}{0pt}{}
-\usepackage[round,sort,authoryear]{natbib}
-%\usepackage[export]{adjustbox}
 
-%% Math and algorithm support (added to align with the
-%% Sjölund & Mair "Advice for Master's thesis reports" guidelines).
+%% Citations.
+\usepackage[round,sort,authoryear]{natbib}
+
+%% Math and algorithms.
 \usepackage{amsmath,amssymb,amsthm,mathtools}
 \usepackage{bbm}
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 
+%% Figures, tables, floats, and links.
 \usepackage[section]{placeins}
+\usepackage{adjustbox}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{hyperref}
+\usepackage[labelfont=sf]{caption}
+\usepackage[capitalise]{cleveref}
 
-\usepackage{
-  marginnote, % Improved margin notes
-  environ,
-  ragged2e,   % Justified text in the margin notes
-  url,        % For typesetting URLs
-  listings,   % Code formatting
-  hyperref,   % Links in PDF from TOC, refs, etc.
-  lipsum,
-  booktabs,
-  changepage,
-  float
-}
-\renewcommand{\bfdefault}{bx}
+\renewcommand{\bfdefault}{b}
 \DeclareTextFontCommand\textsb{\libertineSB}
 
-\usepackage[capitalise]{cleveref}
 \Crefname{section}{\S}{\S\S}
 
-%% Hyperref link coloring: URLs in blue (visible as clickable links),
-%% other links black to avoid distraction in the body text.
 \hypersetup{
   colorlinks=true,
   urlcolor=blue,
@@ -56,128 +49,40 @@
   filecolor=black,
 }
 
-\usepackage{enumitem}   % Improved lists 
-% \setlist{noitemsep} % To make all lists compact
+%% Lists.
+\usepackage{enumitem}
 \setlist[itemize]{itemsep=0pt}
 \setlist[itemize,1]{label=--}
 \setlist[itemize,2]{label=\ensuremath{\triangleright}}
-\setlist[itemize,3]{label=\RED{AVOID}}
-% Description lists to use semibold labels
+\setlist[itemize,3]{label=\ensuremath{\diamond}}
 \setlist[description]{font=\libertineSB}
-
-%% Paragraph spacing: visible vertical gap between paragraphs.
 \setlength{\parskip}{0.6em plus 0.15em minus 0.05em}
-%% American/technical style: no first-line indent, rely on parskip alone.
 \setlength{\parindent}{0pt}
-
-%% Make lists hug their lead-in paragraph: drop the extra topsep/partopsep
-%% so the gap before/after itemize/enumerate equals \parskip, not parskip + topsep.
 \setlist{topsep=0pt, partopsep=0pt}
 
-\usepackage[twoside,labelfont=sf]{caption}
-
+%% Captions.
 \captionsetup{justification=raggedright,singlelinecheck=false}
-
 \newcommand\myhrulefill[1]{\leavevmode\leaders\hrule height#1\hfill\kern0pt}
 \DeclareCaptionFormat{FigFormat}{{\color{black}\myhrulefill{0.5pt}}\\#1#2#3}
 \captionsetup[figure]{format=FigFormat}
 \captionsetup[table]{format=FigFormat}
 
-\DeclareCaptionFormat{LstFormat}{\textsf{Listing}~\arabic{chapter}.\arabic{listing}:#2#3}
-\floatstyle{ruled}
-\newfloat{listing}{thp}{lol}[chapter]
-\floatname{listing}{Listing}
-\captionsetup[listing]{format=LstFormat}
-
-\NewEnviron{MarginNote}[1][0mm]{\marginnote{\footnotesize\justifying\BODY}[#1]}
-\newcommand{\Footnote}[2][0mm]{\footnotemark\marginnote{\footnotesize$^{\arabic{footnote})}$~#2}[#1]}
-
-\renewenvironment{figure*}[1][]{%
-  \begin{figure}[#1]%
-    % This feature is deprecated for now
-    % \checkoddpage%
-    % \ifoddpage%
-    %   \begin{adjustwidth}{0cm}{-45mm}%%
-    % \else%
-    %   \begin{adjustwidth}{-45mm}{0cm}%%
-    % \fi%
-    }{%
-    % \end{adjustwidth}%
-  \end{figure}}
-
-\renewenvironment{table*}[1][]{%
-  \begin{table}[#1]%
-    % This feature is deprecated for now
-    % \checkoddpage%
-    % \ifoddpage%
-    %   \begin{adjustwidth}{0cm}{-45mm}%%
-    % \else%
-    %   \begin{adjustwidth}{-45mm}{0cm}%%
-    % \fi%
-    }{%
-    % \end{adjustwidth}%
-  \end{table}}
-
-\renewenvironment{listing*}[1][]{%
-  \begin{listing}[#1]%
-    % This feature is deprecated for now
-    % \checkoddpage%
-    % \ifoddpage%
-    %   \begin{adjustwidth}{0cm}{-45mm}%%
-    % \else%
-    %   \begin{adjustwidth}{-45mm}{0cm}%%
-    % \fi%
-    }{%
-    % \end{adjustwidth}%
-  \end{listing}}
-
-%% == Code =======================================================
-\lstnewenvironment{Code}[1][style=std]{\lstset{#1}}{}
-\lstnewenvironment{Code_Numbered}[1][style=std,numbers=left]{\lstset{#1}}{}
-
-\renewcommand{\c}[1]{\lstinline[style=std]@#1@}
-
-\lstdefinestyle{std}{
-  language=python,
-  basicstyle=\small\tt\color{black},
-  keywordstyle=\small\tt\bfseries,
-  numberstyle=\footnotesize\sf\color{black},
-  commentstyle=\small\color{black}\it,
-  aboveskip=1ex,
-  belowskip=1ex,
-  tabsize=2,
-  columns=fullflexible,
-  xleftmargin=1ex,
-  resetmargins=true,
-  showstringspaces=false,
-  morecomment=[l]{//},
-  morecomment=[l]{--},
-  morecomment=[s]{/*}{*/},
-  escapeinside=@@,
-  morekeywords={Frobies},
-  moredelim=[is][\textit]{___}{___},
-  moredelim=[is][\textbf]{__*}{*__},
-  numberbychapter=true
-}
-
+%% Typography and page layout.
 \usepackage[activate={true,nocompatibility},final,tracking=true,kerning=true,spacing=true,factor=1100,stretch=10,shrink=10]{microtype}
-\usepackage[paper=a4paper,text={13cm,24cm},marginparsep=5mm,marginparwidth=45mm,inner=20mm,twoside]{geometry}
+\usepackage[
+  paper=a4paper,
+  top=28mm,
+  bottom=28mm,
+  left=32mm,
+  right=32mm,
+  marginparsep=5mm,
+  marginparwidth=25mm
+]{geometry}
 
-\newcommand{\RED}[1]{\textcolor{red}{#1}}
+%% Short text macros.
 \newcommand{\ie}{\emph{i.e.,}}
 \newcommand{\eg}{\emph{e.g.,}}
 \newcommand{\etal}{\emph{et~al.}}
-
-\usepackage{pifont}
-\newcommand{\Yes}{\ding{51}}
-\newcommand{\No}{\ding{55}}
-
-\renewcommand{\bfdefault}{b}
-\clearpage{\pagestyle{empty}\cleardoublepage}
-
-%% You can remove this line if you compile with --synctex=1 (see Makefile)
-\synctex=1
-\pagestyle{plain}
 
 \begin{document}
 \frontmatter
@@ -623,6 +528,7 @@ This chapter first describes the experimental setup and data in the Overview (\c
   \caption{Per-asset trades/s for the five USDT spot pairs.}
   \label{tab:trades-per-second}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
             & \multicolumn{2}{c}{Raw trades/s} & \multicolumn{2}{c}{aggTrades/s} & raw/agg \\
@@ -636,6 +542,7 @@ This chapter first describes the experimental setup and data in the Overview (\c
       \texttt{BNBUSDT}  & $12.6$ & $[8.4,\, 25.7]$  & $4.3$  & $[2.9,\, 8.4]$   & $2.8$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Throughout this thesis ``/s'' is shorthand for ``per second''. For each of the two rates (raw trades/s and aggTrades/s), the table reports the per-asset median and the [5th, 95th] percentiles across the 15 monthly archives covering the 2025-01 to 2026-03 sample period. Assets are sorted by the median raw trades/s in descending order.}
 \end{table}
@@ -670,9 +577,9 @@ Experiment~1 answers the negative side of RQ1. The simplest possible baseline is
   \caption{Experiment~1 baseline - per-asset summary.}
   \label{tab:exp1-summary}
   \centering
-  \footnotesize
   \setlength{\tabcolsep}{4.2pt}
   \renewcommand{\arraystretch}{1.08}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{@{}lrrrcccccr@{}}
       \toprule
       Asset & bps & $1-H$ & $\rho_1$ & Mono. & Runs & ApEn & $D$ & $D_2$ & $L_{\max}$ \\
@@ -685,6 +592,7 @@ Experiment~1 answers the negative side of RQ1. The simplest possible baseline is
       SOL  & $1.74$  & $2.35 \times 10^{-6}$ & $+0.095$ & $4/15$  & $15/15$ & $15/15$ & $15/15$ & $15/15$ & $792$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \par\smallskip
   {\footnotesize Each row aggregates 15 (asset, month) cells covering 2025-01 to 2026-03: the median bit emission rate (bps), the worst-case Shannon bias (largest $1 - H$), the median lag-1 autocorrelation, the number of months (out of fifteen) on which Monobit, Runs, ApEn, $D$ (adaptive $k$), and $D_2 = D(k{=}2)$ reject at $\alpha = 0.01$, and the largest 0-run or 1-run length $L_{\max}$ observed across all 15 cells. Rows are sorted by bps median in descending order. The adaptive block length $k = \lfloor 0.5 \log_2 n \rfloor$ falls in $10$--$12$ on this sample. The per-(asset, month) distributions behind these summary statistics are shown in \cref{fig:exp1-distributions}.}
 \end{table}
@@ -780,6 +688,7 @@ This step uses the simplified single-offset version with $o = 0$: for each $\ell
   \caption{Single-offset criterion -- per-asset summary.}
   \label{tab:exp2-single-offset-summary}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lccr}
       \toprule
       Asset & n\_pass & selected $\ell^*$ median (over n\_pass) & selected $\ell^*$ range \\
@@ -791,6 +700,7 @@ This step uses the simplified single-offset version with $o = 0$: for each $\ell
       DOGE & $15/15$ & $225$  & $[75, 825]$   \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize n\_pass is the number of months (out of fifteen) on which the single-offset criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a1}.}
 \end{table}
@@ -828,6 +738,7 @@ This step replaces the ``single offset passes'' rule with the strict criterion o
   \caption{All-offset strict criterion -- per-asset summary.}
   \label{tab:exp2-strict-summary}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lccr}
       \toprule
       Asset & n\_pass & selected $\ell^*$ median (over n\_pass) & selected $\ell^*$ range \\
@@ -839,6 +750,7 @@ This step replaces the ``single offset passes'' rule with the strict criterion o
       BNB  & $15/15$ & $350$  & $[200, 1025]$  \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize n\_pass is the number of months (out of fifteen) on which the strict criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a2}.}
 \end{table}
@@ -869,6 +781,7 @@ This step replaces the strict criterion with the relaxed criterion defined in \c
   \caption{All-offset relaxed criterion -- per-asset summary.}
   \label{tab:exp2-relaxed-summary}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lccr}
       \toprule
       Asset & n\_pass & selected $\ell^*$ median & selected $\ell^*$ range \\
@@ -880,6 +793,7 @@ This step replaces the strict criterion with the relaxed criterion defined in \c
       DOGE & $15/15$ & $156$  & $[48, 594]$   \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize n\_pass is the number of months on which the relaxed criterion returns acceptable; the median and the range are computed over all 15 months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a4}.}
 \end{table}
@@ -921,6 +835,7 @@ This step redoes the all-offset acceptance loop on the physical-time axis. Diffe
   \caption{1-second bar criterion -- per-asset summary.}
   \label{tab:exp2-1sbars-summary}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lcccc}
       \toprule
       Asset & base n\_pass & base $\ell^*$ median (sec) & +Runs n\_pass & +Runs $\ell^*$ median (sec) \\
@@ -932,6 +847,7 @@ This step redoes the all-offset acceptance loop on the physical-time axis. Diffe
       SOL  & $15/15$ & $54$ & $12/15$ & $59$  \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Each row aggregates 15 (asset, month) cells under two criteria: base ($D$ + Monobit) and +Runs. For even sample sizes the $\ell^*$ median is the average of the two middle values rounded to the nearest integer (BNB base $83.5 \to 84$, ETH base $64.5 \to 65$, ETH +Runs $55.5 \to 56$, SOL +Runs $58.5 \to 59$). The full per-(asset, month) tables, including the +Runs+ApEn criterion, are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
 \end{table}
@@ -1004,6 +920,7 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
   \caption{Experiment~3 -- three sub-tests that fail across assets.}
   \label{tab:exp3-failing-subtests}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{llccccc}
       \toprule
       Sub-test & Battery & BTC & ETH & BNB & SOL & DOGE \\
@@ -1013,6 +930,7 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
       Approximate Entropy    & Core diagnostic  & $11/15$ & $2/8$ & $8/14$ & $9/12$ & $9/13$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Each entry is ``passing months / admissible months''. The admissible month count differs by asset because the +Runs criterion accepts different numbers of monthly cells: BTC 15, ETH 8, BNB 14, SOL 12, and DOGE 13. Rows are grouped by source battery, not sorted by failure rate.}
 \end{table}
@@ -1084,7 +1002,7 @@ The calibration procedure is simple. For each subset and each calibration month,
   \caption{Experiment~4 -- calibration-selected throughput-best subset.}
   \label{tab:exp4-calibration}
   \begin{center}
-    \footnotesize
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{clrrrrr}
       \toprule
       $n$ & selected subset & $\ell^*_n$ & selected output offset & est. bits/mo & $\Delta$ vs runner-up & median $p(1)$ \\
@@ -1095,6 +1013,7 @@ The calibration procedure is simple. For each subset and each calibration month,
       5 & BTC + ETH + BNB + SOL + DOGE & $3$ & $0$ & $102{,}858$ & unique & $0.499$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize ``$\Delta$ vs runner-up'' is the throughput gap between the selected subset and the second-best subset with the same $n$. For $n=5$ there is only one subset.}
 \end{table}
@@ -1116,7 +1035,7 @@ Validation fixes the selected subset, $\ell^*_n$, and selected output offset fro
   \caption{Experiment~4 -- validation throughput and failure count.}
   \label{tab:exp4-validation-throughput}
   \begin{center}
-    \footnotesize
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{clrrrr}
       \toprule
       $n$ & selected subset & $\ell^*_n$ & output bits/mo & hours/256 bits & sub-tests with $\geq 1$ fail / 29 \\
@@ -1127,6 +1046,7 @@ Validation fixes the selected subset, $\ell^*_n$, and selected output offset fro
       5 & BTC + ETH + BNB + SOL + DOGE & $3$  & $95{,}118$  & $2.01$ & $8$  \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Throughput is measured on the selected output offset fixed during calibration. Failure count is the number of sub-tests that fail in at least one of the six validation months.}
 \end{table}
@@ -1157,6 +1077,7 @@ Validation throughput is close to, but lower than, the calibration estimate. The
   \caption{Experiment~4 -- key validation sub-tests, PASS months out of 6.}
   \label{tab:exp4-key-validation-subtests}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lcccc}
       \toprule
       Sub-test & $n=2$ & $n=3$ & $n=4$ & $n=5$ \\
@@ -1175,6 +1096,7 @@ Validation throughput is close to, but lower than, the calibration estimate. The
       MultinomialBitsOver L4    & $6$ & $5$ & $1$ & $6$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
 \end{table}
 
@@ -1205,7 +1127,7 @@ Using the min-entropy budget from \cref{sec:output-metrics}, each validation cel
   \caption{Experiment~4 -- validation min-entropy summary.}
   \label{tab:exp4-min-entropy}
   \begin{center}
-    \footnotesize
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{clrrlr}
       \toprule
       $n$ & selected subset & median $h_\infty$ & worst $h_\infty$ & binding estimator & IKM bytes \\
@@ -1216,6 +1138,7 @@ Using the min-entropy budget from \cref{sec:output-metrics}, each validation cel
       5 & BTC + ETH + BNB + SOL + DOGE & $0.982$ & $0.979$ & MCV & $33$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize $h_\infty$ is the smaller of the MCV and Markov estimates for each validation cell. The IKM byte count is computed against a 256-bit target.}
 \end{table}
@@ -1246,7 +1169,7 @@ In this chapter, a ``strong password'' means a randomly generated password strin
 
 \begin{figure}[!htbp]
   \begin{center}
-    \includegraphics[width=\textwidth]{figures/prototype_pipeline.png}
+    \includegraphics[width=0.82\textwidth]{figures/prototype_pipeline.png}
   \end{center}
   \caption{Prototype pipeline from Experiment~4 combined stream to password output.}
   \label{fig:prototype-pipeline}
@@ -1278,7 +1201,7 @@ Each cell is evaluated with two output metrics. First, the 100 passwords are exp
   \caption{Prototype output evaluation.}
   \label{tab:prototype-evaluation}
   \begin{center}
-    \footnotesize
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrcc}
       \toprule
       Group & cells & chi-square pass & chi-square $p$-value range & entropy median [min, max] \\
@@ -1290,6 +1213,7 @@ Each cell is evaluated with two output metrics. First, the 100 passwords are exp
       B2 ideal-IKM       & $6$ & $6/6$ & $[0.595,\;0.938]$      & $6.1007\;[6.0996,\;6.1058]$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
 \end{table}
 
@@ -1426,9 +1350,10 @@ Overall, the thesis shows that market-derived randomness is not usable in raw fo
 This appendix gives two kinds of supplementary results. First, it gives the full 15-month tables of selected $\ell^*$ for the criteria in Experiment~2 (\cref{sec:exp2}). The figures in the main text show only two quarters (2025~Q1 and 2026~Q1, i.e.\ Q5); the full month-by-month results are listed here. Second, it gives the complete calibration ranking for Experiment~4 (\cref{sec:exp4}). In the Experiment~2 tables, all tables use the same asset order (BTC, ETH, BNB, SOL, DOGE), which is the same descending order of raw trades/s as in \cref{tab:trades-per-second}. An empty cell (``--'') means that the (asset, month) cell has no acceptable $\ell$ inside the $\ell$ grid under the given criterion. The raw CSV files behind the Experiment~2 appendix tables live under \texttt{data/processed/experiment2/}; the Experiment~4 calibration summary is under \texttt{data/processed/experiment4/calibration\_all\_subsets/}.
 
 \begin{table}[!htbp]
-  \caption{Single-offset criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the smallest $\ell$ at which $D$ (adaptive $k$) and Monobit both give $p \geq \alpha$ ($\alpha = 0.01$).}
+  \caption[Single-offset criterion -- selected $\ell^*$]{Single-offset criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the smallest $\ell$ at which $D$ (adaptive $k$) and Monobit both give $p \geq \alpha$ ($\alpha = 0.01$).}
   \label{tab:appendix-a1}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC    & ETH    & BNB   & SOL   & DOGE  \\
@@ -1450,13 +1375,15 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2026.03 & $1075$ & $575$  & $175$ & $100$ & $100$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{All-offset strict criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the $80\%$ strict criterion (pass rates of $D$ and Monobit both $\geq 0.80$).}
+  \caption[All-offset strict criterion -- selected $\ell^*$]{All-offset strict criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the $80\%$ strict criterion (pass rates of $D$ and Monobit both $\geq 0.80$).}
   \label{tab:appendix-a2}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC    & ETH    & BNB    & SOL    & DOGE   \\
@@ -1478,14 +1405,16 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2026.03 & $1225$ & $750$  & $200$  & $150$  & $125$  \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Overall acceptance rate is $63/75$ (BTC fails on 8 months, ETH and SOL each fail on 2 months). On these 63 accepted cells, the Runs pass rate is below $0.05$ on 38 cells, and the $D(k{=}2)$ pass rate is below $0.05$ on the same 38 cells.}
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{Transaction-time strict + Runs criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is the same as \cref{tab:appendix-a2}; the criterion adds Runs to the strict criterion, that is, pass rates of $D$, Monobit and Runs are all $\geq 0.80$. This table is the same-criterion comparator referenced in \cref{sec:exp2-1sbars}; it does not change the strict-criterion definition in the main text.}
+  \caption[Transaction-time strict + Runs criterion -- selected $\ell^*$]{Transaction-time strict + Runs criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is the same as \cref{tab:appendix-a2}; the criterion adds Runs to the strict criterion, that is, pass rates of $D$, Monobit and Runs are all $\geq 0.80$. This table is the same-criterion comparator referenced in \cref{sec:exp2-1sbars}; it does not change the strict-criterion definition in the main text.}
   \label{tab:appendix-a3}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC    & ETH    & BNB    & SOL    & DOGE   \\
@@ -1507,14 +1436,16 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2026.03 & --     & $1750$ & $225$  & $325$  & $300$  \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Overall acceptance rate is $48/75$ (BTC passes on 1 month, ETH on 9, BNB on 12, SOL and DOGE on 13 each).}
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{All-offset relaxed criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $10$ to $2000$ with step $2$; the criterion is the heuristic relaxed criterion with $(F, f) = (3, 0.03)$.}
+  \caption[All-offset relaxed criterion -- selected $\ell^*$]{All-offset relaxed criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $10$ to $2000$ with step $2$; the criterion is the heuristic relaxed criterion with $(F, f) = (3, 0.03)$.}
   \label{tab:appendix-a4}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC    & ETH    & BNB   & SOL   & DOGE  \\
@@ -1536,14 +1467,16 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2026.03 & $880$  & $442$  & $128$ & $66$  & $48$  \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Overall acceptance rate is $75/75$.}
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{Bonferroni / \v{S}id\'ak directional comparison on 2025~Q1 (see \cref{sec:exp2-relaxed-criterion}). After tightening to per-offset $\alpha / N_{\text{valid}}$, the ``at least one offset passes'' rule gives selected $\ell^*$ that are systematically smaller than the values in \cref{tab:appendix-a4}, confirming the directional analysis in \cref{sec:acceptance-criteria}: Bonferroni / \v{S}id\'ak controls the ``at least one false rejection'' family-wise error and is not the right correction for the opposite question (``at least one false acceptance''); under an ``at least one offset passes'' rule, tightening $\alpha$ instead gives an earlier and looser selected $\ell^*$. This table is therefore only a directional comparator, not a main criterion.}
+  \caption[Bonferroni / \v{S}id\'ak directional comparison]{Bonferroni / \v{S}id\'ak directional comparison on 2025~Q1 (see \cref{sec:exp2-relaxed-criterion}). After tightening to per-offset $\alpha / N_{\text{valid}}$, the ``at least one offset passes'' rule gives selected $\ell^*$ that are systematically smaller than the values in \cref{tab:appendix-a4}, confirming the directional analysis in \cref{sec:acceptance-criteria}: Bonferroni / \v{S}id\'ak controls the ``at least one false rejection'' family-wise error and is not the right correction for the opposite question (``at least one false acceptance''); under an ``at least one offset passes'' rule, tightening $\alpha$ instead gives an earlier and looser selected $\ell^*$. This table is therefore only a directional comparator, not a main criterion.}
   \label{tab:appendix-a5}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC    & ETH   & BNB   & SOL   & DOGE  \\
@@ -1553,13 +1486,15 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2025.03 & $1252$ & $338$ & $156$ & $154$ & $102$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{1-second bar criterion, base ($D$ + Monobit) -- selected $\ell^*$ per (asset, month). The $\ell$ unit is seconds; the grid is $10$ to $600$ with step $1$.}
+  \caption[1-second bar base criterion -- selected $\ell^*$]{1-second bar criterion, base ($D$ + Monobit) -- selected $\ell^*$ per (asset, month). The $\ell$ unit is seconds; the grid is $10$ to $600$ with step $1$.}
   \label{tab:appendix-a6}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC   & ETH   & BNB   & SOL   & DOGE  \\
@@ -1581,14 +1516,16 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2026.03 & $250$ & $327$ & $197$ & $356$ & $196$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Acceptance rate $70/75$. Failed cells: 2025.06 ETH, 2025.07 BNB, 2025.12 ETH, 2026.02 DOGE and 2026.02 ETH. Among these, the 2025.12 ETH and 2026.02 DOGE cells have a seconds-with-trades coverage below $0.75$; the other failed cells still have a coverage between $0.76$ and $0.83$.}
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{1-second bar criterion, +Runs -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
+  \caption[1-second bar +Runs criterion -- selected $\ell^*$]{1-second bar criterion, +Runs -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
   \label{tab:appendix-a6b}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC   & ETH   & BNB   & SOL   & DOGE  \\
@@ -1610,14 +1547,16 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2026.03 & $339$ & --    & $293$ & --    & $278$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Acceptance rate $62/75$. Runs passes on most cells here, while on the transaction-time axis it is rejected on almost every cell at the selected $\ell^*$ (\cref{tab:appendix-a2,tab:appendix-a3}); this is the key independence result of the 1-second bar axis (\cref{sec:exp2-1sbars}).}
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{1-second bar criterion, +Runs + ApEn ($m = 5$) -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
+  \caption[1-second bar +Runs + ApEn criterion -- selected $\ell^*$]{1-second bar criterion, +Runs + ApEn ($m = 5$) -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
   \label{tab:appendix-a6c}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lrrrrr}
       \toprule
       Month   & BTC   & ETH   & BNB   & SOL   & DOGE  \\
@@ -1639,6 +1578,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       2026.03 & $339$ & --    & $293$ & --    & $278$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize Acceptance rate $62/75$. Adding ApEn at $m = 5$ on top of +Runs does not further reduce the acceptance count; the few cells that move only shift their selected $\ell^*$ slightly higher.}
 \end{table}
@@ -1647,7 +1587,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
   \caption{Experiment~4 per-subset calibration summary.}
   \label{tab:appendix-a7}
   \begin{center}
-    \scriptsize
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{rlrrrr}
       \toprule
       $n$ & subset & $\ell^*_n$ & median $p(1)$ & est. bits/mo & selected output offset \\
@@ -1683,6 +1623,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       5 & BTC + ETH + BNB + SOL + DOGE$^\dagger$ & $3$ & $0.499$ & $102{,}858$ & $0$ \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
   {\footnotesize The calibration window is 2025-01 to 2025-09. All 234 (subset, month) cells pass the +Runs criterion, meaning that each cell can find an $\ell^*$ in the $\ell = 1,\ldots,400$ grid where $D$ (adaptive $k$), Monobit, and Runs all reach all-offset pass rate at least $0.80$. Rows are ordered by $n$ and then by estimated bits/month. The dagger marks the throughput-best subset selected for validation.}
 \end{table}
@@ -1734,6 +1675,7 @@ AI did not independently produce the research design, experimental decisions, or
   \caption{Caption goes ABOVE the table.}
   \label{tab:example}
   \begin{center}
+    \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{lll}
       \toprule
       $A$ & $B$ & $C$ \\
@@ -1742,6 +1684,7 @@ AI did not independently produce the research design, experimental decisions, or
       $A$ & \Yes{} & \No{} \\
       \bottomrule
     \end{tabular}
+    \end{adjustbox}
   \end{center}
 \end{table}
 
