@@ -296,8 +296,8 @@
 }
 
 %% NIST SP 800-63B-4 (Final, 2025-07-31) -- Digital Identity Guidelines;
-%% cited from Ch5 §5.2 (strong-password threshold and verifier-side
-%% policy framing for the ~30 / >=80 / ~98 bit password ladder).
+%% cited for verifier-side password guidance: length, blocklists,
+%% rate limiting, and verifier-side storage protection.
 @techreport{nist2025sp80063b,
   author      = {{National Institute of Standards and Technology}},
   title       = {Digital Identity Guidelines: Authentication and
@@ -561,4 +561,55 @@
   number  = {2},
   pages   = {5--40},
   doi     = {10.21314/JOR.2001.041}
+}
+
+%% =====================================================================
+%%  Practitioner guidance (password-strength working benchmark)
+%% =====================================================================
+
+%% Keeper Security -- practitioner recommendation of >=75 bits for a
+%% strong random password; cited in Ch2 Background (Password output
+%% strength) to support the thesis's more conservative ~80-bit working
+%% benchmark. Practitioner/industry source, not a normative standard.
+@misc{keeper2024entropy,
+  author       = {{Keeper Security}},
+  title        = {Password Entropy: What It Is and Why It's Important},
+  year         = {2024},
+  howpublished = {\url{https://www.keepersecurity.com/blog/2024/03/04/password-entropy-what-it-is-and-why-its-important/}},
+  note         = {Accessed 2026-06-01}
+}
+
+%% Proton -- practitioner statement that 75-80 bits resists known
+%% brute-force attacks; cited in Ch2 (Password output strength) for the
+%% 75-80 bit practitioner cluster.
+@misc{proton2023entropy,
+  author       = {{Proton}},
+  title        = {What is Password Entropy?},
+  year         = {2023},
+  howpublished = {\url{https://proton.me/blog/what-is-password-entropy}},
+  note         = {By R. Koch. Accessed 2026-06-01}
+}
+
+%% KeePass -- documentation example uses 80 bits as the minimum
+%% master-password quality threshold; cited in Ch2 (Password output
+%% strength) as a configurable practical quality floor.
+%% Continuously updated online documentation, no fixed publication
+%% date -> cited as n.d. with an access date (not a dated paper).
+@misc{keepassdocs,
+  author       = {{KeePass}},
+  title        = {{KeePass} Help Center: Master Key},
+  year         = {n.d.},
+  howpublished = {Online documentation, \url{https://keepass.info/help/base/keys.html}},
+  note         = {Maintained by D. Reichl; no fixed publication date. Accessed 2026-06-01}
+}
+
+%% EFF Diceware -- recommends a six-word passphrase (~77 bits) from the
+%% 7776-word long list; cited in Ch2 (Password output strength) for the
+%% 75-80 bit practitioner cluster.
+@misc{eff2016diceware,
+  author       = {{Electronic Frontier Foundation}},
+  title        = {Deep Dive: {EFF}'s New Wordlists for Random Passphrases},
+  year         = {2016},
+  howpublished = {\url{https://www.eff.org/deeplinks/2016/07/new-wordlists-random-passphrases}},
+  note         = {By J. Bonneau. Accessed 2026-06-01}
 }

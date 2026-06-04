@@ -182,7 +182,7 @@
 \begin{document}
 \frontmatter
 \title{Random Number Generator from Aggregated Cryptocurrency Prices \\ with an Application to Secure Password Generation}
-\author{Yujia Liu \\ Uppsala University \\[1.2em] {\small GitHub Link: \url{https://github.com/Liu-yujia-66/CryptoEntropy-RNG}}}
+\author{Yujia Liu \\ Uppsala University}
 \date{\today}
 
 \maketitle
@@ -190,12 +190,11 @@
 \vspace*{3cm}
 \section*{Abstract}
 
-Random numbers are a basic requirement for security, yet true-random sources need special hardware and pseudo-random generators still need a high-entropy seed. This thesis studies whether public cryptocurrency market data can serve as such an entropy source, with strong password generation as the application target. The cryptocurrency spot market is attractive because it trades 24~hours a day and exposes every trade through public APIs. The difficulty is that raw price-change signs are not independent: microstructure effects such as the bid-ask bounce make neighbouring signs strongly correlated, so the data cannot be used as random bits directly.
+Random numbers are a basic requirement for security, but a reliable physical source of randomness is not always conveniently available on ordinary devices. This thesis studies a concrete question: in a setting where the market data is only passively observed, can public cryptocurrency trade data, after statistical processing and standard cryptographic conditioning, provide usable entropy for strong password generation? The cryptocurrency market trades continuously around the clock and produces high-frequency public data, which makes it a suitable test case for this question. The main difficulty is that raw price changes are not independent: market microstructure makes the signs of neighbouring price changes strongly correlated, so the data cannot be used directly as random bits.
 
-The method reuses the entropy-based predictability test $D$ and the all-offset construction from recent high-frequency-finance work, and adapts them to the cryptocurrency setting with a relaxed acceptance gate, a 1-second bar physical-time aggregation pipeline, a multi-asset XOR combination, and output metrics for throughput and min-entropy. The data are Binance aggregated trades for five USDT spot pairs over 15 months.
+This thesis builds and evaluates a pipeline that runs from market prices to password output. Price changes are first encoded as bits, then aggregated on different time bases, then screened by statistical tests, and the outputs of several assets are combined. After these steps, the bit streams that pass validation are passed into a standard cryptographic conditioning step that produces the final passwords. The experimental data cover five high-liquidity USDT spot pairs over a span of 15 months.
 
-The experiments show a clear progression. Raw tick signs are rejected on every monthly cell. One-second-bar aggregation passes a $D$ + Monobit + Runs gate on 62 of 75 cells, and a 29-sub-test extended battery shows that only higher-order, multi-symbol structure remains, detected independently by NIST SP800-22 and TestU01. Multi-asset XOR combination then gives three deployable configurations ($n \in \{2,3,5\}$), while $n = 4$ exposes a non-stationarity boundary. A final prototype conditions the deployable streams through HKDF-SHA256 and produces about 98-bit passwords whose character statistics match ideal baselines. The overall answer is a conditional yes within a passive statistical setting, in which cryptographic conditioning is a required part of the design.
-
+The experiments give a conditional yes. Raw per-trade price changes fail the statistical checks in every month. After aggregation into one-second time windows, most of the short-range dependence is removed, but the output of a single asset still retains some higher-order structure. Combining several assets reduces this residual further: three configurations stay stable on the held-out validation months, while one four-asset configuration fails because its bias drifts outside the calibration range. The final prototype uses the stable configurations to generate 16-character passwords; measured by search-space entropy, each password carries about 98 bits of strength --- well above the roughly 30 bits typical of user-chosen passwords, and above the 80-bit working benchmark for strong random passwords adopted in this thesis. The overall conclusion is limited but practical: under a passive statistical setting and prototype-level evaluation, public cryptocurrency data can serve as entropy input for password generation after aggregation, validation, and cryptographic conditioning.
 
 \tableofcontents
 \listoffigures
@@ -224,7 +223,7 @@ In recent years, a middle-ground approach has attracted research interest: wheth
 
 However, using the sign of price changes directly as a random bit stream does not work. Many studies have shown that high-frequency trading sequences look balanced at the marginal level (for example, the up/down ratio is close to 1:1), but neighbouring symbols are strongly correlated at short lags. A common cause is microstructure noise such as the bid-ask bounce~\citep{cont2001stylized,shternshis2025predictability}. To turn this kind of ``looks random but is conditionally predictable'' data into a usable random bit stream, a pipeline is needed. In this thesis the pipeline is: take market prices, encode the sign of price changes as bits, aggregate neighbouring observations to reduce short-range dependence, test the resulting bit streams, and only then pass acceptable streams into a cryptographic conditioning step.
 
-This pipeline is not specific to one market. In principle, it can be applied to many financial data sources. This thesis focuses on the cryptocurrency spot market for practical reasons. Compared to traditional stock markets, the cryptocurrency market runs 24~hours a day without exchange closures, and its public APIs (such as Binance) allow direct download of every trade, with no broker batching or routing layer in between. Market activity is therefore directly visible to end users. These properties make cryptocurrency data a useful test case for the pipeline. The main methodological question is then: which aggregation axis should be used, and how coarse should the aggregation be?
+This pipeline is not specific to one market. In principle, it can be applied to many financial data sources. This thesis focuses on the cryptocurrency spot market for practical reasons. Compared to traditional stock markets, the cryptocurrency market runs 24~hours a day without exchange closures, and its public APIs (such as Binance) allow direct download of every trade, with no broker batching or routing layer in between. Market activity is therefore directly visible to end users. These properties make cryptocurrency data a useful test case for the pipeline. At the methodological level, the later experiments compare different aggregation axes and choose a suitable aggregation granularity.
 
 For the application target, this thesis uses the accepted streams for \emph{strong password generation}. The literature gives a context for this choice: an early large-scale study of web password habits~\citep{florencio2007webpassword} and a later guessing-corpus analysis~\citep{bonneau2012guessing} both report that user-chosen passwords often have low entropy, around 20--30 bits, and randomly generated passwords are one of the countermeasures discussed in that literature. This thesis therefore uses market-derived randomness as input to a standard cryptographic conditioning step that produces passwords, giving an application target with a clear scope that can be checked end to end within the thesis.
 
@@ -243,19 +242,35 @@ The literature directly related to this work falls into two lines. This section 
 \item \textbf{(ii) End-to-end engineering pipeline.} Protocol-level financial beacons~\citep{clark2010beacon,chiba2024lfsr,landis2025beacon} and the underlying statistical validation~\citep{shternshis2025predictability,onofri2025emergence} have not yet been connected on cryptocurrency data into a single end-to-end pipeline that runs from aggregation-parameter selection through to a password generator.
 \end{itemize}
 
-This thesis addresses gaps (i) and (ii) through a staged empirical design. \cref{cha:experiments} contains four experiments: the first tests the raw baseline, the second chooses an aggregation axis and level, the third audits the selected streams with a wider test battery, and the fourth combines several assets and validates the result on held-out months. \cref{cha:prototype} then uses the deployable streams in a password generator prototype. Following the gap above, \cref{sec:research-questions} states the three research questions answered by this work.
+The thesis-level question of this work is: in a passive statistical setting, can public cryptocurrency market data, after statistical aggregation and cryptographic conditioning, provide usable entropy for strong password generation? This overall question is split below into three research questions: whether aggregation can extract statistically independent random sequences (RQ1), to what extent the resulting sequences pass randomness tests (RQ2), and whether, after cryptographic conditioning, they can support a password-generation application (RQ3).
+
+This thesis addresses the question above through a staged empirical design.
 
 \section{Research Questions}
 \label{sec:research-questions}
 
 Based on the motivation and the literature gaps above, this thesis answers the three research questions:
 \begin{description}
-\item[RQ1.] How can an aggregation algorithm be designed to extract statistically independent random sequences from cryptocurrency price data?
+\item[RQ1.] Can aggregation extract statistically independent random sequences from cryptocurrency price data?
 \item[RQ2.] To what extent can these sequences pass standard randomness tests?
 \item[RQ3.] Can this data-driven randomness be effectively applied to secure password generation?
 \end{description}
 
-A note on the scope of RQ3: statistical tests are necessary but not sufficient for cryptographic security. The prototype in this thesis treats market-derived bits as entropy input to a cryptographic component, not directly as a password string. The phrase ``effective application'' in RQ3 is therefore limited to ``providing acceptable entropy for a standard password-conditioning pipeline,'' rather than replacing that pipeline.
+A note on the scope of RQ3: this thesis positions market-derived bits as entropy input to a standard password-conditioning pipeline. Statistical tests screen the quality of that input, while the final password output is produced by the conditioning and character-mapping procedure.
+
+\section{Thesis Structure}
+\label{sec:thesis-structure}
+
+The remainder of this thesis is organised as follows.
+\begin{itemize}
+\item \Cref{cha:introduction} introduces the motivation, the literature gaps, and the three research questions answered by this thesis.
+\item \Cref{cha:background} gives the background needed for the later chapters, including prior work on financial data as a randomness source, market microstructure, randomness testing, and password-strength measures.
+\item \Cref{cha:methods} describes the pipeline of this thesis: how price data is turned into bit streams, how candidate sequences are screened, how several assets are combined, and how the strength of the final output is measured.
+\item \Cref{cha:experiments} reports four experiments that move from the raw market data through the aggregated sequences to the multi-asset validation.
+\item \Cref{cha:prototype} checks whether the validated sequences can drive a password-generator prototype.
+\item \Cref{cha:discussion} answers the research questions and discusses the conditions and boundaries under which the results hold.
+\item \Cref{cha:conclusion} summarises the contributions of the thesis.
+\end{itemize}
 
 %% =====================================================================
 %% Chapter 2 — Background
@@ -292,7 +307,7 @@ These three levels answer different questions, but none of them connects all the
 
 \citet{shternshis2025predictability} proposed an entropy-based predictability test $D$ based on the Kullback--Leibler divergence (formal definition in \cref{sec:background-information}). The test treats $k$ as a user-defined hyper-parameter; \citet{shternshis2025predictability} use the fixed setting $k = 2$ in their~\S4.4 to study first-order pair-of-signs predictability (the bid-ask bounce mentioned above). This thesis adopts the same $k = 2$ setup as a first-order diagnostic, complementary to the adaptive-$k$ main statistic, which gives the methodological starting point for separating first-order structure from higher-order structure. The $D$ test is run at both adaptive $k$ and fixed $k = 2$.
 
-\citet{onofri2025emergence} further upgraded this framework into an ``all-offset'' construction (which Onofri \etal{} call ``$\ell$-samplings''): for each aggregation level $\ell$, it constructs $\ell$ separate bit streams from $\ell$ different starting offsets and tests each independently, then uses a ``pass-rate threshold'' as the acceptance rule for $\ell$. This construction replaces ``does a single $p$-value pass the line'' with ``do most offsets pass the line at the same time'', and uses a box plot of $-\log_{10}(p)$ to directly show how the $p$-value distribution shifts as $\ell$ grows. The paper produces a robust empirical observation on 8 US stocks plus 1 ETF: the higher the trades per second of an asset, the larger the minimum required aggregation level $\ell^*$ (the original paper also notes that some assets show non-monotonic behaviour). This thesis directly reuses this all-offset construction and pass-rate threshold framework, but differs from \citet{onofri2025emergence} in three concrete ways: the market is cryptocurrency rather than US equities; the aggregation axis includes physical time (1-second bars) in addition to transaction time; and the qualitative acceptance criterion of that work is operationalised as a quantitative fixed-threshold gate together with a heuristic relaxed gate (\cref{sec:acceptance-gates} and \cref{sec:time-based-pipeline}).
+\citet{onofri2025emergence} further upgraded this framework into an ``all-offset'' construction (which Onofri \etal{} call ``$\ell$-samplings''): for each aggregation level $\ell$, it constructs $\ell$ separate bit streams from $\ell$ different starting offsets, where each offset means starting at position $o$ and taking every $\ell$-th observation, for $o = 0,1,\ldots,\ell-1$. It then tests each stream independently and uses a pass-rate threshold as the acceptance rule for $\ell$. This construction replaces ``does a single $p$-value pass the line'' with ``do most offsets pass the line at the same time'', and uses a box plot of $-\log_{10}(p)$ to directly show how the $p$-value distribution shifts as $\ell$ grows. The paper produces a robust empirical observation on 8 US stocks plus 1 ETF: the higher the trades per second of an asset, the larger the minimum required aggregation level $\ell^*$ (the original paper also notes that some assets show non-monotonic behaviour). This thesis directly reuses this all-offset construction and pass-rate threshold framework, but differs from \citet{onofri2025emergence} in three concrete ways: the market is cryptocurrency rather than US equities; the aggregation axis includes physical time (1-second bars) in addition to transaction time; and the qualitative acceptance criterion of that work is operationalised as a quantitative fixed-threshold criterion together with a heuristic relaxed criterion (\cref{sec:acceptance-criteria} and \cref{sec:time-based-pipeline}).
 
 \subsection*{Market efficiency under stress}
 
@@ -318,7 +333,7 @@ This section reviews the core concepts used in the later Methods chapter. All ra
 
 \textbf{Aggregated trades and 1-second bars.} Binance provides two main data views: tick-by-tick trades (\texttt{trades}) and aggregated trades (\texttt{aggTrades}). The latter merges trades that happen at the same price, in the same direction, and at the same time into a single record. This reduces data size while keeping the price-change and sign information. Based on these two views, aggregation can be done on the transaction-time axis (by trade count) and on the physical-time axis (by second) respectively.
 
-\textbf{Multiple testing.} The Bonferroni and \v{S}id\'ak corrections~\citep{bonferroni1936teoria,sidak1967rectangular} control the family-wise Type-I error rate, by tightening the per-test significance level $\alpha$ to $\alpha/N$ or $1 - (1 - \alpha)^{1/N}$. They address the question ``how often does \emph{at least one} of $N$ tests falsely reject $H_0$?''. There is no symmetric correction for the opposite question, ``how often does \emph{at least one} of $N$ tests falsely pass?'', because tightening $\alpha$ makes each individual test more likely to pass and therefore pushes the family-wise pass probability in the wrong direction. False discovery rate control, such as the Benjamini--Hochberg procedure~\citep{benjamini1995fdr}, is another possible approach, but this thesis does not use FDR correction; the reason is given in \cref{sec:acceptance-gates}.
+\textbf{Multiple testing.} The Bonferroni and \v{S}id\'ak corrections~\citep{bonferroni1936teoria,sidak1967rectangular} control the family-wise Type-I error rate, by tightening the per-test significance level $\alpha$ to $\alpha/N$ or $1 - (1 - \alpha)^{1/N}$. They address the question ``how often does \emph{at least one} of $N$ tests falsely reject $H_0$?''. There is no symmetric correction for the opposite question, ``how often does \emph{at least one} of $N$ tests falsely pass?'', because tightening $\alpha$ makes each individual test more likely to pass and therefore pushes the family-wise pass probability in the wrong direction. False discovery rate control, such as the Benjamini--Hochberg procedure~\citep{benjamini1995fdr}, is another possible approach, but this thesis does not use FDR correction; the reason is given in \cref{sec:acceptance-criteria}.
 
 \textbf{Cryptographic conditioning.} A standard cryptographic pipeline can take a rough entropy input, whose min-entropy may be below 1 bit per symbol, and condition it into pseudo-random output. This thesis uses \textbf{HKDF}, the HMAC-based Extract-and-Expand Key Derivation Function~\citep{krawczyk2010rfc5869,krawczyk2010extraction}, with \textbf{SHA-256} as the hash function~\citep{nist2015fips180}. HKDF has two steps: \emph{Extract} compresses an entropy input, which may not be uniform, into a pseudo-random key; \emph{Expand} then uses that key together with a context label to produce output bits of the required length. This combination works as a cryptographic conditioning / extraction component only when the IKM has enough min-entropy and the standard HKDF usage assumptions are met. This thesis follows the standard HKDF names:
 
@@ -338,7 +353,7 @@ This section reviews the core concepts used in the later Methods chapter. All ra
 
 The min-entropy budget follows a simplified subset of NIST SP800-90B~\citep{turan2018sp80090b}: this thesis uses the Most Common Value and Markov estimators, takes the smaller value, and does not claim to implement the full SP800-90B entropy validation flow. The estimator output is used in \cref{sec:output-metrics} and \cref{sec:exp4-min-entropy}.
 
-\textbf{Password output strength.} Randomly generated passwords and human-chosen passwords should not be measured in the same way. For a uniformly generated password, the main strength measure is search-space entropy: a password of length $L$ over a character set of size $n$ has $L \log_2 n$ bits of search space. Human-chosen passwords need guessability models, because people reuse words, dates, keyboard patterns, and other regular structures. Large empirical studies place many human-chosen passwords in the tens-of-bits range~\citep{bonneau2012guessing,florencio2007webpassword}. Modern verifier guidance also focuses on length, blocklists, rate limiting, and secure verifier-side storage, rather than fixed composition rules~\citep{nist2025sp80063b}. The ``80-bit'' strong-password threshold used later in this thesis is a working benchmark based on search-space entropy: it is far above the common human-chosen range and well outside ordinary offline-cracking targets. It is not a NIST compliance threshold.
+\textbf{Password output strength.} Randomly generated passwords and human-chosen passwords should not be measured in the same way. For a uniformly generated password, the main strength measure is search-space entropy: a password of length $L$ over a character set of size $n$ has $L \log_2 n$ bits of search space. Human-chosen passwords need guessability models, because people reuse words, dates, keyboard patterns, and other regular structures. Large empirical studies place many human-chosen passwords in the tens-of-bits range~\citep{bonneau2012guessing,florencio2007webpassword}. Modern verifier guidance also focuses on length, blocklists, rate limiting, and secure verifier-side storage, rather than fixed composition rules~\citep{nist2025sp80063b}. This thesis later adopts $\gtrsim 80$ bits as a working benchmark for a strong password. The value is used here as an engineering reference point on the search-space-entropy scale, and it is close to the 75--80 bit level that recurs in industry practitioner guidance: Proton describes 75--80 bits as the level that resists currently known brute-force attacks~\citep{proton2023entropy}, Keeper Security recommends at least 75 bits~\citep{keeper2024entropy}, the KeePass documentation uses 80 bits as the example minimum quality for a master password~\citep{keepassdocs}, and the EFF six-word Diceware passphrase corresponds to about 77 bits~\citep{eff2016diceware}. This thesis takes $\gtrsim 80$ bits because it is well above the $\sim 20$--$30$ bit range of human-chosen passwords and because the $2^{80}$ search space is well outside the practical reach of known offline cracking.
 
 
 %% =====================================================================
@@ -349,10 +364,10 @@ The min-entropy budget follows a simplified subset of NIST SP800-90B~\citep{tura
 \chapter{Methods}
 \label{cha:methods}
 
-This chapter describes all the methods used in this thesis to turn a price sequence into a random bit stream that can be tested. It is organised in the order ``encoding $\to$ construction $\to$ tests $\to$ acceptance rule $\to$ axis comparison $\to$ multi-asset combination $\to$ output metrics (throughput and min-entropy).'' HKDF-SHA256 is adopted as a standard cryptographic conditioning component and is introduced in the Background (\cref{sec:background-information}); it is not redefined here.
+This chapter describes all the methods used in this thesis to turn a price sequence into a random bit stream that can be tested. It is organised in the order ``encoding $\to$ construction $\to$ tests $\to$ acceptance rule $\to$ axis comparison $\to$ multi-asset combination $\to$ output metrics (throughput and min-entropy).''
 \begin{itemize}
-\item \textbf{Reused from prior work.} The entropy-based predictability test $D$ from \citet{shternshis2025predictability}, run at both adaptive $k$ and fixed $k = 2$; the all-offset construction from \citet{onofri2025emergence}, including its choice of $m = 5$ for Approximate Entropy; and the classical sub-tests from the NIST SP800-22 STS battery~\citep{bassham2010sp80022} (Monobit, Runs, Approximate Entropy, and the extended-battery items) and TestU01 Alphabit~\citep{lecuyer2007testu01}. The strict gate (\cref{sec:acceptance-gates}) operationalises the all-offset framework of \citet{onofri2025emergence} with a fixed 0.80 pass-rate threshold.
-\item \textbf{New in this thesis.} The overall methodological idea is to place the entropy-based $D$ test and the classical NIST/TestU01 sub-tests under one all-offset acceptance and audit framework, and to evaluate the resulting combined battery on the 24/7 continuous cryptocurrency market. On top of the reused components, the concrete new contributions are: the relaxed gate (\cref{sec:acceptance-gates}), the 1-second bar physical-time pipeline (\cref{sec:time-based-pipeline}), the multi-asset XOR combination (\cref{sec:multi-asset-xor}), and the output metrics for throughput and a simplified min-entropy estimate (\cref{sec:output-metrics}). HKDF-SHA256 is adopted as a standard cryptographic conditioning component (introduced in \cref{sec:background-information}); it serves the application in \cref{cha:prototype} and is not itself counted among the new contributions of this thesis.
+\item \textbf{Reused from prior work.} The entropy-based predictability test $D$ from \citet{shternshis2025predictability}, run at both adaptive $k$ and fixed $k = 2$; the all-offset construction from \citet{onofri2025emergence}, including its choice of $m = 5$ for Approximate Entropy; and the classical sub-tests from the NIST SP800-22 STS battery~\citep{bassham2010sp80022} (Monobit, Runs, Approximate Entropy, and the extended-battery items) and TestU01 Alphabit~\citep{lecuyer2007testu01}. The strict criterion (\cref{sec:acceptance-criteria}) operationalises the all-offset framework of \citet{onofri2025emergence} with a fixed 0.80 pass-rate threshold.
+\item \textbf{New in this thesis.} The overall methodological idea is to place the entropy-based $D$ test and the classical NIST/TestU01 sub-tests under one all-offset acceptance and audit framework, and to evaluate the resulting combined battery on the 24/7 continuous cryptocurrency market. On top of the reused components, the concrete new contributions are: the relaxed criterion (\cref{sec:acceptance-criteria}), the 1-second bar physical-time pipeline (\cref{sec:time-based-pipeline}), the multi-asset XOR combination (\cref{sec:multi-asset-xor}), and the output metrics for throughput and a simplified min-entropy estimate (\cref{sec:output-metrics}). HKDF-SHA256 is adopted as a standard cryptographic conditioning component (introduced in \cref{sec:background-information}); it serves the application in \cref{cha:prototype} and is not itself counted among the new contributions of this thesis.
 \end{itemize}
 
 \section{Aggregation and Encoding}
@@ -402,7 +417,7 @@ For a fixed $\ell$, there are $\ell$ candidate offsets. The construction conside
 \begin{equation}
 r_{\text{pass}}(\ell, \alpha) = \frac{1}{N_{\text{valid}}(\ell)} \sum_{o \in \mathcal{O}_{\text{valid}}(\ell)} \mathbbm{1}\!\left[p^{(o)} \ge \alpha\right],
 \end{equation}
-where $\mathcal{O}_{\text{valid}}(\ell)$ is the set of offsets with bit count at least $\texttt{MIN\_BIT\_COUNT} = 2000$. This threshold is a conservative engineering floor that ensures enough samples to support the $\chi^2$ asymptotic approximation of the $D$ test. Because different offsets share the same underlying tick data, the $\ell$ bit streams are strongly correlated (especially for large $\ell$); their simultaneous passing provides robust evidence that ``the sequence passes from many starting points'', but it cannot be interpreted as the result of compounding independent tests. This point determines the design choice for the acceptance rule in \cref{sec:acceptance-gates}.
+where $\mathcal{O}_{\text{valid}}(\ell)$ is the set of offsets with bit count at least $\texttt{MIN\_BIT\_COUNT} = 2000$. This threshold is a conservative engineering floor that ensures enough samples to support the $\chi^2$ asymptotic approximation of the $D$ test. Because different offsets share the same underlying tick data, the $\ell$ bit streams are strongly correlated (especially for large $\ell$); their simultaneous passing provides offset-robustness evidence. This point determines the design choice for the acceptance rule in \cref{sec:acceptance-criteria}.
 
 \section{Test Battery}
 \label{sec:test-battery}
@@ -412,25 +427,25 @@ The test battery of this thesis is as follows:
 \item \textbf{Predictability $\boldsymbol{D}$ (adaptive $k$).} The main statistic, with $k = \lfloor 0.5 \log_2 n \rfloor$.
 \item \textbf{Predictability $\boldsymbol{D}$ (fixed $k = 2$).} A first-order diagnostic for pair-of-signs dependence between neighbouring symbols, covering both the bid-ask-bounce reversal and the persistent same-direction order-flow stylised facts.
 \item \textbf{Monobit.} A basic frequency test that checks the overall 0/1 balance.
-\item \textbf{Runs.} NIST-style, checking correlation between neighbouring bits. The NIST pre-frequency check is not implemented separately, since Monobit passing at $\alpha = 0.01$ implies $|\pi - 0.5| \le 1.288/\sqrt{n}$, which is strictly tighter than the NIST threshold $2/\sqrt{n}$; the check is therefore equivalently absorbed by the Monobit gate on every accepted~$\ell$.
+\item \textbf{Runs.} NIST-style, checking correlation between neighbouring bits. The NIST pre-frequency check is not implemented separately, since Monobit passing at $\alpha = 0.01$ implies $|\pi - 0.5| \le 1.288/\sqrt{n}$, which is strictly tighter than the NIST threshold $2/\sqrt{n}$; the check is therefore equivalently absorbed by the Monobit criterion on every accepted~$\ell$.
 \item \textbf{Approximate Entropy ($m = 5$).} The multi-window complexity difference~\citep{pincus1991apen}, aligned with Table~4 of \citet{onofri2025emergence}. The NIST default is $m = 2$ (more stable on short sequences); $m = 5$ is more sensitive to short-range structure but requires $n \gtrsim 10 \cdot 2^m \approx 320$ for the asymptotic distribution to be reliable. This thesis uses $n \ge 2000$, well above this threshold.
 \item \textbf{TestU01.} Cross-battery external validation for the extended-audit and validation stages~\citep{lecuyer2007testu01}. Alphabit is enabled; Rabbit is reserved for future work.
 \end{itemize}
 
 Under the extended-battery convention, this thesis uses a fixed \textbf{29-sub-test universe}: 5 core tests ($D$ at adaptive $k$, $D(k = 2)$, Monobit, Runs, and ApEn), 7 NIST SP800-22 extensions~\citep{bassham2010sp80022} (Block Frequency, Cumulative Sums forward/backward, Longest Run, DFT, and Serial $m$/$m{-}1$), and 17 TestU01 Alphabit statistics. Alphabit has 9 named tests, but RandomWalk1 outputs 5 statistics at each of L64 and L320; this thesis therefore counts Alphabit at the statistic level, giving 17 sub-tests. The three parts sum to $5 + 7 + 17 = 29$. At short lengths, TestU01 may length-skip long-block sub-tests, and such entries are excluded from the admissible denominator.
 
-\textbf{Sub-test selection under a length budget.} The bit-stream lengths the cells in this thesis can reach are roughly in the $2$K--$200$K bit range (single-offset streams are about $2$K--$25$K bit; cross-offset, cross-month, or cross-asset concatenations are about $25$K--$200$K bit). Several sub-tests in the full NIST SP800-22 STS battery (15 items) and the TestU01 Crush battery recommend input lengths on the order of $10^{6}$ bits -- for example Non-overlapping Template Matching, Universal Statistical, the Random Excursions family, and most of Crush -- which exceeds the cell-reachable range and cannot run stably at the selected $\ell^*$. This thesis therefore selects from NIST SP800-22 only the $7$ sub-tests whose length requirement is at most $\approx 200$K bit (Block Frequency, Cumulative Sums forward/backward, Longest Run, DFT, Serial $m$/$m{-}1$), and from TestU01 only the Alphabit sub-battery. These $7$ NIST SP800-22 sub-tests span the main NIST STS families -- frequency (Block Frequency), cumulative offset (Cumulative Sums), runs (Longest Run), spectral (DFT), and entropy / multi-symbol structure (Serial) -- so that the length-budget filter still retains family-level coverage. This is a methodological filter driven by the cell bit-length budget, not a claim that the omitted sub-tests are theoretically unimportant; the omitted items are listed under \cref{sec:limitations-future-work}.
+\textbf{Sub-test selection under a length budget.} The bit-stream lengths the cells in this thesis can reach are roughly in the $2$K--$200$K bit range (single-offset streams are about $2$K--$25$K bit; cross-offset, cross-month, or cross-asset concatenations are about $25$K--$200$K bit). Several sub-tests in the full NIST SP800-22 STS battery (15 items) and the TestU01 Crush battery recommend input lengths on the order of $10^{6}$ bits -- for example Non-overlapping Template Matching, Universal Statistical, the Random Excursions family, and most of Crush -- which exceeds the cell-reachable range and cannot run stably at the selected $\ell^*$. This thesis therefore selects from NIST SP800-22 only the $7$ sub-tests whose length requirement is at most $\approx 200$K bit (Block Frequency, Cumulative Sums forward/backward, Longest Run, DFT, Serial $m$/$m{-}1$), and from TestU01 only the Alphabit sub-battery. These $7$ NIST SP800-22 sub-tests span the main NIST STS families -- frequency (Block Frequency), cumulative offset (Cumulative Sums), runs (Longest Run), spectral (DFT), and entropy / multi-symbol structure (Serial) -- so that the length-budget filter still retains family-level coverage. The omitted items remain methodologically relevant and are listed under \cref{sec:limitations-future-work}.
 
 \textbf{When TestU01 is enabled.} Following the cross-battery design of \citet{onofri2025emergence}, the methodology of this thesis further includes the Alphabit sub-battery of TestU01 as cross-battery external validation. TestU01 is not enabled during the selection-grid stage: the per-(asset, $\ell$, offset) bit stream is only an intermediate output of parameter search, and its length is usually below the range where the cross-battery sanity check applies, so it is not a suitable input for cross-battery validation. The extended-audit and validation stages concatenate across months, assets, or offsets at the selected $\ell^*$, so that the length meets the sanity-check range, and the corresponding Alphabit sub-tests are then enabled. Rabbit requires longer and more stable bit streams and is therefore not part of the main analysis.
 
 \textbf{Why both fixed $\boldsymbol{k = 2}$ and adaptive $\boldsymbol{k}$?} Adaptive $k = \lfloor 0.5 \log_2 n \rfloor$ is usually 5 to 6 on ultra-high-frequency monthly samples. The $D$ test then has $2^{k-1} \approx 16$ to $32$ contexts; first-order correlation -- whether the symbol reversal caused by the bid-ask bounce, or the same-direction persistence caused by sustained order flow - is diluted across more than ten or even tens of positions, and the statistical power drops quickly. \citet{shternshis2025predictability} provides empirical evidence consistent with this: on predictable days, with fixed $k = 2$, the ``too strong sign reversal'' pattern (i.e., $\hat{p}(00) + \hat{p}(11) < 0.5$) is significant; when $k$ is raised to about 5 to 6, this pattern is no longer significant. Therefore, $D(k = 2)$ is kept as a first-order diagnostic for pair-of-signs dependence, complementary to $D(\text{adaptive } k)$. The former captures short-range structure, while the latter measures the overall predictability. The later baseline results further verify that first-order residuals in cryptocurrency tick signs need to be diagnosed explicitly, rather than being left to the adaptive-$k$ main statistic alone.
 
-\section{Acceptance Gates}
-\label{sec:acceptance-gates}
+\section{Acceptance Criteria}
+\label{sec:acceptance-criteria}
 
-The acceptance rule is the key step in the all-offset framework that maps the ``pass rate'' to ``whether $\ell$ is accepted''. This thesis uses two gates, introduced in chronological order.
+The acceptance rule is the key step in the all-offset framework that maps the ``pass rate'' to ``whether $\ell$ is accepted''. This thesis uses two criteria, introduced in chronological order.
 
-\textbf{Strict gate.} \citet{onofri2025emergence} apply a qualitative acceptance criterion. This thesis adopts a quantitative counterpart within the same framework: a fixed 0.80 pass-rate threshold, used consistently across all (asset, period) cells reported in this thesis. The strict gate requires the following three conditions to hold simultaneously:
+\textbf{Strict criterion.} \citet{onofri2025emergence} apply a qualitative acceptance criterion. This thesis adopts a quantitative counterpart within the same framework: a fixed 0.80 pass-rate threshold, used consistently across all (asset, period) cells reported in this thesis. The strict criterion requires the following three conditions to hold simultaneously:
 \begin{equation}
 \begin{aligned}
 r_{\text{valid}}(\ell)            &\ge 0.80 \\
@@ -440,7 +455,7 @@ r_{\text{pass}}^{\text{Mono}}(\ell) &\ge 0.80
 \end{equation}
 Here $\alpha = 0.01$ is taken from \citet{onofri2025emergence}. The pass rates of Runs and $D(k = 2)$ are recorded as supplementary diagnostics only and do not enter the acceptance criterion; the reason is given in \cref{sec:test-battery}.
 
-\textbf{Relaxed gate (a heuristic newly introduced in this thesis).} The all-offset bit streams are strongly correlated. From an engineering point of view, the final system only needs to pick one usable witness offset; but in the statistical selection process, a simple ``at-least-one passes'' rule would introduce a serious selection bias. If the underlying sequence still contains structural dependence, a large number of offsets may still produce one offset that passes the $\alpha$ threshold because of sample variation or low test power.
+\textbf{Relaxed criterion (a heuristic newly introduced in this thesis).} The all-offset bit streams are strongly correlated. From an engineering point of view, the final system only needs to pick one usable selected output offset; but in the statistical selection process, a simple ``at-least-one passes'' rule would introduce a serious selection bias. If the underlying sequence still contains structural dependence, a large number of offsets may still produce one offset that passes the $\alpha$ threshold because of sample variation or low test power.
 
 As discussed in \cref{sec:background-information}, Bonferroni / \v{S}id\'ak corrections address the wrong direction for this ``false pass'' question. This thesis therefore neither adopts the ``at-least-one passes'' rule (selection bias) nor adopts the Bonferroni / \v{S}id\'ak formal correction (the direction is reversed), and instead uses the following heuristic redundancy criterion:
 \begin{equation}
@@ -450,33 +465,33 @@ where $n_{\text{pass}}(\ell)$ is the number of offsets that pass both $D$ and Mo
 
 \begin{algorithm}
   \caption{All-offset acceptance check at level $\ell$}
-  \label{alg:gate}
+  \label{alg:acceptance-criterion}
   \begin{algorithmic}[1]
-    \Require Tick prices $\{p_i\}$, level $\ell$, $\text{gate} \in \{\text{strict}, \text{relaxed}\}$, $\alpha = 0.01$
-    \Ensure $\text{accept}(\ell) \in \{\text{true}, \text{false}\}$; witness offset (if accepted)
+    \Require Tick prices $\{p_i\}$, level $\ell$, $\text{criterion} \in \{\text{strict}, \text{relaxed}\}$, $\alpha = 0.01$
+    \Ensure $\text{accept}(\ell) \in \{\text{true}, \text{false}\}$; selected output offset (if accepted)
     \State $\mathcal{O}_{\text{valid}} \gets \emptyset$
     \For{$o = 0$ \textbf{to} $\ell - 1$}
       \State $b \gets$ Algorithm~\ref{alg:encode} with $(p, \ell, o)$
       \If{$|b| \ge \texttt{MIN\_BIT\_COUNT}$ ($= 2000$)}
-        \State compute and store $p^{D}(o),\; p^{\text{Mono}}(o)$ on $b$ \Comment{reused by both gates below}
+        \State compute and store $p^{D}(o),\; p^{\text{Mono}}(o)$ on $b$ \Comment{reused by both criteria below}
         \State add $o$ to $\mathcal{O}_{\text{valid}}$
       \EndIf
     \EndFor
     \State $N_{\text{valid}} \gets |\mathcal{O}_{\text{valid}}|$
     \State $r_{\text{valid}} \gets N_{\text{valid}} / \ell$
-    \If{$\text{gate} = \text{strict}$}
+    \If{$\text{criterion} = \text{strict}$}
       \State $r_{\text{pass}}^{D} \gets |\{o \in \mathcal{O}_{\text{valid}} : p^{D}(o) \ge \alpha\}| / N_{\text{valid}}$
       \State $r_{\text{pass}}^{\text{Mono}} \gets |\{o \in \mathcal{O}_{\text{valid}} : p^{\text{Mono}}(o) \ge \alpha\}| / N_{\text{valid}}$
       \State \Return $r_{\text{valid}} \ge 0.80 \;\land\; r_{\text{pass}}^{D} \ge 0.80 \;\land\; r_{\text{pass}}^{\text{Mono}} \ge 0.80$
     \EndIf
-    \If{$\text{gate} = \text{relaxed}$}
+    \If{$\text{criterion} = \text{relaxed}$}
       \State $n_{\text{pass}} \gets |\{o \in \mathcal{O}_{\text{valid}} : p^{D}(o) \ge \alpha \;\land\; p^{\text{Mono}}(o) \ge \alpha\}|$
       \State \Return $n_{\text{pass}} \ge \max(F,\; \lceil f \cdot N_{\text{valid}} \rceil)$ \Comment{$(F, f) = (3, 0.03)$}
     \EndIf
   \end{algorithmic}
 \end{algorithm}
 
-\textbf{Selection rule for $\ell^*$.} The smallest $\ell$ for which Algorithm~\ref{alg:gate} returns true is recorded as the selected $\ell^*$. The specific $\ell$ grid (per-asset values, step, and bounds) is given in \cref{cha:experiments}.
+\textbf{Selection rule for $\ell^*$.} The smallest $\ell$ for which Algorithm~\ref{alg:acceptance-criterion} returns true is recorded as the selected $\ell^*$. The specific $\ell$ grid (per-asset values, step, and bounds) is given in \cref{cha:experiments}.
 
 \section{Time-Based Aggregation Pipeline}
 \label{sec:time-based-pipeline}
@@ -528,7 +543,7 @@ where $\oplus$ denotes XOR. The resulting $\{x_{S,t}\}$ is called the \emph{comb
 \begin{equation}
 y^{(\ell, o)}_{S, j} = \bigoplus_{r=0}^{\ell - 1} x_{S,\, o + j\ell + r}.
 \end{equation}
-This step matches the piling-up intuition from linear cryptanalysis~\citep{matsui1994linear}: if the inputs are approximately independent, XOR shrinks the marginal bias. This intuition is used here only as an engineering assumption, not as a security proof; the inter-asset correlation still has to be checked empirically through mutual information and out-of-sample validation.
+The use of XOR here comes from the piling-up result in linear cryptanalysis~\citep{matsui1994linear}. For a binary stream, this thesis understands the \emph{marginal bias} as how far the single-bit distribution departs from uniform, that is, how far $p(1)$ deviates from $0.5$. In the ideal case of independent inputs, XOR-ing several slightly biased bits makes the output bias decay as the product of the input biases, so it moves closer to $0.5$. This is a computable result that holds under independent inputs. Because the asset sign streams are correlated, piling-up is used here as an engineering assumption: if the assets still retain some independent component, the multi-asset XOR combination may weaken the single-asset residual. This assumption is then checked through the mutual-information diagnostic and out-of-sample validation.
 
 \begin{algorithm}
   \caption{Multi-asset XOR combination and $\ell$-level aggregation}
@@ -572,7 +587,7 @@ This thesis refers to $\{x_{S,t}\}$ as the \emph{combined stream}. The code base
 
 This section defines two metrics used to evaluate the output bit streams produced by the methods above: a \emph{throughput} metric for bit-production rate and waiting-time discussion, and a simplified \emph{min-entropy budget} for sizing the input keying material of the downstream cryptographic conditioning component.
 
-\textbf{Throughput.} To align the methodological results with the downstream application, this thesis records the throughput $r_b$ at each accepted $\ell^*$, defined as the effective output rate (in bits/s) of the witness offset bit stream at that $\ell^*$. On the transaction-time axis, $r_b$ is a realised rate driven by market activity, so it changes with the asset and the monthly trades/s. On the physical-time axis, $1/\ell^*$ gives a fixed sampling-rate and an approximate waiting time per candidate bit. The effective $r_b$ is usually slightly lower than $1/\ell^*$, because drop-zero removes seconds that do not produce a bit.
+\textbf{Throughput.} To align the methodological results with the downstream application, this thesis records the throughput $r_b$ at each accepted $\ell^*$, defined as the effective output rate (in bits/s) of the selected output offset bit stream at that $\ell^*$. On the transaction-time axis, $r_b$ is a realised rate driven by market activity, so it changes with the asset and the monthly trades/s. On the physical-time axis, $1/\ell^*$ gives a fixed sampling-rate and an approximate waiting time per candidate bit. The effective $r_b$ is usually slightly lower than $1/\ell^*$, because drop-zero removes seconds that do not produce a bit.
 
 \textbf{Min-entropy budget.} This thesis uses a simplified min-entropy estimate to check whether a produced bit stream carries enough randomness to drive a standard cryptographic conditioning component. For each stream, the estimate is the smaller of two NIST SP800-90B non-IID estimators~\citep{turan2018sp80090b}: Most Common Value (MCV), which measures the imbalance between 0 and 1, and the Markov estimator, which measures the dependence between adjacent bits. These two estimators are chosen because they cover the two most common sources of bias in a binary stream: single-bit imbalance and pairwise correlation. The result is reported as a per-symbol lower bound $h_\infty$ and is used to determine the IKM size for downstream conditioning. For a binary stream, $h_\infty$ has a theoretical maximum of 1 bit per symbol, which is reached only by a perfectly independent and balanced bit stream; this thesis treats ``$h_\infty$ close to 1'' as the practical judgment direction for stream quality. If the deployment requires $T$ bits of target entropy, the input size needed is $\lceil T / (h_\infty \times 8) \rceil$ bytes -- $h_\infty = 1$ gives the lower bound $\lceil T / 8 \rceil$ bytes, and the further $h_\infty$ is from 1 the more input bytes are needed. This is not a complete SP800-90B non-IID certification (the full procedure includes more estimators); it is the simplified version used in this thesis.
 
@@ -593,7 +608,7 @@ This chapter first describes the experimental setup and data in the Overview (\c
 \begin{itemize}
 \item Experiment~1 (\cref{sec:exp1-baseline}) answers the negative side of RQ1: are the raw tick sequences themselves random enough? The answer is no, and this directly motivates Experiment~2.
 \item Experiment~2 (\cref{sec:exp2}) answers RQ1 and RQ2: at what aggregation level $\ell$ does the bit stream start to pass standard randomness tests, and how do the transaction-time and physical-time axes differ?
-\item Experiments 3 and 4 (\cref{sec:exp3}, \cref{sec:exp4}) together with the password generator prototype in \cref{cha:prototype} answer RQ3: can these data-driven random sequences be applied to secure password generation?
+\item Experiments 3 and 4 (\cref{sec:exp3}, \cref{sec:exp4}) together with the password generator prototype in \cref{cha:prototype} answer RQ3: can these validated market-derived streams support secure password generation?
 \end{itemize}
 
 \textbf{Common parameters.} The same core parameters are used across all experiments: the significance level is $\alpha = 0.01$, \texttt{MIN\_BIT\_COUNT} is $2000$, and the pass-rate threshold is $0.80$. All runner scripts are written in Python with NumPy. The numbers reported in this chapter can be reproduced by running the \texttt{scripts/runner\_*.py} files in the project repository.
@@ -717,8 +732,8 @@ This section proceeds in four steps. Each step exposes a problem that the next s
 
 \begin{enumerate}
 \item \textbf{Transaction-time single offset} (\cref{sec:exp2-single-offset}): the starting offset is fixed at $o = 0$. This is a quick pilot step: it gives the first estimate of the size of $\ell^*$, but it does not decide final acceptance.
-\item \textbf{Transaction-time all-offset strict gate} (\cref{sec:exp2-strict-gate}): the analysis moves to the full all-offset construction and uses the strict $80\%$ pass-rate gate to test robustness across offsets.
-\item \textbf{Transaction-time all-offset relaxed gate} (\cref{sec:exp2-relaxed-gate}): the rule is loosened so that a small number of offsets is enough to pass. This checks whether the strict rule is rejecting too many otherwise usable cells.
+\item \textbf{Transaction-time all-offset strict criterion} (\cref{sec:exp2-strict-criterion}): the analysis moves to the full all-offset construction and uses the strict $80\%$ pass-rate criterion to test robustness across offsets.
+\item \textbf{Transaction-time all-offset relaxed criterion} (\cref{sec:exp2-relaxed-criterion}): the rule is loosened so that a small number of offsets is enough to pass. This checks whether the strict rule is rejecting too many otherwise usable cells.
 \item \textbf{Physical-time 1-second bars} (\cref{sec:exp2-1sbars}): the analysis switches to the physical-time axis and checks whether the short-range dependence behaves differently when the data is sampled once per second.
 \end{enumerate}
 
@@ -727,15 +742,15 @@ This section proceeds in four steps. Each step exposes a problem that the next s
 \subsection{Setup}
 \label{sec:exp2-setup}
 
-The shared setup below covers \cref{sec:exp2-single-offset,sec:exp2-strict-gate,sec:exp2-relaxed-gate,sec:exp2-1sbars}. Each subsection only states the differences in the $\ell$ grid.
+The shared setup below covers \cref{sec:exp2-single-offset,sec:exp2-strict-criterion,sec:exp2-relaxed-criterion,sec:exp2-1sbars}. Each subsection only states the differences in the $\ell$ grid.
 
 \begin{itemize}
 \item \textbf{Asset universe.} The same five USDT spot pairs as Experiment~1 (\texttt{BTCUSDT}, \texttt{ETHUSDT}, \texttt{BNBUSDT}, \texttt{SOLUSDT}, \texttt{DOGEUSDT}; see \cref{sec:overview}).
 \item \textbf{Window.} The same 15-month sample (2025-01 to 2026-03). The diagnostic granularity is monthly: one bit stream per (asset, month) cell, $5 \times 15 = 75$ cells in total.
 \item \textbf{Encoding.} \cref{alg:encode}: on the transaction-time axis $\ell$ has the unit ``number of trades''; on the physical-time axis the pipeline in \cref{sec:time-based-pipeline} first turns the price series into one closing price per second, and $\ell$ becomes ``number of seconds''. The drop-zero step is the same on both axes.
-\item \textbf{All-offset construction.} \cref{sec:all-offset}: for each $\ell$, $\ell$ offset bit streams are built and tested independently. \cref{sec:exp2-single-offset} first uses the simplified single-offset version ($o = 0$ only, one stream); from \cref{sec:exp2-strict-gate} on, the full all-offset version is used.
-\item \textbf{Acceptance gates.} The main acceptance rule is $D$ (adaptive $k$) + Monobit: the single-offset version asks for both $p$-values to be $\geq \alpha$; the all-offset strict gate asks for both pass rates to be $\geq 0.80$; the relaxed gate is the heuristic version in \cref{sec:acceptance-gates}. Runs, $D(k = 2)$, ApEn, and the Shannon bias are still recorded as auxiliary diagnostics. Runs is also added explicitly in \cref{sec:exp2-1sbars} as the ``+Runs'' gate.
-\item \textbf{$\ell$ grid.} \cref{sec:exp2-single-offset} and \cref{sec:exp2-strict-gate} use $\ell$ from $50$ to $2000$ with step $25$; \cref{sec:exp2-relaxed-gate} uses $10$ to $2000$ with step $2$; \cref{sec:exp2-1sbars} uses $10$ to $600$ with step $1$.
+\item \textbf{All-offset construction.} \cref{sec:all-offset}: for each $\ell$, $\ell$ offset bit streams are built and tested independently. \cref{sec:exp2-single-offset} first uses the simplified single-offset version ($o = 0$ only, one stream); from \cref{sec:exp2-strict-criterion} on, the full all-offset version is used.
+\item \textbf{Acceptance criteria.} The main acceptance rule is $D$ (adaptive $k$) + Monobit: the single-offset version asks for both $p$-values to be $\geq \alpha$; the all-offset strict criterion asks for both pass rates to be $\geq 0.80$; the relaxed criterion is the heuristic version in \cref{sec:acceptance-criteria}. Runs, $D(k = 2)$, ApEn, and the Shannon bias are still recorded as auxiliary diagnostics. Runs is also added explicitly in \cref{sec:exp2-1sbars} as the ``+Runs'' criterion.
+\item \textbf{$\ell$ grid.} \cref{sec:exp2-single-offset} and \cref{sec:exp2-strict-criterion} use $\ell$ from $50$ to $2000$ with step $25$; \cref{sec:exp2-relaxed-criterion} uses $10$ to $2000$ with step $2$; \cref{sec:exp2-1sbars} uses $10$ to $600$ with step $1$.
 \end{itemize}
 
 \subsection{Transaction-Time: Single Offset}
@@ -762,7 +777,7 @@ This step uses the simplified single-offset version with $o = 0$: for each $\ell
 \end{figure}
 
 \begin{table}[!htbp]
-  \caption{Single-offset gate -- per-asset summary.}
+  \caption{Single-offset criterion -- per-asset summary.}
   \label{tab:exp2-single-offset-summary}
   \begin{center}
     \begin{tabular}{lccr}
@@ -777,40 +792,40 @@ This step uses the simplified single-offset version with $o = 0$: for each $\ell
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize n\_pass is the number of months (out of fifteen) on which the single-offset gate returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a1}.}
+  {\footnotesize n\_pass is the number of months (out of fifteen) on which the single-offset criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a1}.}
 \end{table}
 
 \textbf{Selected $\ell^*$ shows a coarse activity-based layering.} The per-asset medians (BTC $\approx 1300$, ETH $\approx 725$, BNB $\approx 275$, SOL $\approx 225$, DOGE $\approx 225$) show that BTC and ETH need a clearly deeper aggregation in the $[50, 2000]$ range, while the three lower-activity assets reach the threshold around $200$--$300$. This is in the same direction as the ``higher trades/s, larger required $\ell$'' relation reported by \citet{onofri2025emergence} on 8 US stocks plus 1 ETF; but the result should be read only as a coarse layering, not as a strict monotone ranking between all five assets.
 
-\textbf{Single offset only gives a first estimate; it is not the final acceptance scheme.} In 2025-01 and 2025-08, BTC does not let $D$ and Monobit pass together for any $\ell$ in $[50, 2000]$ (see \cref{tab:appendix-a1}). This shows that fixing $o = 0$ can give an approximate size for $\ell^*$, but it cannot show whether other starting offsets behave in the same way. These failures also cannot be explained only by single-month trades/s. Single offset is therefore used only as a pilot diagnostic.
+\textbf{Single offset is used as a pilot diagnostic; final acceptance is determined by the all-offset criterion.} In 2025-01 and 2025-08, BTC does not let $D$ and Monobit pass together for any $\ell$ in $[50, 2000]$ (see \cref{tab:appendix-a1}). This shows that fixing $o = 0$ can give an approximate size for $\ell^*$, but it cannot show whether other starting offsets behave in the same way. These failures also cannot be explained only by single-month trades/s.
 
-\textbf{The next question is whether the result is stable across offsets.} For a fixed $\ell$, the all-offset construction has $\ell$ possible starting offsets. Passing at $o = 0$ does not mean that the other $\ell - 1$ offset streams also pass. If the result changes strongly with the starting offset, the cell should not be accepted only because one offset works. \cref{sec:exp2-strict-gate} therefore upgrades the pilot diagnostic to the full rule: at least $80\%$ of offsets must pass together.
+\textbf{The next question is whether the result is stable across offsets.} For a fixed $\ell$, the all-offset construction has $\ell$ possible starting offsets. Passing at $o = 0$ does not mean that the other $\ell - 1$ offset streams also pass. If the result changes strongly with the starting offset, the cell should not be accepted only because one offset works. \cref{sec:exp2-strict-criterion} therefore upgrades the pilot diagnostic to the full rule: at least $80\%$ of offsets must pass together.
 
-\subsection{Transaction-Time: All-Offset Strict Gate}
-\label{sec:exp2-strict-gate}
+\subsection{Transaction-Time: All-Offset Strict Criterion}
+\label{sec:exp2-strict-criterion}
 
-This step replaces the ``single offset passes'' rule with the strict gate of the all-offset framework (\cref{alg:gate}, \cref{sec:acceptance-gates}): for each $\ell$, $\ell$ offset bit streams are built, and at least $80\%$ of them must give $p \geq \alpha$ on both $D$ (adaptive $k$) and Monobit at the same time ($\alpha = 0.01$). The selected $\ell^*$ is the smallest $\ell$ on which this holds. The $\ell$ grid stays at $50$ to $2000$ with step $25$.
+This step replaces the ``single offset passes'' rule with the strict criterion of the all-offset framework (\cref{alg:acceptance-criterion}, \cref{sec:acceptance-criteria}): for each $\ell$, $\ell$ offset bit streams are built, and at least $80\%$ of them must give $p \geq \alpha$ on both $D$ (adaptive $k$) and Monobit at the same time ($\alpha = 0.01$). The selected $\ell^*$ is the smallest $\ell$ on which this holds. The $\ell$ grid stays at $50$ to $2000$ with step $25$.
 
 \begin{figure}[!htbp]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_3a_all_offset_strict_q1.png}
   \end{center}
-  \caption{All-offset strict gate -- pass rate versus $\ell$ on 2025~Q1.}
-  \label{fig:exp2-strict-gate-q1}
-  {\footnotesize Each panel shows the offset pass rate of $D$ and Monobit for one (asset, month) cell. The horizontal red line is the $0.80$ strict gate threshold. The full 15-month table of selected $\ell^*$ is in \cref{tab:appendix-a2}.}
+  \caption{All-offset strict criterion -- pass rate versus $\ell$ on 2025~Q1.}
+  \label{fig:exp2-strict-criterion-q1}
+  {\footnotesize Each panel shows the offset pass rate of $D$ and Monobit for one (asset, month) cell. The horizontal red line is the $0.80$ strict criterion threshold. The full 15-month table of selected $\ell^*$ is in \cref{tab:appendix-a2}.}
 \end{figure}
 
 \begin{figure}[!htbp]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_3b_all_offset_strict_q5.png}
   \end{center}
-  \caption{All-offset strict gate -- pass rate versus $\ell$ on 2026~Q1 (Q5).}
-  \label{fig:exp2-strict-gate-q5}
-  {\footnotesize Same format as \cref{fig:exp2-strict-gate-q1}.}
+  \caption{All-offset strict criterion -- pass rate versus $\ell$ on 2026~Q1 (Q5).}
+  \label{fig:exp2-strict-criterion-q5}
+  {\footnotesize Same format as \cref{fig:exp2-strict-criterion-q1}.}
 \end{figure}
 
 \begin{table}[!htbp]
-  \caption{All-offset strict gate -- per-asset summary.}
+  \caption{All-offset strict criterion -- per-asset summary.}
   \label{tab:exp2-strict-summary}
   \begin{center}
     \begin{tabular}{lccr}
@@ -825,33 +840,33 @@ This step replaces the ``single offset passes'' rule with the strict gate of the
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize n\_pass is the number of months (out of fifteen) on which the strict gate returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a2}.}
+  {\footnotesize n\_pass is the number of months (out of fifteen) on which the strict criterion returns acceptable; the median and the range of selected $\ell^*$ are computed only over those acceptable months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a2}.}
 \end{table}
 
-\textbf{The strict gate pushes $\ell^*$ higher; the coarse ranking remains the same as in single offset.} Compared with \cref{sec:exp2-single-offset}, the strict gate raises the per-asset median of selected $\ell^*$ on every asset: BTC $1300 \to 1500$, ETH $725 \to 975$, BNB $275 \to 350$, DOGE $225 \to 375$, SOL $225 \to 350$ (the two medians are computed over different months because the acceptable subsets differ, so the comparison is a magnitude trend, not a month-by-month difference). This is the cost of asking $80\%$ of offsets to pass together rather than only one: the joint confirmation from many offsets is statistically a higher bar, so a deeper aggregation is needed to move out of the rejection region. The relation between assets is still that BTC and ETH are clearly above BNB, SOL and DOGE; the lower three should not be read as a strict monotone ranking.
+\textbf{The strict criterion pushes $\ell^*$ higher; the coarse ranking remains the same as in single offset.} Compared with \cref{sec:exp2-single-offset}, the strict criterion raises the per-asset median of selected $\ell^*$ on every asset: BTC $1300 \to 1500$, ETH $725 \to 975$, BNB $275 \to 350$, DOGE $225 \to 375$, SOL $225 \to 350$ (the two medians are computed over different months because the acceptable subsets differ, so the comparison is a magnitude trend, not a month-by-month difference). This is the cost of asking $80\%$ of offsets to pass together rather than only one: the joint confirmation from many offsets is statistically a higher bar, so a deeper aggregation is needed to move out of the rejection region. The relation between assets is still that BTC and ETH are clearly above BNB, SOL and DOGE; the lower three should not be read as a strict monotone ranking.
 
-\textbf{BTC plays the high-activity outlier role in this dataset: 8 of 15 months have no solution in $\ell \leq 2000$.} Under single offset only 2 months (2025-01, 2025-08) fail; under the strict gate this number rises to 8. The same asset and the same aggregation range now cost much more, mostly because BTC has to carry the $80\%$ joint confirmation. This failure pattern cannot be explained by single-month raw trades/s alone: ETH, which also has high activity, still passes 13 of 15 months, while BTC fails on both lower and higher activity months. ETH and SOL each have 2 failing months, so $63$ of $75$ cells pass and the overall acceptance rate of the strict gate is $63/75 = 84\%$.
+\textbf{BTC plays the high-activity outlier role in this dataset: 8 of 15 months have no solution in $\ell \leq 2000$.} Under single offset only 2 months (2025-01, 2025-08) fail; under the strict criterion this number rises to 8. The same asset and the same aggregation range now cost much more, mostly because BTC has to carry the $80\%$ joint confirmation. This failure pattern cannot be explained by single-month raw trades/s alone: ETH, which also has high activity, still passes 13 of 15 months, while BTC fails on both lower and higher activity months. ETH and SOL each have 2 failing months, so $63$ of $75$ cells pass and the overall acceptance rate of the strict criterion is $63/75 = 84\%$.
 
-\textbf{The streams that pass the strict gate still fail Runs in a systematic way.} It should be stressed that the strict gate uses only $D$ (adaptive $k$) + Monobit as the main criterion. Among the 63 cells accepted, 38 cells have a Runs pass rate below $0.05$ (see the note of \cref{tab:appendix-a2}), which means that at the selected $\ell^*$ of those cells almost every offset stream is rejected by Runs; $D(k = 2)$ shows the same pattern. So ``passing the strict gate'' does not mean ``the first-order structure is removed''; it only guarantees that $D$ at adaptive $k$ and Monobit are both satisfied. This residual is a stable feature on the transaction-time axis, and is one reason for comparing the physical-time axis in \cref{sec:exp2-1sbars}.
+\textbf{The streams that pass the strict criterion still fail Runs in a systematic way.} It should be stressed that the strict criterion uses only $D$ (adaptive $k$) + Monobit as the main criterion. Among the 63 cells accepted, 38 cells have a Runs pass rate below $0.05$ (see the note of \cref{tab:appendix-a2}), which means that at the selected $\ell^*$ of those cells almost every offset stream is rejected by Runs; $D(k = 2)$ shows the same pattern. So ``passing the strict criterion'' does not mean ``the first-order structure is removed''; it only guarantees that $D$ at adaptive $k$ and Monobit are both satisfied. This residual is a stable feature on the transaction-time axis, and is one reason for comparing the physical-time axis in \cref{sec:exp2-1sbars}.
 
-\textbf{The strict gate leaves two practical problems.} First, BTC has no acceptable $\ell \leq 2000$ on 8 months, which shows that the $80\%$ requirement can be too strict for the highest-activity asset. Second, the month-to-month range of selected $\ell^*$ is wide, and the coarse grid further limits the precision of the estimate. \cref{sec:exp2-relaxed-gate} therefore tries a relaxed offset-coverage gate and also refines the $\ell$ grid to step $2$.
+\textbf{The strict criterion leaves two practical problems.} First, BTC has no acceptable $\ell \leq 2000$ on 8 months, which shows that the $80\%$ requirement can be too strict for the highest-activity asset. Second, the month-to-month range of selected $\ell^*$ is wide, and the coarse grid further limits the precision of the estimate. \cref{sec:exp2-relaxed-criterion} therefore tries a relaxed offset-coverage criterion and also refines the $\ell$ grid to step $2$.
 
-\subsection{Transaction-Time: All-Offset Relaxed Gate}
-\label{sec:exp2-relaxed-gate}
+\subsection{Transaction-Time: All-Offset Relaxed Criterion}
+\label{sec:exp2-relaxed-criterion}
 
-This step replaces the strict gate with the relaxed gate defined in \cref{sec:acceptance-gates}. The main text uses $(F, f) = (3, 0.03)$, and the $\ell$ grid is refined to $10$ to $2000$ with step $2$.
+This step replaces the strict criterion with the relaxed criterion defined in \cref{sec:acceptance-criteria}. The main text uses $(F, f) = (3, 0.03)$, and the $\ell$ grid is refined to $10$ to $2000$ with step $2$.
 
 \begin{figure}[!htbp]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_4_all_offset_relaxed.png}
   \end{center}
-  \caption{All-offset relaxed gate -- $n_{\text{pass}}(\ell)$ and selected $\ell^*$.}
-  \label{fig:exp2-relaxed-gate}
-  {\footnotesize 2025~Q1 and 2026~Q1 (Q5) are shown together. Each panel plots $n_{\text{pass}}(\ell)$ for the five assets, where $n_{\text{pass}}$ is the number of offsets that pass both $D$ and Monobit. The red line is the relaxed gate threshold; the marked points are the selected $\ell^*$. The full 15-month results are in \cref{tab:appendix-a4}; a Bonferroni comparison is in \cref{tab:appendix-a5}.}
+  \caption{All-offset relaxed criterion -- $n_{\text{pass}}(\ell)$ and selected $\ell^*$.}
+  \label{fig:exp2-relaxed-criterion}
+  {\footnotesize 2025~Q1 and 2026~Q1 (Q5) are shown together. Each panel plots $n_{\text{pass}}(\ell)$ for the five assets, where $n_{\text{pass}}$ is the number of offsets that pass both $D$ and Monobit. The red line is the relaxed criterion threshold; the marked points are the selected $\ell^*$. The full 15-month results are in \cref{tab:appendix-a4}; a Bonferroni comparison is in \cref{tab:appendix-a5}.}
 \end{figure}
 
 \begin{table}[!htbp]
-  \caption{All-offset relaxed gate -- per-asset summary.}
+  \caption{All-offset relaxed criterion -- per-asset summary.}
   \label{tab:exp2-relaxed-summary}
   \begin{center}
     \begin{tabular}{lccr}
@@ -866,44 +881,44 @@ This step replaces the strict gate with the relaxed gate defined in \cref{sec:ac
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize n\_pass is the number of months on which the relaxed gate returns acceptable; the median and the range are computed over all 15 months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a4}.}
+  {\footnotesize n\_pass is the number of months on which the relaxed criterion returns acceptable; the median and the range are computed over all 15 months. Rows are sorted by median in descending order. The full per-(asset, month) table is in \cref{tab:appendix-a4}.}
 \end{table}
 
-\textbf{The relaxed gate raises coverage from $63/75$ to $75/75$.} The strict gate fails on 8 months of BTC, 2 months of ETH and 2 months of SOL, which is 12 cells in total (\cref{tab:exp2-strict-summary}). The relaxed gate finds an acceptable $\ell^*$ on all 75 cells. The 8 BTC months that had no $\ell \leq 2000$ acceptable under the strict gate now find $\ell^* \in [998, 1750]$ under the relaxed gate, all still inside the same $[50, 2000]$ grid; it is the strict $80\%$ bar that is too tight on those cells. This observation directly responds to the practical coverage problem raised at the end of \cref{sec:exp2-strict-gate}.
+\textbf{The relaxed criterion raises coverage from $63/75$ to $75/75$.} The strict criterion fails on 8 months of BTC, 2 months of ETH and 2 months of SOL, which is 12 cells in total (\cref{tab:exp2-strict-summary}). The relaxed criterion finds an acceptable $\ell^*$ on all 75 cells. The 8 BTC months that had no $\ell \leq 2000$ acceptable under the strict criterion now find $\ell^* \in [998, 1750]$ under the relaxed criterion, all still inside the same $[50, 2000]$ grid; it is the strict $80\%$ bar that is too tight on those cells. This observation directly responds to the practical coverage problem raised at the end of \cref{sec:exp2-strict-criterion}.
 
-\textbf{Selected $\ell^*$ drops overall, but the coarse asset layering does not change.} A per-asset comparison (strict over its acceptable months, relaxed over all 15 months) shows that the relaxed gate pulls every per-asset median down: BTC $1500 \to 1150$, ETH $975 \to 556$, BNB $350 \to 212$, DOGE $375 \to 156$, SOL $350 \to 180$, which is a reduction of about $23\%$ (BTC) to $58\%$ (DOGE). The two medians use different month bases (strict has 12 failing cells, relaxed has 75 successful cells), so the reduction is a magnitude comparison rather than a month-by-month difference. The relaxed gate is a looser bar, so every asset passes at a smaller $\ell$. The asset level still shows BTC the highest, ETH second, and BNB / SOL / DOGE at the same order, which is the same coarse pattern as in the strict gate.
+\textbf{Selected $\ell^*$ drops overall, but the coarse asset layering does not change.} A per-asset comparison (strict over its acceptable months, relaxed over all 15 months) shows that the relaxed criterion pulls every per-asset median down: BTC $1500 \to 1150$, ETH $975 \to 556$, BNB $350 \to 212$, DOGE $375 \to 156$, SOL $350 \to 180$, which is a reduction of about $23\%$ (BTC) to $58\%$ (DOGE). The two medians use different month bases (strict has 12 failing cells, relaxed has 75 successful cells), so the reduction is a magnitude comparison rather than a month-by-month difference. The relaxed criterion is a looser bar, so every asset passes at a smaller $\ell$.
 
-\textbf{The accepted-cell descriptive throughput of the relaxed gate is higher than that of the strict gate.} On the accepted cells, the median bit rate of the selected witness stream rises from about $0.012$ bps under the strict gate to about $0.021$ bps under the relaxed gate, which is a factor of about $1.8\times$. This difference mainly comes from the lower $\ell^*$ values that the relaxed gate selects; but it is only a descriptive comparison between the two gates on this experiment's cell set, not the deployment throughput of any multi-asset system. The advantage of the relaxed gate should therefore be read as more complete coverage and a higher per-cell bit rate; the cost is that the robustness argument moves from ``$80\%$ of offsets pass together'' to ``at least 3 offsets pass together'', and the latter is explicitly marked as a heuristic rather than a formal correction.
+\textbf{The accepted-cell descriptive throughput of the relaxed criterion is higher than that of the strict criterion.} On the accepted cells, the median bit rate of the selected output offset stream rises from about $0.012$ bps under the strict criterion to about $0.021$ bps under the relaxed criterion, which is a factor of about $1.8\times$. This difference mainly comes from the lower $\ell^*$ values that the relaxed criterion selects; but it is only a descriptive comparison between the two criteria on this experiment's cell set, not the deployment throughput of any multi-asset system. The advantage of the relaxed criterion should therefore be read as more complete coverage and a higher per-cell bit rate; the cost is that the robustness argument moves from ``$80\%$ of offsets pass together'' to ``at least 3 offsets pass together'', and the latter is explicitly marked as a heuristic rather than a formal correction.
 
-\textbf{Bonferroni / \v{S}id\'ak comparison gives smaller $\ell^*$.} As a directional comparison, a Bonferroni / \v{S}id\'ak version on 2025~Q1 gives systematically smaller selected $\ell^*$ than the heuristic relaxed gate. This is consistent with the discussion in \cref{sec:acceptance-gates}, so it is not used as the main criterion; the full results are in \cref{tab:appendix-a5}.
+\textbf{Bonferroni / \v{S}id\'ak comparison gives smaller $\ell^*$.} As a directional comparison, a Bonferroni / \v{S}id\'ak version on 2025~Q1 gives systematically smaller selected $\ell^*$ than the heuristic relaxed criterion. This is consistent with the discussion in \cref{sec:acceptance-criteria}, so it is not used as the main criterion; the full results are in \cref{tab:appendix-a5}.
 
-This subsection closes the chain on the transaction-time axis: single offset $\to$ strict gate $\to$ relaxed gate. The last two trade off offset stability, coverage and bit rate. The relaxed gate gives full $75/75$ coverage, but it is still a heuristic and does not give a stronger statistical guarantee. One important question remains: $D(k = 2)$ and Runs are almost always rejected near the selected $\ell^*$, so the short-range dependence may be partly caused by the sampling axis. \cref{sec:exp2-1sbars} therefore switches to the physical-time axis (1-second bar).
+This subsection closes the chain on the transaction-time axis: single offset $\to$ strict criterion $\to$ relaxed criterion. The last two trade off offset stability, coverage and bit rate. The relaxed criterion gives full $75/75$ coverage, but it is still a heuristic and does not give a stronger statistical guarantee. One important question remains: $D(k = 2)$ and Runs are almost always rejected near the selected $\ell^*$, so the short-range dependence may be partly caused by the sampling axis. \cref{sec:exp2-1sbars} therefore switches to the physical-time axis (1-second bar).
 
 \subsection{Physical-Time: 1-Second Bars}
 \label{sec:exp2-1sbars}
 
-This step redoes the all-offset acceptance loop on the physical-time axis. Different from transaction-time, the price series is first turned into a per-second closing price, and then $\ell$ takes the unit ``seconds'' (see \cref{sec:time-based-pipeline}). The $\ell$ grid is $10$ to $600$ with step $1$; the gate still uses the $80\%$ pass-rate framework. The base gate already gives $70/75$ coverage on 1-second bars, so no relaxed gate is needed here.
+This step redoes the all-offset acceptance loop on the physical-time axis. Different from transaction-time, the price series is first turned into a per-second closing price, and then $\ell$ takes the unit ``seconds'' (see \cref{sec:time-based-pipeline}). The $\ell$ grid is $10$ to $600$ with step $1$; the criterion still uses the $80\%$ pass-rate framework. The base criterion already gives $70/75$ coverage on 1-second bars, so no relaxed criterion is needed here.
 
 \begin{figure}[!htbp]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_5a_1sbars_q1.png}
   \end{center}
-  \caption{1-second bar gate -- pass rate versus $\ell$ on 2025~Q1.}
+  \caption{1-second bar criterion -- pass rate versus $\ell$ on 2025~Q1.}
   \label{fig:exp2-1sbars-q1}
-  {\footnotesize The format is the same as \cref{fig:exp2-strict-gate-q1}, but the unit of $\ell$ changes from ``number of trades'' to ``seconds''. The horizontal red line is the $0.80$ pass rate threshold. The full 15-month tables of selected $\ell^*$ across the three gates are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
+  {\footnotesize The format is the same as \cref{fig:exp2-strict-criterion-q1}, but the unit of $\ell$ changes from ``number of trades'' to ``seconds''. The horizontal red line is the $0.80$ pass rate threshold. The full 15-month tables of selected $\ell^*$ across the three criteria are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
 \end{figure}
 
 \begin{figure}[!htbp]
   \begin{center}
     \includegraphics[width=\textwidth]{figures/exp2_fig_4_5b_1sbars_q5.png}
   \end{center}
-  \caption{1-second bar gate -- pass rate versus $\ell$ on 2026~Q1 (Q5).}
+  \caption{1-second bar criterion -- pass rate versus $\ell$ on 2026~Q1 (Q5).}
   \label{fig:exp2-1sbars-q5}
   {\footnotesize Same format as \cref{fig:exp2-1sbars-q1}.}
 \end{figure}
 
 \begin{table}[!htbp]
-  \caption{1-second bar gate -- per-asset summary.}
+  \caption{1-second bar criterion -- per-asset summary.}
   \label{tab:exp2-1sbars-summary}
   \begin{center}
     \begin{tabular}{lcccc}
@@ -918,12 +933,12 @@ This step redoes the all-offset acceptance loop on the physical-time axis. Diffe
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize Each row aggregates 15 (asset, month) cells under two gates: base ($D$ + Monobit) and +Runs. For even sample sizes the $\ell^*$ median is the average of the two middle values rounded to the nearest integer (BNB base $83.5 \to 84$, ETH base $64.5 \to 65$, ETH +Runs $55.5 \to 56$, SOL +Runs $58.5 \to 59$). The full per-(asset, month) tables, including the +Runs+ApEn gate, are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
+  {\footnotesize Each row aggregates 15 (asset, month) cells under two criteria: base ($D$ + Monobit) and +Runs. For even sample sizes the $\ell^*$ median is the average of the two middle values rounded to the nearest integer (BNB base $83.5 \to 84$, ETH base $64.5 \to 65$, ETH +Runs $55.5 \to 56$, SOL +Runs $58.5 \to 59$). The full per-(asset, month) tables, including the +Runs+ApEn criterion, are in \cref{tab:appendix-a6,tab:appendix-a6b,tab:appendix-a6c}.}
 \end{table}
 
-\textbf{The 1-second bar base gate covers $70/75$ cells on the physical-time axis.} The base gate gives 70 acceptable cells out of 75, which shows that the axis change still finds a second-level $\ell^*$ on most cells. The failures concentrate on a few months of ETH, BNB and DOGE; the seconds-with-trades coverage can explain a part of these failures, but it is not the only factor.
+\textbf{The 1-second bar base criterion covers $70/75$ cells on the physical-time axis.} The base criterion gives 70 acceptable cells out of 75, which shows that the axis change still finds a second-level $\ell^*$ on most cells. The failures concentrate on a few months of ETH, BNB and DOGE; the seconds-with-trades coverage can explain a part of these failures, but it is not the only factor.
 
-\textbf{Adding Runs to the gate moves the coverage from $70/75$ to $62/75$, which is the key independence result on the 1-second bar axis.} To compare the two axes under the same criterion, Runs is also added to the transaction-time strict gate and to the 1-second bar gate. Transaction-time strict+Runs covers only $48/75$ cells (\cref{tab:appendix-a3}), while 1-second bar +Runs covers $62/75$; adding ApEn after that keeps the same $62/75$. This comparison shows that the first-order residual which is hard to handle on the transaction-time axis is clearly reduced on the physical-time axis.
+\textbf{Adding Runs to the criterion moves the coverage from $70/75$ to $62/75$, which is the key independence result on the 1-second bar axis.} To compare the two axes under the same criterion, Runs is also added to the transaction-time strict criterion and to the 1-second bar criterion. Transaction-time strict+Runs covers only $48/75$ cells (\cref{tab:appendix-a3}), while 1-second bar +Runs covers $62/75$; adding ApEn after that keeps the same $62/75$. This comparison shows that the first-order residual which is hard to handle on the transaction-time axis is clearly reduced on the physical-time axis.
 
 \textbf{This independence improvement is connected to the aggregation axis.} The same aggTrades data still keeps a strong first-order residual on the transaction-time axis, but on the physical-time axis most cells get a clear reduction. This result does not support the reading that ``the first-order residual comes entirely from the source data and cannot be reduced''; a more reasonable reading is that sampling by equal trade counts concentrates same-direction order flow into adjacent bits, while a 1-second bar spreads out this local concentration. This is consistent with the Experiment~1 diagnostic that lag-1 autocorrelation is positive on all five assets, with a magnitude broadly co-varying with activity.
 
@@ -939,9 +954,9 @@ The main role of Experiment~2 is to choose the aggregation axis for the later pi
 \begin{enumerate}
 \item \textbf{Physical-time should be used as the main aggregation axis.} The bit rate on transaction-time varies with trades/s, so it is more suitable as a statistical construction and as a supplementary comparison. In contrast, $\ell$ on physical-time is in seconds, and the selected $\ell^*$ can be read directly as a wall-clock sampling schedule and an approximate waiting time per candidate bit.
 
-\item \textbf{Physical-time is more suitable as the input configuration for the extended tests.} Under the +Runs criterion, the transaction-time strict gate drops from $63/75$ to $48/75$ accepted cells (a within-axis loss of $24\%$), while the 1-second bar base gate drops from $70/75$ to $62/75$ accepted cells (a within-axis loss of $11\%$); adding ApEn after that keeps the same $62/75$. The within-axis coverage loss is clearly larger on transaction-time, which shows that the Runs / $D(k=2)$ residual on transaction-time is at least partly amplified by the sampling axis. The later entropy-rate analysis, the additional NIST sub-tests, and the TestU01 sanity check therefore use the bit streams selected on the physical-time axis.
+\item \textbf{Physical-time is more suitable as the input configuration for the extended tests.} Under the +Runs criterion, the transaction-time strict criterion drops from $63/75$ to $48/75$ accepted cells (a within-axis loss of $24\%$), while the 1-second bar base criterion drops from $70/75$ to $62/75$ accepted cells (a within-axis loss of $11\%$); adding ApEn after that keeps the same $62/75$. The within-axis coverage loss is clearly larger on transaction-time, which shows that the Runs / $D(k=2)$ residual on transaction-time is at least partly amplified by the sampling axis. The later entropy-rate analysis, the additional NIST sub-tests, and the TestU01 sanity check therefore use the bit streams selected on the physical-time axis.
 
-\item \textbf{Transaction-time relaxed gate is kept as a supplementary configuration.} It shows that the trade-count axis can also reach full coverage when the offset-coverage rule is loosened. But this relaxed rule is heuristic, and its throughput varies with market activity, so it is not used as the main configuration. Experiment~3 also does not use it as a fallback: the audit target is the coverage boundary of the 1-second bar +Runs gate itself. The 13 cells that fail under the 1-second bar +Runs gate are therefore kept as evidence about that gate's boundary and do not enter the Experiment~3 sample.
+\item \textbf{Transaction-time relaxed criterion is kept as a supplementary configuration.} It shows that the trade-count axis can also reach full coverage when the offset-coverage rule is loosened. But this relaxed rule is heuristic, and its throughput varies with market activity, so it is not used as the main configuration. Experiment~3 also does not use it as a fallback: the audit target is the coverage boundary of the 1-second bar +Runs criterion itself. The 13 cells that fail under the 1-second bar +Runs criterion are therefore kept as evidence about that criterion's boundary and do not enter the Experiment~3 sample.
 
 \item \textbf{Throughput is reported only as a magnitude anchor.} The per-cell bit rate of the selected cells in Experiment~2 is at the $10^{-2}$ bps order. This means that stronger randomness diagnostics come with a lower bit emission rate.
 \end{enumerate}
@@ -949,19 +964,19 @@ The main role of Experiment~2 is to choose the aggregation axis for the later pi
 \section{Experiment 3: Extended Test Battery}
 \label{sec:exp3}
 
-Experiment~2 selects the aggregation level $\ell^*$ on the 1-second bar axis using a small gate: $D$ (adaptive $k$), Monobit, and Runs must each reach an offset pass rate of at least $0.80$. Under this +Runs gate, $62$ of the $75$ (asset, month) cells are accepted. This gate is enough to select an aggregation level, but it does not prove that the selected streams are random under a wider test battery.
+Experiment~2 selects the aggregation level $\ell^*$ on the 1-second bar axis using a small criterion: $D$ (adaptive $k$), Monobit, and Runs must each reach an offset pass rate of at least $0.80$. Under this +Runs criterion, $62$ of the $75$ (asset, month) cells are accepted. This criterion is enough to select an aggregation level, but it does not prove that the selected streams are random under a wider test battery.
 
-Experiment~3 therefore audits the coverage boundary of the gate in \cref{sec:exp2-1sbars}. The question is not whether the selected streams are perfectly random. The question is more concrete: which structures does the small gate detect, and which structures remain visible when the same streams are checked by a wider battery?
+Experiment~3 therefore audits the coverage boundary of the criterion in \cref{sec:exp2-1sbars}: which structures does the small criterion detect, and which structures remain visible when the same streams are checked by a wider battery?
 
-The $62$ accepted cells are tested against the 29-sub-test universe defined in \cref{sec:test-battery}. This battery adds NIST SP800-22 and TestU01 Alphabit items beyond the core tests already used in Experiment~2, so it gives a cross-battery check. The main sample of Experiment~3 is fixed to the +Runs gate. The earlier base gate ($D$ + Monobit) is kept only as a sensitivity comparison, because \cref{sec:exp2-1sbars} has already shown that excluding Runs allows clear first-order structure to remain in the candidate streams.
+The $62$ accepted cells are tested against the 29-sub-test universe defined in \cref{sec:test-battery}. This battery adds NIST SP800-22 and TestU01 Alphabit items beyond the core tests already used in Experiment~2, so it gives a cross-battery check. The main sample of Experiment~3 is fixed to the +Runs criterion. The earlier base criterion ($D$ + Monobit) is kept only as a sensitivity comparison, because \cref{sec:exp2-1sbars} has already shown that excluding Runs allows clear first-order structure to remain in the candidate streams.
 
 \subsection{Setup}
 \label{sec:exp3-setup}
 
 \begin{itemize}
-\item \textbf{Sample.} The sample contains the $62$ (asset, month) cells accepted by the 1-second bar +Runs gate in Experiment~2. The $13$ cells that fail that gate do not enter Experiment~3, and no fallback rescue is used. Experiment~3 also does not re-select $\ell^*$; it audits each accepted cell at the $\ell^*$ already selected in \cref{sec:exp2-1sbars}.
+\item \textbf{Sample.} The sample contains the $62$ (asset, month) cells accepted by the 1-second bar +Runs criterion in Experiment~2. The $13$ cells that fail that criterion do not enter Experiment~3, and no fallback rescue is used. Experiment~3 also does not re-select $\ell^*$; it audits each accepted cell at the $\ell^*$ already selected in \cref{sec:exp2-1sbars}.
 
-\item \textbf{Battery.} The experiment uses the 29-sub-test universe from \cref{sec:test-battery}. Of the five core tests reported around Experiment~2, only $D$ (adaptive $k$), Monobit, and Runs form the +Runs gate. $D(k=2)$ and ApEn are diagnostic quantities and do not take part in the selection of $\ell^*$. At short lengths, TestU01 Alphabit may skip long-block sub-tests; such (cell, sub-test) entries are marked as \textsc{not\_run} and are not included in the admissible denominator.
+\item \textbf{Battery.} The experiment uses the 29-sub-test universe from \cref{sec:test-battery}. Of the five core tests reported around Experiment~2, only $D$ (adaptive $k$), Monobit, and Runs form the +Runs criterion. $D(k=2)$ and ApEn are diagnostic quantities and do not take part in the selection of $\ell^*$. At short lengths, TestU01 Alphabit may skip long-block sub-tests; such (cell, sub-test) entries are marked as \textsc{not\_run} and are not included in the admissible denominator.
 
 \item \textbf{Acceptance.} The acceptance rule follows Experiment~2. For each (cell, sub-test), the sub-test is counted as passed if at least $80\%$ of valid offsets give $p \geq \alpha = 0.01$. Per-asset summaries report ``passing months / admissible months''.
 
@@ -983,7 +998,7 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
   {\footnotesize Each cell shows the share of admissible months on which one asset passes one sub-test. The main sample is the 62-cell 1-second bar +Runs sample selected in Experiment~2.}
 \end{figure}
 
-\textbf{Most sub-tests still pass under the extended battery.} $D$ (adaptive $k$), Monobit, Runs, and DFT pass in all admissible cells across all five assets. The first three are already part of the +Runs gate. DFT is outside that gate, so its 100\% pass rate gives an additional spectral check. Most other sub-tests also pass on most months, as shown in \cref{fig:exp3-pass-rate-per-asset}. In this sense, the aggregation levels selected by Experiment~2 are broadly stable under a wider battery.
+\textbf{Most sub-tests still pass under the extended battery.} $D$ (adaptive $k$), Monobit, Runs, and DFT pass in all admissible cells across all five assets. The first three are already part of the +Runs criterion. DFT is outside that criterion, so its 100\% pass rate gives an additional spectral check. Most other sub-tests also pass on most months, as shown in \cref{fig:exp3-pass-rate-per-asset}. In this sense, the aggregation levels selected by Experiment~2 are broadly stable under a wider battery.
 
 \begin{table}[!htbp]
   \caption{Experiment~3 -- three sub-tests that fail across assets.}
@@ -999,14 +1014,14 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize Each entry is ``passing months / admissible months''. The admissible month count differs by asset because the +Runs gate accepts different numbers of monthly cells: BTC 15, ETH 8, BNB 14, SOL 12, and DOGE 13. Rows are grouped by source battery, not sorted by failure rate.}
+  {\footnotesize Each entry is ``passing months / admissible months''. The admissible month count differs by asset because the +Runs criterion accepts different numbers of monthly cells: BTC 15, ETH 8, BNB 14, SOL 12, and DOGE 13. Rows are grouped by source battery, not sorted by failure rate.}
 \end{table}
 
-\textbf{Three higher-order sub-tests expose the remaining weak point.} \cref{tab:exp3-failing-subtests} shows that Serial $m$ has per-asset pass rates from $33\%$ (SOL, $4/12$) to $64\%$ (BNB, $9/14$), with $30/62$ passes in total. It is the weakest NIST SP800-22 extension in this experiment. Across the full 29-sub-test universe, MultinomialBitsOver L4 is even weaker, with per-asset pass rates from $25\%$ to $57\%$ and $28/62$ passes in total. ApEn also fails clearly, especially on ETH ($2/8$). These tests all target higher-order or multi-symbol structure. Their failures show that the small gate from Experiment~2 removes much of the short-range dependence, but still leaves structure that the gate does not see.
+\textbf{Three higher-order sub-tests expose the remaining weak point.} \cref{tab:exp3-failing-subtests} shows that Serial $m$ has per-asset pass rates from $33\%$ (SOL, $4/12$) to $64\%$ (BNB, $9/14$), with $30/62$ passes in total. It is the weakest NIST SP800-22 extension in this experiment. Across the full 29-sub-test universe, MultinomialBitsOver L4 is even weaker, with per-asset pass rates from $25\%$ to $57\%$ and $28/62$ passes in total. ApEn also fails clearly, especially on ETH ($2/8$). These tests all target higher-order or multi-symbol structure. Their failures show that the small criterion from Experiment~2 removes much of the short-range dependence, but still leaves structure that the criterion does not see.
 
-\textbf{The two independent test libraries agree on the failure pattern.} Serial $m$ comes from NIST SP800-22, while MultinomialBitsOver L4 comes from TestU01 Alphabit. They show almost the same per-asset failure pattern. This is the most important observation of Experiment~3: the residual is not just a quirk of one implementation or one battery. It is a signal confirmed by two independent test libraries.
+\textbf{The two independent test libraries agree on the failure pattern.} Serial $m$ comes from NIST SP800-22, while MultinomialBitsOver L4 comes from TestU01 Alphabit. They show almost the same per-asset failure pattern. This is the most important observation of Experiment~3: two independent test libraries confirm the same residual signal.
 
-\textbf{The base-gate comparison supports the +Runs choice in Experiment~2.} As a sensitivity check, the 70 cells selected earlier by the base gate ($D$ + Monobit) are also tested with the same extended battery at their selected $\ell^*$. Compared with the +Runs main sample, the base-selected streams are much worse on $D(k=2)$ and Runs. Their cross-asset average pass rates fall from almost 100\% under +Runs to about 29\%, with BTC, ETH, SOL, and DOGE near 20\% and only BNB higher. This confirms that adding Runs to the main gate is not an arbitrary tightening. It prevents clear first-order structure from entering the candidate streams.
+\textbf{The base-criterion comparison supports the +Runs choice in Experiment~2.} As a sensitivity check, the 70 cells selected earlier by the base criterion ($D$ + Monobit) are also tested with the same extended battery at their selected $\ell^*$. Compared with the +Runs main sample, the base-selected streams are much worse on $D(k=2)$ and Runs. Their cross-asset average pass rates fall from almost 100\% under +Runs to about 29\%, with BTC, ETH, SOL, and DOGE near 20\% and only BNB higher. This confirms that adding Runs to the main criterion is not an arbitrary tightening. It prevents clear first-order structure from entering the candidate streams.
 
 \FloatBarrier
 
@@ -1015,7 +1030,7 @@ The $62$ accepted cells are tested against the 29-sub-test universe defined in \
 
 Experiment~3 gives a more detailed conclusion than Experiment~2. Single-asset aggregation on the 1-second bar axis strongly reduces short-range dependence: $D$ (adaptive $k$), Monobit, Runs, and DFT all pass in the extended battery, and $D(k=2)$ fails in only one of the 62 cells (BTC, $14/15$). However, a higher-order residual remains. Serial, ApEn, and the multi-symbol Alphabit tests can still detect it, and the pattern is confirmed by both NIST SP800-22 and TestU01.
 
-This result motivates Experiment~4. If a single aggregated asset stream still contains higher-order residual structure, then combining several asset streams may reduce the residual further. The intuition is the piling-up effect discussed in \cref{sec:multi-asset-xor}: if several input bits are close to independent, XOR pushes the marginal bias towards 0.5. Experiment~4 tests whether this multi-asset XOR combination works out of sample, and how much throughput it costs.
+This result motivates Experiment~4. If a single aggregated asset stream still contains higher-order residual structure, then combining several asset streams may reduce the residual further. The intuition and limits of XOR combination are given in \cref{sec:multi-asset-xor}; Experiment~4 only tests whether it works on the held-out months, and how much throughput it costs.
 
 \section{Experiment 4: Multi-Asset XOR Combination}
 \label{sec:exp4}
@@ -1024,7 +1039,7 @@ Experiment~3 shows that single-asset aggregation strongly reduces short-range de
 
 This experiment answers the second layer of RQ3. It checks whether multi-asset combination gives, in an out-of-sample validation window, three things at the same time: stronger statistical robustness, acceptable throughput, and enough estimated min-entropy to support the downstream password generator. The main result is that $n \in \{2,3,5\}$ gives deployable streams, while $n=4$ fails systematically in validation. This failure is not a side note; it is a useful methodological result about calibration under non-stationary market signs.
 
-The intuition follows the piling-up discussion in \cref{sec:multi-asset-xor}: if several input bits are close to independent, XOR pushes the marginal bias towards $0.5$. This is not used as a security proof. It is used as a testable engineering hypothesis: does multi-asset XOR combination improve the single-asset residuals found in Experiment~3?
+\Cref{sec:multi-asset-xor} already states the intuition and limits of XOR combination: under independent inputs XOR attenuates the marginal bias, but cryptocurrency asset sign streams are correlated, so this thesis treats it only as an assumption that must be checked. This section tests that assumption on the held-out months, and reports validation robustness, throughput, and min-entropy together.
 
 \subsection{Setup}
 \label{sec:exp4-setup}
@@ -1032,14 +1047,14 @@ The intuition follows the piling-up discussion in \cref{sec:multi-asset-xor}: if
 \begin{itemize}
 \item \textbf{Input.} The experiment uses the multi-asset combination and $\ell$-level XOR aggregation defined in \cref{sec:multi-asset-xor}. The operator is instantiated on the five 1-second sign-bit streams from BTC, ETH, BNB, SOL, and DOGE.
 
-\item \textbf{Calibration / validation split.} Calibration uses 2025-01 to 2025-09 (9 months). Validation uses 2025-10 to 2026-03 (6 months). Calibration selects the asset subset, $\ell^*_n$, and the witness offset. Validation keeps these choices fixed and does not tune parameters again.
+\item \textbf{Calibration / validation split.} Calibration uses 2025-01 to 2025-09 (9 months). Validation uses 2025-10 to 2026-03 (6 months). Calibration selects the asset subset, $\ell^*_n$, and the selected output offset. Validation keeps these choices fixed and does not tune parameters again.
 
 \item \textbf{Subset universe.} For each $n \in \{2,3,4,5\}$, all $\binom{5}{n}$ asset subsets are enumerated. In total this gives
 $\binom{5}{2}+\binom{5}{3}+\binom{5}{4}+\binom{5}{5}=10+10+5+1=26$ subsets.
 
-\item \textbf{Calibration search.} For each subset and each calibration month, the combined stream is built and the all-offset +Runs gate is scanned over $\ell = 1,\ldots,400$ with step 1. Here $\ell$ is the bit-domain XOR aggregation level from \cref{sec:multi-asset-xor}, not the price-domain physical-time aggregation level used in \cref{sec:exp2-1sbars}. The gate still requires $D$ (adaptive $k$), Monobit, and Runs to each reach pass rate at least $0.80$.
+\item \textbf{Calibration search.} For each subset and each calibration month, the combined stream is built and the all-offset +Runs criterion is scanned over $\ell = 1,\ldots,400$ with step 1. Here $\ell$ is the bit-domain XOR aggregation level from \cref{sec:multi-asset-xor}, not the price-domain physical-time aggregation level used in \cref{sec:exp2-1sbars}. The criterion still requires $D$ (adaptive $k$), Monobit, and Runs to each reach pass rate at least $0.80$.
 
-\item \textbf{Selection rule.} For each $n$, the subset with the highest estimated bits/month is selected. For that subset, $\ell^*_n$ is the 80th percentile of the nine monthly $\ell^*$ values. The 80th percentile gives more room than the median for month-to-month variation, but avoids letting one outlier month determine the whole setting. To fix the output stream, the witness offset is selected in the last calibration month: among valid offsets, it is the offset with the largest geometric mean of the three $p$-values from $D$ (adaptive $k$), Monobit, and Runs. This witness offset is fixed in validation. The validation battery pass/fail result is still based on all-offset pass rates, not on the witness offset alone.
+\item \textbf{Selection rule.} For each $n$, the subset with the highest estimated bits/month is selected. For that subset, $\ell^*_n$ is the 80th percentile of the nine monthly $\ell^*$ values. The 80th percentile gives more room than the median for month-to-month variation, but avoids letting one outlier month determine the whole setting. To fix the output stream, the selected output offset is chosen in the last calibration month: among valid offsets, it is the offset with the largest geometric mean of the three $p$-values from $D$ (adaptive $k$), Monobit, and Runs. This selected output offset is fixed in validation. The validation battery pass/fail result is still based on all-offset pass rates, not on the selected output offset alone.
 
 \item \textbf{Validation battery.} Validation runs the 29-sub-test universe from \cref{sec:test-battery} on the four calibration-selected subsets, one for each $n$. Running all 26 subsets again in validation would leak test data into model selection. For each (month, sub-test), the verdict is pass if at least $80\%$ of valid offsets pass at $\alpha = 0.01$; length-skipped or sanity-excluded items are not included in the admissible denominator.
 \end{itemize}
@@ -1072,7 +1087,7 @@ The calibration procedure is simple. For each subset and each calibration month,
     \footnotesize
     \begin{tabular}{clrrrrr}
       \toprule
-      $n$ & selected subset & $\ell^*_n$ & witness & est. bits/mo & $\Delta$ vs runner-up & median $p(1)$ \\
+      $n$ & selected subset & $\ell^*_n$ & selected output offset & est. bits/mo & $\Delta$ vs runner-up & median $p(1)$ \\
       \midrule
       2 & BTC + ETH                 & $10$ & $1$ & $97{,}163$  & $+5\%$  & $0.340$ \\
       3 & BTC + ETH + SOL           & $3$  & $0$ & $201{,}950$ & $+15\%$ & $0.500$ \\
@@ -1084,7 +1099,7 @@ The calibration procedure is simple. For each subset and each calibration month,
   {\footnotesize ``$\Delta$ vs runner-up'' is the throughput gap between the selected subset and the second-best subset with the same $n$. For $n=5$ there is only one subset.}
 \end{table}
 
-\cref{tab:exp4-calibration} gives three observations. First, the throughput-best subset is not the same as the MI-best subset. For example, the MI-best subset for $n=3$ is BTC+BNB+SOL, while the throughput-best subset is BTC+ETH+SOL. The main text uses the throughput-best subset because the deployment goal is usable output rate under the fixed gate. MI remains a diagnostic.
+\cref{tab:exp4-calibration} gives three observations. First, the throughput-best subset is not the same as the MI-best subset. For example, the MI-best subset for $n=3$ is BTC+BNB+SOL, while the throughput-best subset is BTC+ETH+SOL. The main text uses the throughput-best subset because the deployment goal is usable output rate under the fixed criterion. MI remains a diagnostic.
 
 Second, odd and even $n$ behave differently in this calibration window. For $n=3$ and $n=5$, the combined $p(1)$ is almost $0.5$, and $\ell^*_n$ is only 3. For the even cases $n=2$ and $n=4$, $p(1)$ is further from $0.5$, so a larger $\ell$ is needed to pass Monobit. This odd/even explanation is only an empirical diagnostic, but it matches the symmetry intuition of XOR in this dataset.
 
@@ -1095,7 +1110,7 @@ The complete calibration ranking of all 26 subsets is given in \cref{tab:appendi
 \subsection{Validation Results}
 \label{sec:exp4-validation}
 
-Validation fixes the selected subset, $\ell^*_n$, and witness offset from calibration. The streams are rebuilt month by month from 2025-10 to 2026-03. No parameter is re-selected. The 29-sub-test verdicts are still based on all-offset pass rates. The witness offset fixes the output stream and throughput measurement, but it does not decide the validation battery pass/fail result.
+Validation fixes the selected subset, $\ell^*_n$, and selected output offset from calibration. The streams are rebuilt month by month from 2025-10 to 2026-03. No parameter is re-selected. The 29-sub-test verdicts are still based on all-offset pass rates. The selected output offset fixes the output stream and throughput measurement, but it does not decide the validation battery pass/fail result.
 
 \begin{table}[!htbp]
   \caption{Experiment~4 -- validation throughput and failure count.}
@@ -1113,7 +1128,7 @@ Validation fixes the selected subset, $\ell^*_n$, and witness offset from calibr
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize Throughput is measured on the fixed witness offset selected in calibration. Failure count is the number of sub-tests that fail in at least one of the six validation months.}
+  {\footnotesize Throughput is measured on the selected output offset fixed during calibration. Failure count is the number of sub-tests that fail in at least one of the six validation months.}
 \end{table}
 
 \begin{figure}[!htbp]
@@ -1173,14 +1188,11 @@ The $n=4$ case is different. Monobit passes in 0 of 6 months, CumSum backward in
 
 This paired comparison shows that multi-asset combination improves the higher-order residuals found in Experiment~3. The exception is $n=4$: Serial $m$ passes only $2/6$ and MultinomialBitsOver L4 only $1/6$. The reason is that its marginal bias has moved outside the calibration range. In short, multi-asset combination helps, but only when the fixed calibration remains representative of validation.
 
-\subsection{Why \texorpdfstring{$n=4$}{n=4} Fails}
-\label{sec:exp4-n4-failure}
-
-The $n=4$ case fully passes calibration. Across the five possible 4-asset subsets and nine calibration months, every cell can find an $\ell^*$ inside the $\ell=1,\ldots,400$ grid that passes the +Runs gate. ETH+BNB+SOL+DOGE is selected because it has the highest estimated throughput. In validation, however, this same fixed configuration fails all six months on Monobit and CumSum backward. This is not simply a weak subset. It is a generalisation failure caused by non-stationary sign bias.
+\textbf{$n=4$ is retained as a negative validation result.} The $n=4$ case fully passes calibration. Across the five possible 4-asset subsets and nine calibration months, every cell can find an $\ell^*$ inside the $\ell=1,\ldots,400$ grid that passes the +Runs criterion. ETH+BNB+SOL+DOGE is selected because it has the highest estimated throughput. In validation, however, this same fixed configuration fails all six months on Monobit and CumSum backward. The failure is a generalisation failure caused by non-stationary sign bias.
 
 The failure can be explained by drift in the marginal bias of the combined stream. During calibration, the $n=4$ combined $p(1)$ is around 0.27, with monthly values from about 0.237 to 0.303. During validation, it moves down to about 0.15--0.24, and in five of the six months it is more biased than any calibration month. The fixed $\ell=9$ selected in calibration is calibrated for the $p \approx 0.27$ range. At that bias level, 9-bit XOR aggregation is enough to push the residual bias below the Monobit detection level. When $p$ moves close to 0.15, the input bias becomes larger, and the same $\ell=9$ is no longer enough. Monobit therefore fails throughout validation.
 
-This is the value of the 9/6 split. It does not only give a failed configuration; it exposes a boundary of the method. Under month-scale non-stationarity in crypto sign bits, a fixed $\ell$ selected in calibration cannot be assumed to generalise for every $n$. The $n=4$ configuration is therefore excluded from the deployment set. It remains in the thesis as a negative result, because it explains why market-derived bits should be treated as entropy input for downstream conditioning, not as final random output by themselves.
+This is the value of the 9/6 split. It does not only give a failed configuration; it exposes a boundary of the method. Under month-scale non-stationarity in crypto sign bits, a fixed $\ell$ selected in calibration cannot be assumed to generalise for every $n$. The $n=4$ configuration is therefore excluded from the deployment set, but it is kept in the thesis as a negative result.
 
 \subsection{Min-Entropy and Deployment Set}
 \label{sec:exp4-min-entropy}
@@ -1210,7 +1222,7 @@ Using the min-entropy budget from \cref{sec:output-metrics}, each validation cel
 
 \cref{tab:exp4-min-entropy} agrees with the validation battery. If all $n$ values are included, the worst cell is $n=4$ with $h_\infty = 0.903$ bits/symbol, requiring 36 input bytes for a 256-bit target. If the deployment set is restricted to $n \in \{2,3,5\}$, the worst-month value is $h_\infty = 0.975$ bits/symbol, so 33 input bytes are enough for the 256-bit target. MCV is almost always the binding estimator: among 24 validation cells, 23 are bound by MCV and only 1 by Markov.
 
-This means that the main residual is usually 0/1 imbalance, which MCV captures, rather than adjacent-bit dependence, which Markov captures. The combined streams should therefore be used as entropy input for downstream conditioning, not directly mapped into final random output.
+This means that the main residual is usually 0/1 imbalance, which MCV captures, rather than adjacent-bit dependence, which Markov captures. The combined streams are therefore positioned as entropy input for downstream conditioning.
 
 Experiment~4 gives the core experimental evidence for RQ3. Multi-asset XOR combination can produce validation-window streams with usable throughput and enough estimated min-entropy for password generation, as long as the failed $n=4$ configuration is excluded and HKDF-based conditioning is treated as a required part of the design. The conclusion is positive but conditional: combination improves the high-order residual seen in Experiment~3 for the deployable configurations, while $n=4$ exposes the non-stationarity boundary of fixed calibration.
 
@@ -1223,14 +1235,14 @@ Experiment~4 gives the core experimental evidence for RQ3. Multi-asset XOR combi
 
 This chapter connects the deployable streams selected in Experiment~4 to a standard HKDF-SHA256 conditioning and character-mapping pipeline. The output is a set of 16-character passwords, and the evaluation checks whether their output-level statistics match an ideal baseline.
 
-\cref{cha:prototype} is not a new statistical experiment. The statistical randomness and min-entropy of the market input have already been evaluated in \cref{cha:experiments}. This chapter answers an application-layer question: if the input streams have passed the previous screening, can standard cryptographic conditioning turn them into usable passwords, and what strength do these passwords have under the output metrics used here?
+This chapter is an application-layer validation. The statistical randomness and min-entropy of the market input have already been evaluated in \cref{cha:experiments}; the question here is whether streams that pass the previous screening can be turned by standard cryptographic conditioning into usable passwords, and what strength those passwords have under the output metrics used here.
 
 \section{Prototype Design and Scope}
 \label{sec:prototype-design}
 
 The prototype uses the deployable set from Experiment~4: $n \in \{2,3,5\}$. The $n=4$ configuration is excluded because it fails systematically in validation. The goal is to check whether these streams, after HKDF-SHA256 conditioning and character mapping, can produce passwords that are strong in the everyday random-password sense.
 
-In this chapter, a ``strong password'' means a randomly generated password string with a near-uniform character distribution and search-space entropy clearly above common human-chosen passwords. This is not the same as saying that the password is an AES-128 or AES-256 key. The main strength measure is the password length and the character set size, as discussed in \cref{sec:background-information}.
+In this chapter, a ``strong password'' means a randomly generated password string with a near-uniform character distribution and search-space entropy clearly above common human-chosen passwords. The main strength measure is the password length and the character set size, as discussed in \cref{sec:background-information}.
 
 \begin{figure}[!htbp]
   \begin{center}
@@ -1249,7 +1261,7 @@ The 33-byte IKM size follows the min-entropy estimate in \cref{tab:exp4-min-entr
 
 Rejection sampling is used to avoid modulo bias~\citep{lemire2019random}. The accepted byte range is $b < 210$, because 210 is the largest multiple of 70 below 256. The HKDF implementation is checked against RFC 5869 Appendix~A Test Case~1~\citep{krawczyk2010rfc5869}. In this run, all 2,400 HKDF-generated passwords finish in one expand round, and the re-expand fallback is never used.
 
-The scope is passive statistical evaluation. The password output is not sent back into the full NIST/TestU01 battery, because the market input has already been evaluated in \cref{cha:experiments}. This chapter only uses output-level character uniformity and Shannon entropy. It also does not cover active market manipulation or production secret management.
+The scope is passive statistical evaluation. Since the market input has already been evaluated in \cref{cha:experiments}, this chapter uses output-level character uniformity and Shannon entropy rather than rerunning the full NIST/TestU01 battery on the password strings. Active market manipulation and production secret management remain outside this prototype scope.
 
 The prototype uses a repository-persisted salt so that the demo output can be reproduced exactly. This salt is suitable for reproducing the experiment: the same market streams, code, and salt generate the same passwords. Since market data are public, a production password generator would need to combine the market-derived entropy with non-public deployment-secret material during conditioning. The public demo salt in the repository is not suitable as the only secret source in a production setting.
 
@@ -1296,7 +1308,7 @@ Each cell is evaluated with two output metrics. First, the 100 passwords are exp
 
 \textbf{The generated passwords fall in the strong-password range.} Using the overall median of 6.0997 bits/char, a 16-character password has about 97.6 bits of empirical entropy. The theoretical search-space upper bound is $16 \times \log_2(70) \approx 98.07$ bits. This is far above the common scale of human-chosen passwords and above the 80-bit working benchmark discussed in \cref{sec:background-information}.
 
-\textbf{The three deployable $n$ values look similar at the output layer.} Market $n=2$, $n=3$, and $n=5$ fall in the same output range. This does not mean that upstream residuals disappear. It means that, under the min-entropy conditions established in \cref{sec:exp4-min-entropy}, those residuals do not show up as extra abnormalities in the character-uniformity and Shannon-entropy metrics used in this chapter.
+\textbf{The three deployable $n$ values look similar at the output layer.} Market $n=2$, $n=3$, and $n=5$ fall in the same output range. Under the min-entropy conditions established in \cref{sec:exp4-min-entropy}, their upstream residuals do not show up as extra abnormalities in the character-uniformity and Shannon-entropy metrics used in this chapter.
 
 Overall, \cref{cha:prototype} gives a positive but conditional result. After the screening, aggregation, extended-battery validation, multi-asset combination, and min-entropy sizing in Experiments~1--4, the deployable market-derived streams can be used as entropy input for an HKDF-based password generator. The output passwords match the ideal baselines on the metrics used here and fall in the everyday strong-password range. This conclusion is limited to the passive statistical setting defined in this thesis; a real secret-producing deployment still needs non-public deployment-secret material.
 
@@ -1311,27 +1323,22 @@ Overall, \cref{cha:prototype} gives a positive but conditional result. After the
 \section{Thesis-Level Answer}
 \label{sec:linking-results-rq}
 
-The central answer of this thesis is conditional but positive. For the deployable configurations $n \in \{2,3,5\}$, cryptocurrency market data can be used as entropy input for HKDF-SHA256 conditioning, and the resulting prototype produces about 98-bit random passwords whose output statistics match the ideal baselines used in \cref{cha:prototype}.
+The thesis-level question answered by this work is: in a passive statistical setting, can public cryptocurrency market data, after statistical aggregation and cryptographic conditioning, provide usable entropy for strong password generation?
 
-This answer is supported by the full chain of evidence:
-\begin{enumerate}
-\item Experiment~1 shows that raw tick signs cannot be used directly as RNG input.
-\item Experiment~2 shows that 1-second bar aggregation reduces short-range dependence and gives a usable +Runs gate on most cells.
-\item Experiment~3 audits the coverage boundary of that gate with up to 29 sub-tests.
-\item Experiment~4 selects three deployable multi-asset streams and exposes the non-stationarity boundary of $n=4$.
-\item The \cref{cha:prototype} prototype turns these deployable streams into passwords whose chi-square and Shannon entropy results match ideal baselines.
-\end{enumerate}
+The central answer is a conditional yes: for the deployable configurations $n \in \{2,3,5\}$, cryptocurrency market data can be used as entropy input for HKDF-SHA256 conditioning, and the resulting prototype produces about 98-bit random passwords whose output statistics match the ideal baselines used in \cref{cha:prototype}.
+
+This answer is based on the whole chain of experiments, from the raw baseline through one-second-bar aggregation, the extended test battery, and multi-asset combination, to the password prototype.
 
 This conclusion is limited to a passive statistical setting. The thesis asks whether a passive observer can find statistical patterns in the output sequence, using the randomness batteries in \cref{cha:experiments} and the output-level chi-square and Shannon entropy checks in \cref{cha:prototype}. It does not prove active-attacker beacon security, production secret management, or beacon-style unpredictability against an adversary who knows the public data source and configuration.
 
 \section{Answers to Research Questions}
 \label{sec:answers-rq}
 
-\textbf{RQ1 -- Can aggregation extract statistically independent random sequences?} The answer is a conditional yes. Both aggregation axes can find an $\ell^*$ that passes $D$ + Monobit on most (asset, month) cells: transaction-time strict gate gives $63/75$, transaction-time relaxed gate gives $75/75$, and 1-second bars give $70/75$. However, independence behaves very differently on the two axes. On the transaction-time axis, $D(k=2)$ and Runs still reject almost every selected witness stream. On the 1-second bar axis, the +Runs gate reaches $62/75$. The stronger independence result therefore comes from the physical-time axis, and this is why Experiments~3 and 4 use the 1-second bar +Runs sample.
+\textbf{RQ1 -- Can aggregation extract statistically independent random sequences from cryptocurrency price data?} The answer is a conditional yes within the statistical-test framework of this thesis. Both aggregation axes can find an $\ell^*$ that passes $D$ + Monobit on most (asset, month) cells: transaction-time strict criterion gives $63/75$, transaction-time relaxed criterion gives $75/75$, and 1-second bar strict criterion gives $70/75$. However, the independence evidence differs strongly between the two axes. On the transaction-time axis, $D(k=2)$ and Runs still reject almost every selected output offset stream. On the 1-second bar axis, the +Runs criterion reaches $62/75$. The stronger independence result therefore comes from the physical-time axis, and this is why Experiments~3 and 4 use the 1-second bar +Runs sample.
 
-\textbf{RQ2 -- Can the sequences pass standard randomness tests?} The answer is mostly yes, but with a clear boundary. For the 62 cells selected by the 1-second bar +Runs gate, Experiment~3 shows that $D$ (adaptive $k$), Monobit, Runs, and DFT pass in all admissible cells, and $D(k=2)$ fails in only one of the 62 cells. At the same time, Serial $m$, TestU01 Alphabit MultinomialBitsOver L4, and ApEn still expose higher-order residuals across assets. The small gate is effective for marginal and short-range structure, but it does not cover higher-order and multi-symbol structure. This boundary is the direct reason for adding multi-asset combination in Experiment~4.
+\textbf{RQ2 -- Can the sequences pass standard randomness tests?} The answer is mostly yes, but with a clear boundary. For the 62 cells selected by the 1-second bar +Runs criterion, Experiment~3 shows that $D$ (adaptive $k$), Monobit, Runs, and DFT pass in all admissible cells, and $D(k=2)$ fails in only one of the 62 cells. At the same time, Serial $m$, TestU01 Alphabit MultinomialBitsOver L4, and ApEn still expose higher-order residuals across assets. The small criterion is effective for marginal and short-range structure, but it does not cover higher-order and multi-symbol structure. This boundary is the direct reason for adding multi-asset combination in Experiment~4.
 
-\textbf{RQ3 -- Can the sequences be used for secure password generation?} In the passive statistical setting of this thesis, the answer is yes. Experiment~4 selects the deployable set $n \in \{2,3,5\}$ by a 9/6 calibration-validation split. The $n=4$ configuration fails systematically in validation, with Monobit and CumSum backward passing $0/6$, so it is kept as a negative result and excluded from deployment. \cref{cha:prototype} then generates 1,800 market-derived passwords from the deployable streams, together with 1,200 baseline passwords. All 18 market cells pass the chi-square test at $\alpha = 0.01$, and the Shannon entropy values match the baselines within the finite-sample bias range. This supports the claim that standard cryptographic conditioning is a necessary part of turning the deployable streams into usable passwords.
+\textbf{RQ3 -- Can the sequences be used for secure password generation?} In the passive statistical setting of this thesis, the answer is yes. Experiment~4 selects the deployable set $n \in \{2,3,5\}$ by a 9/6 calibration-validation split. The $n=4$ configuration fails systematically in validation, with Monobit and CumSum backward passing $0/6$, so it is kept as a negative result and excluded from deployment. \cref{cha:prototype} then turns the deployable streams into passwords. All the market-derived cells pass the character-uniformity test, and their Shannon entropy matches the ideal baselines (see \cref{tab:prototype-evaluation}). This supports the claim that standard cryptographic conditioning is a necessary part of turning the deployable streams into usable passwords.
 
 \section{Secondary Observations}
 \label{sec:secondary-observations}
@@ -1340,7 +1347,7 @@ Beyond the three research questions, two secondary observations are worth record
 
 \textbf{Coarse activity layering with local non-monotonicity.} The selected $\ell^*$ values show a coarse two-layer structure across the five assets. High-activity BTC usually needs a larger $\ell^*$, which is in the same direction as earlier equity-market results where higher activity requires deeper aggregation. At the finer level, however, SOL, DOGE, and BNB are not strictly monotone: raw trades/s ranking and selected $\ell^*$ ranking do not fully match. Similar non-monotonic behaviour has been observed in other markets and is usually linked to microstructure mechanisms such as order splitting and execution scheduling~\citep{almgren2001execution}. Identifying the exact mechanism in cryptocurrency data is left to future work.
 
-\textbf{First-order residuals look like an aggregation-axis effect.} $D(k=2)$ and Runs fail on the transaction-time axis but mostly pass on the 1-second bar axis. This suggests that the first-order residual seen in the raw tick stream is not only a fixed property of the source data. It is also affected by the sampling axis. In this thesis, changing from equal-trade-count sampling to physical-time sampling turns the residual from a hard failure into a cost of axis choice.
+\textbf{First-order residuals are partly an axis artifact.} The RQ1 answer (\cref{sec:answers-rq}) shows that $D(k=2)$ and Runs are severe on the transaction-time axis but weak on the 1-second bar axis. The point worth recording here is how to read that result: what looks like a fixed property of the source data is, in part, a property of the sampling scheme rather than of the market itself.
 
 \section{Limitations and Future Work}
 \label{sec:limitations-future-work}
@@ -1348,9 +1355,9 @@ Beyond the three research questions, two secondary observations are worth record
 \textbf{Methodological limitations.}
 
 \begin{enumerate}
-\item \textbf{The witness-offset rule is still simple.} This thesis fixes the witness offset in the last calibration month and keeps it fixed in validation. This affects the final output stream and the throughput measurement, but not the validation battery verdict, which is still based on all-offset pass rates. A stronger deployment version should compare this rule with multi-month stable witness selection or a fixed-offset rule.
+\item \textbf{The selected output offset rule is still simple.} This thesis fixes the selected output offset in the last calibration month and keeps it fixed in validation. This affects the final output stream and the throughput measurement, but not the validation battery verdict, which is still based on all-offset pass rates. A stronger deployment version should compare this rule with single-month selection, multi-month stability-based offset selection, and a fixed-offset rule.
 
-\item \textbf{The gate design is not formally corrected over the whole search.} The $\ell$ grid search is not corrected with Bonferroni or FDR. The relaxed gate parameters $(F,f)=(3,0.03)$ are a design choice from \cref{sec:acceptance-gates}, not an optimum over a parameter family. Other values, such as $(2,0.02)$ or $(5,0.05)$, may change coverage and selected $\ell^*$, and this sensitivity is not explored here.
+\item \textbf{The criterion design is not formally corrected over the whole search.} The $\ell$ grid search is not corrected with Bonferroni or FDR. The relaxed criterion parameters $(F,f)=(3,0.03)$ are a design choice from \cref{sec:acceptance-criteria}, not an optimum over a parameter family. Other values, such as $(2,0.02)$ or $(5,0.05)$, may change coverage and selected $\ell^*$, and this sensitivity is not explored here.
 
 \item \textbf{The extended battery is still not the full NIST/TestU01 universe.} Experiment~3 adds 7 NIST SP800-22 extensions and TestU01 Alphabit, but it does not include Non-overlapping Template, Universal Statistical, the Random Excursions family, or TestU01 Rabbit. This is a scope and length limitation, not a claim that these tests are unimportant.
 
@@ -1368,7 +1375,7 @@ Beyond the three research questions, two secondary observations are worth record
 
 \item \textbf{Test compression-based complexity diagnostics.} Lempel--Ziv style methods~\citep{ziv1977lempelziv} and compression-based language-tree methods~\citep{benedetto2002language} could be used as additional randomness diagnostics on longer bit streams. They were not used in the main analysis because the current cell lengths and $\ell$ ranges make their power limited.
 
-\item \textbf{Explore low-frequency key-material use.} The same 33-byte IKM to HKDF-Extract pipeline could be studied for low-frequency key-material derivation. This would no longer be the password-output setting of this thesis. It would require a new threat model, secret-management design, and authentication requirements.
+\item \textbf{Explore low-frequency key-material use.} The same 33-byte IKM to HKDF-Extract pipeline could be studied for low-frequency key-material derivation. This direction belongs to a new key-material setting and would require a new threat model, secret-management design, and authentication requirements.
 \end{itemize}
 
 %% =====================================================================
@@ -1382,35 +1389,31 @@ Beyond the three research questions, two secondary observations are worth record
 \section{Recap of the Motivation and Setting}
 \label{sec:conclusion-recap}
 
-This thesis starts from a concrete engineering question: can public and continuously available cryptocurrency market data be turned, through statistical processing, into random bit streams that are useful for password generation? The main difficulty is not producing bits. The difficulty is whether the bits pass standard randomness tests, and whether the resulting throughput is usable.
+This thesis starts from a concrete engineering question: in a passive statistical setting, can public cryptocurrency market data, after statistical aggregation and cryptographic conditioning, provide usable entropy for strong password generation? What matters is not only producing bits, but whether the bits pass standard randomness tests, whether the throughput is usable, and whether, after cryptographic conditioning, they can support the final password output.
 
 Experiment~1 shows that raw tick signs are not suitable. They have high marginal entropy, but they are conditionally predictable. This makes aggregation necessary. Experiments~2--4 and the \cref{cha:prototype} prototype are built on that result.
 
-The method is based on two earlier ideas: the entropy-based predictability test $D$ from \citet{shternshis2025predictability}, and the all-offset construction from \citet{onofri2025emergence}. This thesis adapts these ideas to the 24/7 cryptocurrency setting by adding a relaxed gate, a 1-second bar physical-time pipeline, multi-asset XOR combination, and output metrics for throughput and min-entropy.
+The method is based on two earlier ideas: the entropy-based predictability test $D$ from \citet{shternshis2025predictability}, and the all-offset construction from \citet{onofri2025emergence}. This thesis adapts these ideas to the 24/7 cryptocurrency setting by adding a relaxed criterion, a 1-second bar physical-time pipeline, multi-asset XOR combination, and output metrics for throughput and min-entropy.
 
 The final answer is yes, but with conditions. For the deployable configurations $n \in \{2,3,5\}$, cryptocurrency market data can be used as entropy input for HKDF-SHA256 conditioning, and the prototype can produce about 98-bit random passwords whose output-level statistics match ideal baselines. This conclusion is limited to a passive statistical setting. It does not cover active market manipulation or production secret management; those boundaries are discussed in \cref{sec:linking-results-rq,sec:limitations-future-work}.
 
 \section{Summary of Contributions}
 \label{sec:summary-contributions}
 
-The contributions of this thesis can be grouped into three levels.
+The contributions of this thesis can be grouped into two levels: method-level and application.
 
 \textbf{Method-level contributions.} The thesis combines the $D$ test, the all-offset construction, and classical NIST SP800-22 / TestU01 sub-tests into one all-offset acceptance and audit framework. It then evaluates this framework on the 24/7 cryptocurrency market. On top of the reused components, the thesis adds four concrete method-level parts:
 
 \begin{itemize}
-\item \textbf{Relaxed gate} (\cref{sec:acceptance-gates}): a heuristic robustness check that keeps offset redundancy without using Bonferroni / \v{S}id\'ak as a false-pass correction.
+\item \textbf{Relaxed criterion} (\cref{sec:acceptance-criteria}): a heuristic robustness check that keeps offset redundancy without using Bonferroni / \v{S}id\'ak as a false-pass correction.
 \item \textbf{1-second bar physical-time pipeline} (\cref{sec:time-based-pipeline}): a second aggregation axis that reduces short-range dependence more clearly than the transaction-time axis.
 \item \textbf{Multi-asset XOR combination} (\cref{sec:multi-asset-xor}): a bit-domain aggregation method that is explicitly separated from the price-domain aggregation used earlier.
 \item \textbf{Output metrics} (\cref{sec:output-metrics}): a common reporting frame for throughput and a simplified SP800-90B-style min-entropy estimate.
 \end{itemize}
 
-HKDF-SHA256 is introduced as a standard cryptographic conditioning component for the password prototype. It supports the application layer, but it is not counted as a new method proposed by this thesis.
+\textbf{Application contribution.} \cref{cha:prototype} gives an end-to-end password generator prototype. It connects the Experiment~4 deployable streams to HKDF-SHA256 conditioning and 70-character rejection sampling. In the evaluation, all the market-derived cells pass the character-uniformity test and their Shannon entropy matches the ideal baselines (see \cref{tab:prototype-evaluation}). This is the application-level evidence that standard cryptographic conditioning can turn the deployable streams into usable passwords.
 
-\textbf{Application contribution.} \cref{cha:prototype} gives an end-to-end password generator prototype. It connects the Experiment~4 deployable streams to HKDF-SHA256 conditioning and 70-character rejection sampling. The evaluation covers 1,800 market-derived passwords and 1,200 baseline passwords. All 18 market cells pass the character-uniformity chi-square test, and their Shannon entropy matches the baselines within the expected finite-sample bias range (see \cref{tab:prototype-evaluation}). This is the application-level evidence that standard cryptographic conditioning can turn the deployable streams into usable passwords.
-
-\textbf{Secondary observations.} The thesis also records two cross-market methodological observations. First, selected $\ell^*$ shows a coarse activity layering across the five assets, but SOL, DOGE, and BNB are not strictly monotone at the finer level. Second, the first-order residual measured by $D(k=2)$ and Runs depends strongly on the aggregation axis: it is severe on transaction-time, but much weaker on 1-second bars. These are treated as secondary observations in \cref{sec:secondary-observations}, not as the main contribution.
-
-Overall, the thesis shows that market-derived randomness is not usable in raw form, but it can become useful after aggregation, extended testing, multi-asset combination, min-entropy sizing, and cryptographic conditioning. The result is practical, but deliberately bounded by the passive statistical scope of the work. The implementation and processed outputs are provided through the repository link on the title page.
+Overall, the thesis shows that market-derived randomness is not usable in raw form, but it can become useful after aggregation, extended testing, multi-asset combination, min-entropy sizing, and cryptographic conditioning. The result is practical, but deliberately bounded by the passive statistical scope of the work. The implementation code, experiment scripts, and processed outputs are available in the project repository: \url{https://github.com/Liu-yujia-66/CryptoEntropy-RNG}.
 
 %% =====================================================================
 %% Appendix
@@ -1420,10 +1423,10 @@ Overall, the thesis shows that market-derived randomness is not usable in raw fo
 \chapter{Supplementary Tables}
 \label[appendix]{cha:appendix}
 
-This appendix gives two kinds of supplementary results. First, it gives the full 15-month tables of selected $\ell^*$ for the gates in Experiment~2 (\cref{sec:exp2}). The figures in the main text show only two quarters (2025~Q1 and 2026~Q1, i.e.\ Q5); the full month-by-month results are listed here. Second, it gives the complete calibration ranking for Experiment~4 (\cref{sec:exp4}). In the Experiment~2 tables, all tables use the same asset order (BTC, ETH, BNB, SOL, DOGE), which is the same descending order of raw trades/s as in \cref{tab:trades-per-second}. An empty cell (``--'') means that the (asset, month) cell has no acceptable $\ell$ inside the $\ell$ grid under the given gate. The raw CSV files behind the Experiment~2 appendix tables live under \texttt{data/processed/experiment2/}; the Experiment~4 calibration summary is under \texttt{data/processed/experiment4/calibration\_all\_subsets/}.
+This appendix gives two kinds of supplementary results. First, it gives the full 15-month tables of selected $\ell^*$ for the criteria in Experiment~2 (\cref{sec:exp2}). The figures in the main text show only two quarters (2025~Q1 and 2026~Q1, i.e.\ Q5); the full month-by-month results are listed here. Second, it gives the complete calibration ranking for Experiment~4 (\cref{sec:exp4}). In the Experiment~2 tables, all tables use the same asset order (BTC, ETH, BNB, SOL, DOGE), which is the same descending order of raw trades/s as in \cref{tab:trades-per-second}. An empty cell (``--'') means that the (asset, month) cell has no acceptable $\ell$ inside the $\ell$ grid under the given criterion. The raw CSV files behind the Experiment~2 appendix tables live under \texttt{data/processed/experiment2/}; the Experiment~4 calibration summary is under \texttt{data/processed/experiment4/calibration\_all\_subsets/}.
 
 \begin{table}[!htbp]
-  \caption{Single-offset gate -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the smallest $\ell$ at which $D$ (adaptive $k$) and Monobit both give $p \geq \alpha$ ($\alpha = 0.01$).}
+  \caption{Single-offset criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the smallest $\ell$ at which $D$ (adaptive $k$) and Monobit both give $p \geq \alpha$ ($\alpha = 0.01$).}
   \label{tab:appendix-a1}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1451,7 +1454,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{All-offset strict gate -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the $80\%$ strict gate (pass rates of $D$ and Monobit both $\geq 0.80$).}
+  \caption{All-offset strict criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $50$ to $2000$ with step $25$; the criterion is the $80\%$ strict criterion (pass rates of $D$ and Monobit both $\geq 0.80$).}
   \label{tab:appendix-a2}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1480,7 +1483,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{Transaction-time strict + Runs gate -- selected $\ell^*$ per (asset, month). The $\ell$ grid is the same as \cref{tab:appendix-a2}; the criterion adds Runs to the strict gate, that is, pass rates of $D$, Monobit and Runs are all $\geq 0.80$. This table is the same-criterion comparator referenced in \cref{sec:exp2-1sbars}; it does not change the strict-gate definition in the main text.}
+  \caption{Transaction-time strict + Runs criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is the same as \cref{tab:appendix-a2}; the criterion adds Runs to the strict criterion, that is, pass rates of $D$, Monobit and Runs are all $\geq 0.80$. This table is the same-criterion comparator referenced in \cref{sec:exp2-1sbars}; it does not change the strict-criterion definition in the main text.}
   \label{tab:appendix-a3}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1509,7 +1512,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{All-offset relaxed gate -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $10$ to $2000$ with step $2$; the criterion is the heuristic relaxed gate with $(F, f) = (3, 0.03)$.}
+  \caption{All-offset relaxed criterion -- selected $\ell^*$ per (asset, month). The $\ell$ grid is $10$ to $2000$ with step $2$; the criterion is the heuristic relaxed criterion with $(F, f) = (3, 0.03)$.}
   \label{tab:appendix-a4}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1538,7 +1541,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{Bonferroni / \v{S}id\'ak directional comparison on 2025~Q1 (see \cref{sec:exp2-relaxed-gate}). After tightening to per-offset $\alpha / N_{\text{valid}}$, the ``at least one offset passes'' rule gives selected $\ell^*$ that are systematically smaller than the values in \cref{tab:appendix-a4}, confirming the directional analysis in \cref{sec:acceptance-gates}: Bonferroni / \v{S}id\'ak controls the ``at least one false rejection'' family-wise error and is not the right correction for the opposite question (``at least one false acceptance''); under an ``at least one offset passes'' rule, tightening $\alpha$ instead gives an earlier and looser selected $\ell^*$. This table is therefore only a directional comparator, not a main criterion.}
+  \caption{Bonferroni / \v{S}id\'ak directional comparison on 2025~Q1 (see \cref{sec:exp2-relaxed-criterion}). After tightening to per-offset $\alpha / N_{\text{valid}}$, the ``at least one offset passes'' rule gives selected $\ell^*$ that are systematically smaller than the values in \cref{tab:appendix-a4}, confirming the directional analysis in \cref{sec:acceptance-criteria}: Bonferroni / \v{S}id\'ak controls the ``at least one false rejection'' family-wise error and is not the right correction for the opposite question (``at least one false acceptance''); under an ``at least one offset passes'' rule, tightening $\alpha$ instead gives an earlier and looser selected $\ell^*$. This table is therefore only a directional comparator, not a main criterion.}
   \label{tab:appendix-a5}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1554,7 +1557,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{1-second bar gate, base ($D$ + Monobit) -- selected $\ell^*$ per (asset, month). The $\ell$ unit is seconds; the grid is $10$ to $600$ with step $1$.}
+  \caption{1-second bar criterion, base ($D$ + Monobit) -- selected $\ell^*$ per (asset, month). The $\ell$ unit is seconds; the grid is $10$ to $600$ with step $1$.}
   \label{tab:appendix-a6}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1583,7 +1586,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{1-second bar gate, +Runs -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
+  \caption{1-second bar criterion, +Runs -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
   \label{tab:appendix-a6b}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1612,7 +1615,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
 \end{table}
 
 \begin{table}[!htbp]
-  \caption{1-second bar gate, +Runs + ApEn ($m = 5$) -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
+  \caption{1-second bar criterion, +Runs + ApEn ($m = 5$) -- selected $\ell^*$ per (asset, month). Same axis, grid and asset order as \cref{tab:appendix-a6}.}
   \label{tab:appendix-a6c}
   \begin{center}
     \begin{tabular}{lrrrrr}
@@ -1647,7 +1650,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
     \scriptsize
     \begin{tabular}{rlrrrr}
       \toprule
-      $n$ & subset & $\ell^*_n$ & median $p(1)$ & est. bits/mo & witness \\
+      $n$ & subset & $\ell^*_n$ & median $p(1)$ & est. bits/mo & selected output offset \\
       \midrule
       2 & BTC + ETH$^\dagger$                 & $10$ & $0.340$ & $97{,}163$  & $1$ \\
       2 & ETH + BNB                            & $9$  & $0.333$ & $92{,}532$  & $0$ \\
@@ -1681,7 +1684,7 @@ This appendix gives two kinds of supplementary results. First, it gives the full
       \bottomrule
     \end{tabular}
   \end{center}
-  {\footnotesize The calibration window is 2025-01 to 2025-09. All 234 (subset, month) cells pass the +Runs gate, meaning that each cell can find an $\ell^*$ in the $\ell = 1,\ldots,400$ grid where $D$ (adaptive $k$), Monobit, and Runs all reach all-offset pass rate at least $0.80$. Rows are ordered by $n$ and then by estimated bits/month. The dagger marks the throughput-best subset selected for validation.}
+  {\footnotesize The calibration window is 2025-01 to 2025-09. All 234 (subset, month) cells pass the +Runs criterion, meaning that each cell can find an $\ell^*$ in the $\ell = 1,\ldots,400$ grid where $D$ (adaptive $k$), Monobit, and Runs all reach all-offset pass rate at least $0.80$. Rows are ordered by $n$ and then by estimated bits/month. The dagger marks the throughput-best subset selected for validation.}
 \end{table}
 
 %% =====================================================================
