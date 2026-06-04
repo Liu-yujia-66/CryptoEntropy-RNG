@@ -42,6 +42,12 @@ pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
+Two dependency files are provided:
+
+- `requirements.txt` — unpinned; installs the latest compatible versions.
+- `requirements.lock.txt` — pinned to the exact versions used for the thesis
+  runs. Use `pip install -r requirements.lock.txt` for a reproducible install.
+
 The extended battery also needs TestU01 for the Alphabit tests. See
 [TestU01](#testu01-prerequisite).
 
@@ -90,6 +96,7 @@ Key source modules:
 | `src/bars.py` | 1-second bar construction and forward-fill pipeline |
 | `src/bitstream.py` | all-offset bitstream construction |
 | `src/stats.py` | in-house tests: Monobit, Runs, ApEn, Shannon bias, predictability `D` |
+| `src/mutual_info.py` | pairwise 1-bit mutual information / correlation for Exp 4 |
 | `src/nist_extended.py` | NIST SP800-22 wrapper through `nistrng` |
 | `src/testu01_alphabit.py` | Python wrapper for the TestU01 Alphabit driver |
 | `src/battery.py` | shared 29-sub-test battery orchestration |
@@ -97,6 +104,8 @@ Key source modules:
 | `src/calibration.py` | Exp 4 subset search, `ell*` selection, selected output offset selection |
 | `src/min_entropy.py` | MCV and Markov min-entropy estimators |
 | `src/prototype.py` | HKDF-SHA256 password prototype and baselines |
+| `src/summary.py` | shared summary-table builders across Exp 2/3/4 |
+| `src/utils.py` | shared utility helpers used by the runners |
 
 ## Terminology Note
 

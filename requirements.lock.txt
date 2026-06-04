@@ -1,0 +1,14 @@
+# Pinned versions for a reproducible install (matches the .venv used for the thesis runs).
+# Install with:  pip install -r requirements.lock.txt
+# For a flexible install (latest compatible versions) use requirements.txt instead.
+
+# Runtime dependencies (imported by src/ and scripts/)
+numpy==2.4.4
+pandas==3.0.2
+scipy==1.17.1
+matplotlib==3.10.8
+nistrng==1.2.3
+
+# Development tools (used via CLI, not imported)
+ruff==0.15.9
+pytest==9.0.2

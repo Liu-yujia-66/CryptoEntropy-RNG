@@ -1,11 +1,12 @@
+# Runtime dependencies (imported by src/ and scripts/)
 numpy
 pandas
 scipy
 matplotlib
-seaborn
-statsmodels
-httpx
-PyYAML
-pytest
-ruff
 nistrng
+
+# Development tools (used via CLI, not imported)
+ruff
+pytest
+
+# For an exact, reproducible install use the pinned versions in requirements.lock.txt
