@@ -1,7 +1,5 @@
 .DS_Store
 **/.DS_Store
-mine.txt
-thesis_specification.md
 
 .venv/
 __pycache__/
@@ -48,6 +46,16 @@ data/processed/**
 !data/processed/prototype/evaluation/per_cell_eval.csv
 !data/processed/prototype/evaluation/prototype_summary.txt
 !data/processed/prototype/evaluation/prototype_analysis.txt
+
+# Working/process docs (kept locally, not part of the code repo)
+/25% Progress Report.md
+/50% Progress Report.md
+/Progress Report - Exp 1 Baseline Analysis.md
+/Progress Report - Exp 2.md
+/Exp2 Limitations.md
+/Exp2 Plan A - Relaxed Gate.md
+/Exp2 Plan B - Time-Based Aggregation.md
+# /thesis-draft-chinese.md
 
 notes/
 
