@@ -999,7 +999,7 @@ Pipeline 见 Figure 5.1。每个 password 使用从 Experiment 4 deployable stre
 
 Rejection sampling 的接受窗口为 b < 210,以避免 modulo bias(Lemire, 2019)。HKDF 实现通过 RFC 5869 Appendix A Test Case 1 self-test;本次 2,400 个 HKDF-generated passwords 全部在一个 expand round 内完成,re-Expand fallback(info ‖ counter)未触发。
 
-本章因此限于 **passive statistical 评估**:具体指标(字符均匀性的 chi-square 与 Shannon entropy)在 §5.2 给出。Password 输出不重新送进完整 randomness battery(市场输入的统计随机性已由 Chapter 4 负责);adversarial security 不在本章范围内。
+本章的评价指标在 §5.2 给出:字符均匀性的 chi-square 与 Shannon entropy。Password 输出不重新送进完整 randomness battery;市场输入的统计随机性已由 Chapter 4 负责。
 
 [^ch5-ikm-bytes]: Deployable set worst-month h∞ = 0.975 bits/symbol(Table 4.11),因此 33 × 8 × 0.975 ≈ 257 ≥ 256 bits 的 estimated input entropy。
 
@@ -1038,7 +1038,7 @@ Evaluation 使用 2025-10 至 2026-03 的 6 个 validation months,与 Experiment
 
 **三档可部署 n 在输出层表现相近。** Market n = 2、3、5 在 prototype output 层面落在相近区间。结合 Experiment 4 的结果看,这说明在 §4.5 给出的 min-entropy 条件下,这些 residual 没有在本章采用的字符均匀性与 Shannon entropy 指标中表现为额外异常。
 
-总体而言,Chapter 5 给出的结论是正向且有条件的:经过 Experiments 1–4 的筛选、聚合、扩展电池验证、多资产 combination 与 min-entropy sizing 后,deployable market-derived streams 可以作为 HKDF-based password generator 的 entropy input,产出字符分布与理想 baseline 对齐的日常强密码。该结论限于 §5.1 定义的 passive statistical setting;真实保密部署仍需要额外的 deployment secret。
+总体而言,Chapter 5 给出一个正向的应用层结果:经过 Experiments 1–4 的筛选、聚合、扩展电池验证、多资产 combination 与 min-entropy sizing 后,deployable market-derived streams 可以作为 HKDF-based password generator 的 entropy input,产出字符分布与理想 baseline 对齐的日常强密码。
 
 
 ---
@@ -1051,8 +1051,6 @@ Evaluation 使用 2025-10 至 2026-03 的 6 个 validation months,与 Experiment
 
 核心结论是**有条件的 yes**:在 deployable 配置 n ∈ {2, 3, 5} 下,加密货币市场数据经标准 HKDF-SHA256 conditioning 后,可以产出在本文输出层面指标上与理想 baseline 对齐的 ~98-bit 强密码。这一结论建立在完整的实验链上:从 raw baseline 出发,经 1-second bar 聚合、扩展电池审计与多资产 combination,最后落到 password prototype。
 
-该结论限于 **passive statistical setting**——即被动观察者能否在输出序列里发现 pattern,典型评估手段是 §4.3–§4.5 用到的 randomness battery 以及 Chapter 5 的输出层 chi-square 与 Shannon entropy。主动市场操纵、生产 secret 管理与轮换、以及 beacon-style unpredictability(即知道 public source 与 configuration 的对抗者能否预测下一 pulse——把"通过 randomness battery"等同于"beacon-unpredictable"是 Chapter 2 beacon 路线读者常见的混淆陷阱)均不在本文证明范围内;active manipulation 作为 §6.4 limitation #5 进一步说明。
-
 ### Answers to the Research Questions
 
 §6.1 的 thesis-level 结论由对三个 research question 的逐个回应支撑。下文按 RQ 顺序给出每条结论的关键数字与边界。
@@ -1061,7 +1059,7 @@ Evaluation 使用 2025-10 至 2026-03 的 6 个 validation months,与 Experiment
 
 **RQ2 — 序列能否通过标准 randomness 检验?** 答案是 *主要 yes,但存在清晰边界*。1-second bar 轴上 +Runs criterion 选出的 62 个 cell 经 §4.4 的 29-sub-test 扩展电池审计:D(adaptive *k*)、Monobit、Runs 与 DFT 在 admissible 范围内 100% 通过;D(*k* = 2) 只在 62 个 cell 中失败 1 个;但 Serial *m*、TestU01 Alphabit MultinomialBitsOver L4 与 ApEn 仍暴露出跨资产高阶残留。**§4.3.5 的小型 criterion 对边际与短程结构有效,但不足以覆盖高阶 / 多符号结构**——这一边界直接动机化了 Experiment 4 的 multi-asset combination。
 
-**RQ3 — 这些序列能否用于安全密码生成?** 答案是 *passive statistical setting 下的 yes*。Experiment 4 通过 9/6 calibration / validation split 选出 deployable set n ∈ {2, 3, 5}——n = 4 在 validation 阶段 Monobit / CumSum backward 全部失败(0/6),作为 calibration-validation 泛化失败的负结果保留,但不进 deployment。Chapter 5 prototype 把这三档 deployable streams 转成密码:全部 market cell 通过字符均匀性检验,Shannon entropy 与理想 baseline 一致。这是"standard cryptographic conditioning 是 deployable streams 转化为可用密码的必要组成"的 prototype 层面证据。
+**RQ3 — 这些序列能否用于安全密码生成?** 答案是:对本文评估的 deployable configurations 而言,可以。Experiment 4 通过 9/6 calibration / validation split 选出 deployable set n ∈ {2, 3, 5}——n = 4 在 validation 阶段 Monobit / CumSum backward 全部失败(0/6),作为 calibration-validation 泛化失败的负结果保留,但不进 deployment。Chapter 5 prototype 把这三档 deployable streams 转成密码:全部 market cell 通过字符均匀性检验,Shannon entropy 与理想 baseline 一致。这是"standard cryptographic conditioning 是 deployable streams 转化为可用密码的必要组成"的 prototype 层面证据。
 
 ### Secondary Observations
 
@@ -1098,7 +1096,7 @@ Evaluation 使用 2025-10 至 2026-03 的 6 个 validation months,与 Experiment
 
 方法基础有两条:Shternshis & Marmi (2025) 的熵驱动可预测性检验 *D*,与 Onofri et al. (2025) 的"全 offset"构造。本工作在此之上对加密货币 24/7 高频特性做了若干修订(relaxed criterion、1-second bar physical-time pipeline、multi-asset XOR combination 等;见 Chapter 3 章首与下文 §7.2)。
 
-本论文的回答是 **yes,但有条件**:在 deployable n ∈ {2, 3, 5} 配置下,加密货币市场数据经标准 HKDF-SHA256 conditioning 后,可产出在本文输出层面指标上与理想 baseline 对齐的 ~98-bit 强密码。该结论限于 passive statistical setting,不覆盖主动操纵或生产 secret 管理;具体回应与边界见 §6.1 与 §6.4。
+本论文的回答是 **yes,但有条件**:在 deployable n ∈ {2, 3, 5} 配置下,加密货币市场数据经标准 HKDF-SHA256 conditioning 后,可产出在本文输出层面指标上与理想 baseline 对齐的 ~98-bit 强密码。该结论限于本文的 passive statistical setting;主动攻击者或生产部署场景需另作分析。
 
 ### Summary of Contributions
 

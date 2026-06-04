@@ -412,7 +412,7 @@ where $n_{\text{pass}}(\ell)$ is the number of offsets that pass both $D$ and Mo
 
 The 1-second bar pipeline (Algorithm~\ref{alg:1sbar}) groups trades into one-second buckets indexed by UTC time (Coordinated Universal Time, the global timestamp standard used by Binance). For each second that contains no trade, the bucket is filled with the price of the most recent prior trade (forward-fill). The standard difference + sign + drop-zero encoding from \cref{sec:aggregation-encoding} is then run on the resulting per-second close-price sequence. Forward-filled seconds have zero difference with their predecessor and are dropped at the drop-zero step, so they contribute no bit; the bit stream therefore contains only bits derived from real price changes between actually-traded seconds.
 
-\begin{algorithm}
+\begin{algorithm}[H]
   \caption{1-second bar pipeline (physical-time axis)}
   \label{alg:1sbar}
   \begin{algorithmic}[1]
@@ -1240,7 +1240,7 @@ Each cell is evaluated with two output metrics. First, the 100 passwords are exp
 
 \textbf{The three deployable $n$ values look similar at the output layer.} Market $n=2$, $n=3$, and $n=5$ fall in the same output range. Under the min-entropy conditions established in \cref{sec:exp4-min-entropy}, their upstream residuals do not show up as extra abnormalities in the character-uniformity and Shannon-entropy metrics used in this chapter.
 
-Overall, \cref{cha:prototype} gives a positive but conditional result. After the screening, aggregation, extended-battery validation, multi-asset combination, and min-entropy sizing in Experiments~1--4, the deployable market-derived streams can be used as entropy input for an HKDF-based password generator. The output passwords match the ideal baselines on the metrics used here and fall in the everyday strong-password range. This conclusion is limited to the passive statistical setting defined in this thesis; a real secret-producing deployment still needs non-public deployment-secret material.
+Overall, \cref{cha:prototype} gives a positive application result. After the screening, aggregation, extended-battery validation, multi-asset combination, and min-entropy sizing in Experiments~1--4, the deployable market-derived streams can be used as entropy input for an HKDF-based password generator. The output passwords match the ideal baselines on the metrics used here and fall in the everyday strong-password range.
 
 %% =====================================================================
 %% Chapter 6 — Discussion
@@ -1259,8 +1259,6 @@ The central answer is a conditional yes: for the deployable configurations $n \i
 
 This answer is based on the whole chain of experiments, from the raw baseline through one-second-bar aggregation, the extended test battery, and multi-asset combination, to the password prototype.
 
-This conclusion is limited to a passive statistical setting. The thesis asks whether a passive observer can find statistical patterns in the output sequence, using the randomness batteries in \cref{cha:experiments} and the output-level chi-square and Shannon entropy checks in \cref{cha:prototype}. It does not prove active-attacker beacon security, production secret management, or beacon-style unpredictability against an adversary who knows the public data source and configuration.
-
 \section{Answers to Research Questions}
 \label{sec:answers-rq}
 
@@ -1268,7 +1266,7 @@ This conclusion is limited to a passive statistical setting. The thesis asks whe
 
 \textbf{RQ2 -- Can the sequences pass standard randomness tests?} The answer is mostly yes, but with a clear boundary. For the 62 cells selected by the 1-second bar +Runs criterion, Experiment~3 shows that $D$ (adaptive $k$), Monobit, Runs, and DFT pass in all admissible cells, and $D(k=2)$ fails in only one of the 62 cells. At the same time, Serial $m$, TestU01 Alphabit MultinomialBitsOver L4, and ApEn still expose higher-order residuals across assets. The small criterion is effective for marginal and short-range structure, but it does not cover higher-order and multi-symbol structure. This boundary is the direct reason for adding multi-asset combination in Experiment~4.
 
-\textbf{RQ3 -- Can the sequences be used for secure password generation?} In the passive statistical setting of this thesis, the answer is yes. Experiment~4 selects the deployable set $n \in \{2,3,5\}$ by a 9/6 calibration-validation split. The $n=4$ configuration fails systematically in validation, with Monobit and CumSum backward passing $0/6$, so it is kept as a negative result and excluded from deployment. \cref{cha:prototype} then turns the deployable streams into passwords. All the market-derived cells pass the character-uniformity test, and their Shannon entropy matches the ideal baselines (see \cref{tab:prototype-evaluation}). This supports the claim that standard cryptographic conditioning is a necessary part of turning the deployable streams into usable passwords.
+\textbf{RQ3 -- Can the sequences be used for secure password generation?} The answer is yes for the deployable configurations evaluated here. Experiment~4 selects the deployable set $n \in \{2,3,5\}$ by a 9/6 calibration-validation split. The $n=4$ configuration fails systematically in validation, with Monobit and CumSum backward passing $0/6$, so it is kept as a negative result and excluded from deployment. \cref{cha:prototype} then turns the deployable streams into passwords. All the market-derived cells pass the character-uniformity test, and their Shannon entropy matches the ideal baselines (see \cref{tab:prototype-evaluation}). This supports the claim that standard cryptographic conditioning is a necessary part of turning the deployable streams into usable passwords.
 
 \section{Secondary Observations}
 \label{sec:secondary-observations}
@@ -1325,7 +1323,7 @@ Experiment~1 shows that raw tick signs are not suitable. They have high marginal
 
 The method is based on two earlier ideas: the entropy-based predictability test $D$ from \citet{shternshis2025predictability}, and the all-offset construction from \citet{onofri2025emergence}. This thesis adapts these ideas to the 24/7 cryptocurrency setting by adding a relaxed criterion, a 1-second bar physical-time pipeline, multi-asset XOR combination, and output metrics for throughput and min-entropy.
 
-The final answer is yes, but with conditions. For the deployable configurations $n \in \{2,3,5\}$, cryptocurrency market data can be used as entropy input for HKDF-SHA256 conditioning, and the prototype can produce about 98-bit random passwords whose output-level statistics match ideal baselines. This conclusion is limited to a passive statistical setting. It does not cover active market manipulation or production secret management; those boundaries are discussed in \cref{sec:linking-results-rq,sec:limitations-future-work}.
+The final answer is yes, but with conditions. For the deployable configurations $n \in \{2,3,5\}$, cryptocurrency market data can be used as entropy input for HKDF-SHA256 conditioning, and the prototype can produce about 98-bit random passwords whose output-level statistics match ideal baselines. This result holds within the passive statistical setting of this thesis; an active-attacker setting or production deployment would need a separate analysis.
 
 \section{Summary of Contributions}
 \label{sec:summary-contributions}
