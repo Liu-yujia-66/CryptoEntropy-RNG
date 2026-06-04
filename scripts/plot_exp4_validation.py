@@ -116,7 +116,7 @@ DISPLAY_ASSET_NAME = {
 # fused streams) is paler so it visually reads as "no data" rather than
 # "ran and failed sanity". Any unknown verdict string is binned into
 # NOT_RUN by the .get() default — keeps the runner / plot drift-safe.
-VERDICT_COLOURS = ListedColormap(["#2ca02c", "#d62728", "#cccccc", "#f4f4f4"])
+VERDICT_COLOURS = ListedColormap(["#e8f1fa", "#08306b", "#bdc7d1", "#ffffff"])
 VERDICT_LABELS = {"PASS": 0, "FAIL": 1, "INVALID": 2, "NOT_RUN": 3}
 
 
@@ -148,6 +148,11 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
     summary = json.loads(summary_path.read_text())
     n_values = summary["n_values"]
     subset_picks = summary["subset_picks"]
+    tick_fontsize = 10
+    axis_label_fontsize = 11
+    panel_title_fontsize = 12
+    legend_fontsize = 11
+    figure_title_fontsize = 14
 
     # 29 sub-tests per panel; widen from the 12-test era's (13, 9) so the
     # x-axis labels stay legible.
@@ -168,17 +173,19 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
             interpolation="nearest",
         )
         ax.set_xticks(range(len(SUB_TESTS)))
-        ax.set_xticklabels(SUB_TEST_LABELS, rotation=45, ha="right", fontsize=8)
+        ax.set_xticklabels(
+            SUB_TEST_LABELS, rotation=45, ha="right", fontsize=tick_fontsize
+        )
         ax.set_yticks(range(len(months)))
-        ax.set_yticklabels(months, fontsize=8)
+        ax.set_yticklabels(months, fontsize=tick_fontsize)
         if idx == len(n_values) - 1:
-            ax.set_xlabel("sub-test")
-        ax.set_ylabel("validation month")
+            ax.set_xlabel("sub-test", fontsize=axis_label_fontsize)
+        ax.set_ylabel("validation month", fontsize=axis_label_fontsize)
         ax.set_title(
             f"n={n}: {_short_subset(pick['subset'])}  "
             f"ell*={pick['ell_star_n']}  "
             f"selected output offset={pick['witness_offset']}",
-            fontsize=10,
+            fontsize=panel_title_fontsize,
         )
         # Optionally annotate FAIL cells with pass_rate from the CSV
         per_month_csv = pd.read_csv(n_dir / "per_month_verdict_matrix.csv").sort_values(
@@ -196,7 +203,7 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
                             f"{rate:.2f}",
                             ha="center",
                             va="center",
-                            fontsize=6,
+                            fontsize=10,
                             color="white",
                         )
 
@@ -205,11 +212,11 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
         axes[k].axis("off")
 
     handles = [
-        Patch(facecolor="#2ca02c", edgecolor="none", label="PASS (>=80% offsets)"),
-        Patch(facecolor="#d62728", edgecolor="none", label="FAIL"),
-        Patch(facecolor="#cccccc", edgecolor="none", label="INVALID (sanity)"),
+        Patch(facecolor="#e8f1fa", edgecolor="#aaaaaa", label="PASS (>=80% offsets)"),
+        Patch(facecolor="#08306b", edgecolor="none", label="FAIL"),
+        Patch(facecolor="#bdc7d1", edgecolor="none", label="INVALID (sanity)"),
         Patch(
-            facecolor="#f4f4f4",
+            facecolor="#ffffff",
             edgecolor="#888888",
             linewidth=0.5,
             label="NOT_RUN (TestU01 length-skip)",
@@ -221,11 +228,12 @@ def _plot_verdict_matrices(validation_root: Path, output_path: Path) -> None:
         ncol=2,
         frameon=False,
         bbox_to_anchor=(0.5, 0.01),
+        fontsize=legend_fontsize,
     )
     fig.suptitle(
         "Experiment 4 validation — cell-level verdict per sub-test "
         f"(6 months × {len(SUB_TESTS)} sub-tests, throughput-best subset per n)",
-        fontsize=12,
+        fontsize=figure_title_fontsize,
     )
     fig.tight_layout(rect=(0.0, 0.06, 1.0, 0.975))
     output_path.parent.mkdir(parents=True, exist_ok=True)

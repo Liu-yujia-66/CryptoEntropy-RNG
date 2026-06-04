@@ -532,7 +532,7 @@ Single offset 固定起始偏移 o = 0:每个 ℓ 只构造一条比特流,先�
 
 **BTC 在本数据集中扮演高活跃 outlier 的角色:8/15 月份在 ℓ ≤ 2000 网格内无解。** Single offset 下 BTC 只有 2 个月(2025-01、2025-08)失败,strict criterion 下升至 8 个月——同一资产、同一聚合范围,80% offset 共同确认的代价主要由它承担。这一失败模式不能由单月 raw trades/s 干净解释:同为高活跃资产的 ETH 在 strict criterion 下保持 13/15 通过,而 BTC 的失败月份跨低 / 高活跃月份均有。ETH 与 SOL 各有 2 个月 strict criterion 失败,合计 12 个 cell 失效,strict criterion 整体接受率为 63/75 = 84%。
 
-**Strict criterion 选中的流仍系统性地过不了 Runs。** 需要强调:strict criterion 的主判据只含 D(adaptive *k*) + Monobit。被它选中的 63 个 acceptable cell 中,有 38 个的 Runs 通过率低于 0.05(统计口径见 Appendix Table A.2 说明)——即在这些 cell 的 selected ℓ\* 上,几乎每一条 offset 流都被 Runs 拒绝;D(*k* = 2) 通过率呈现同样的模式。换言之,"strict criterion 通过" ≠ "一阶结构被消化",它只保证 adaptive-*k* 的 D 与 Monobit 两项达标。这一残留是 transaction-time 轴的稳定病征,也是后续比较 physical-time 轴的动机之一。
+**Strict criterion 选中的流仍系统性地过不了 Runs。** strict criterion 的主判据只含 D(adaptive *k*) + Monobit,Runs 与 D(*k* = 2) 仅作诊断。被它选中的 63 个 acceptable cell 中,有 38 个的 Runs 通过率低于 0.05(统计口径见 Appendix Table A.2 说明):在这些 cell 的 selected ℓ\* 上,几乎每一条 offset 流都被 Runs 拒绝,D(*k* = 2) 呈现同样的模式。因此 strict criterion 通过只保证 adaptive-*k* 的 D 与 Monobit 达标,一阶结构可能仍然残留。这一残留是 transaction-time 轴的稳定病征,也是后续比较 physical-time 轴的动机之一。
 
 **Strict criterion 留下两条实际问题。** 第一,BTC 在 8 个月里完全无 acceptable ℓ ≤ 2000,说明 80% offset 同时通过的要求对高活跃资产可能过严。第二,selected ℓ\* 的 month-to-month range 较宽,粗网格也限制了估计精度。§4.3.4 因此尝试 relaxed offset-coverage criterion,并把 ℓ 网格细化到 step = 2。
 

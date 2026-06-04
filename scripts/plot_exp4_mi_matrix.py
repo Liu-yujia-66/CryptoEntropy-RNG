@@ -35,6 +35,13 @@ import pandas as pd
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.colors import LinearSegmentedColormap as _LSC
+
+INK = "#16324f"
+# Monochrome "ink" colormap (no red/green): faint -> deep navy.
+# Saturated blue (no red/green): light blue -> vivid blue -> deep navy;
+# the vivid mid-stop stops the mid-range washing out to grey.
+INK_CMAP = _LSC.from_list("ink", ["#e8f1fa", "#4292c6", "#08306b"])
 
 DISPLAY_NAMES = {
     "BTCUSDT": "BTC",
@@ -123,34 +130,36 @@ def main() -> int:
     ax = axes[0]
     mi_values = mi.values.astype(float)
     mi_masked = np.ma.masked_invalid(mi_values)
-    cmap = plt.cm.viridis.copy()
-    cmap.set_bad(color="#dcdcdc")
+    cmap = INK_CMAP.copy()
+    cmap.set_bad(color="white")
     vmax = float(np.nanmax(mi_values))
-    im = ax.imshow(mi_masked, cmap=cmap, vmin=0.0, vmax=vmax, aspect="auto")
+    im = ax.imshow(mi_masked, cmap=cmap, vmin=0.0, vmax=1.0, aspect="auto")
     ax.set_xticks(range(n))
     ax.set_xticklabels(labels, rotation=0)
     ax.set_yticks(range(n))
     ax.set_yticklabels(labels)
     ax.set_title("Pairwise 1-bit mutual information (bits)")
-    _annotate(ax, mi_values, "{:.3f}", colour_threshold=vmax * 0.55)
+    _annotate(ax, mi_values, "{:.3f}", colour_threshold=0.55)
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
     cbar.set_label("MI (bits)")
 
     # ---- Bottom: Pearson heatmap ----
     ax = axes[1]
     rho_values = rho.values.astype(float)
     rho_masked = np.ma.masked_invalid(rho_values)
-    cmap = plt.cm.viridis.copy()
-    cmap.set_bad(color="#dcdcdc")
+    cmap = INK_CMAP.copy()
+    cmap.set_bad(color="white")
     rho_max = float(np.nanmax(np.abs(rho_values)))
-    im = ax.imshow(rho_masked, cmap=cmap, vmin=0.0, vmax=rho_max, aspect="auto")
+    im = ax.imshow(rho_masked, cmap=cmap, vmin=0.0, vmax=1.0, aspect="auto")
     ax.set_xticks(range(n))
     ax.set_xticklabels(labels, rotation=0)
     ax.set_yticks(range(n))
     ax.set_yticklabels(labels)
     ax.set_title("Pairwise Pearson correlation $\\rho$")
-    _annotate(ax, rho_values, "{:.2f}", colour_threshold=rho_max * 0.55)
+    _annotate(ax, rho_values, "{:.2f}", colour_threshold=0.55)
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
+    cbar.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
     cbar.set_label(r"|$\rho$|")
 
     fig.suptitle(

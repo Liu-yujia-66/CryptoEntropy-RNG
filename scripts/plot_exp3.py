@@ -50,6 +50,15 @@ from src.utils import ASSET_COLORS
 VALID_GATES = ("base", "runs", "apen")
 ALPHA = 0.01
 
+# Monochrome "ink" palette (no red/green): pass-rate heatmap maps high
+# pass-rate -> faint, low pass-rate -> deep navy so failures stand out.
+from matplotlib.colors import LinearSegmentedColormap as _LSC
+INK = "#16324f"
+# Same saturated-blue ramp as the MI matrix; reversed so low pass-rate
+# (failures) reads deep navy and high pass-rate reads faint blue.
+PASS_RATE_CMAP = _LSC.from_list("inkpass", ["#08306b", "#4292c6", "#e8f1fa"])
+PASS_RATE_CMAP.set_bad("white")
+
 # Use the same asset order as scripts/aggregate_exp3_battery.py and
 # plan §1.4 admissible-months table (BTC, ETH, BNB, SOL, DOGE), NOT the
 # alphabetical `src.utils.ASSET_ORDER`. Keeps Exp 3 figures / tables /
@@ -104,7 +113,7 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
     # zero 100K cells per plan §1.4.1). pd.to_numeric coerces pd.NA → NaN so
     # imshow renders it blank instead of `.astype(float)` choking on NAType.
     data = pr_pivot.apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
-    im = ax.imshow(data, cmap="RdYlGn", vmin=0.0, vmax=1.0, aspect="auto")
+    im = ax.imshow(data, cmap=PASS_RATE_CMAP, vmin=0.0, vmax=1.0, aspect="auto")
 
     # Annotate every cell with "X/Y" — choose text color for contrast.
     for i, sub_test in enumerate(ALL_SUB_TESTS):
@@ -117,7 +126,7 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
             # Black text on the green/yellow band, white on extreme red/dark
             # green; NaN rate (n_admissible == 0) → white "0/0" label.
             text_color = (
-                "black" if (pd.notna(rate) and 0.40 <= rate <= 0.90) else "white"
+                "white" if (pd.notna(rate) and rate < 0.5) else "#1a1a1a"
             )
             ax.text(
                 j, i, f"{int(p)}/{int(a)}",
@@ -139,7 +148,7 @@ def plot_heatmap(summary: pd.DataFrame, out_path: Path, gate: str) -> None:
         pad=28,
     )
 
-    cbar = fig.colorbar(im, ax=ax, shrink=0.75, label="pass_rate")
+    cbar = fig.colorbar(im, ax=ax, shrink=0.75, fraction=0.075, pad=0.04, label="pass_rate")
     cbar.set_ticks([0.0, 0.25, 0.5, 0.75, 1.0])
 
     fig.tight_layout()
