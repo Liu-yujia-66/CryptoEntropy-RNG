@@ -164,14 +164,25 @@
 \frontmatter
 \makeuutitlepage
 
+\thispagestyle{empty}
 \AddToShipoutPictureFG*{%
   \AtPageUpperLeft{%
     \put(\LenToUnit{28mm},\LenToUnit{-40mm}){%
       \includegraphics[width=24mm]{figures/uppsala_logo_bw.png}%
     }%
+    \put(\LenToUnit{63mm},\LenToUnit{-23mm}){%
+      \parbox[t]{115mm}{%
+        \raggedright\sffamily
+        {\small\color{gray}\textbf{\ThesisTitle}\par}
+        % \vspace{0.12cm}
+        {\footnotesize\color{gray}\ThesisSubtitle\par}
+        \vspace{0.12cm}
+        {\footnotesize\ThesisAuthor\par}
+      }%
+    }%
   }%
 }
-\vspace*{1.5cm}
+\vspace*{2cm}
 \section*{Abstract}
 
 Randomness is a basic requirement for many computational tasks, especially in security, but a reliable physical source of randomness is not always conveniently available on ordinary devices. This thesis studies a concrete research question: can passively observed public cryptocurrency trade data, after statistical aggregation, validation, and cryptographic conditioning, provide usable entropy for strong password generation? The cryptocurrency market trades continuously and produces high-frequency public data, which makes it a suitable test case for this question. The main difficulty is that raw price changes are not independent: market microstructure makes the signs of neighbouring price changes strongly correlated, so the data cannot be used directly as random bits.
@@ -181,17 +192,19 @@ This thesis builds and evaluates a pipeline that runs from market prices to pass
 The experiments give a positive answer with some limitations. Raw per-trade price changes fail the statistical checks in every month. After aggregation into one-second time windows, most short-range dependence is removed, but the output of a single asset still retains some higher-order structure. Combining several assets reduces this residual further: three configurations stay stable on the held-out validation months, while one four-asset configuration fails because its bias drifts outside the calibration range. The final prototype uses the stable configurations to generate 16-character passwords; measured by search-space entropy, each password carries about 98 bits of strength, well above the roughly 30 bits typical of user-chosen passwords and above the 80-bit working benchmark for strong random passwords adopted in this thesis. The overall conclusion is limited but practical: under a passive statistical setting and prototype-level evaluation, public cryptocurrency data can serve as entropy input for password generation after aggregation, validation, and cryptographic conditioning.
 
 \vfill
-\vspace*{0.45cm}
 \begin{center}
+\setlength{\parskip}{0pt}
   {\sffamily\small\color{gray}\textbf{\ThesisFaculty}\par}
-  % \vspace{0.10cm}
+  \vspace{0.10cm}
   {\sffamily\small\color{gray}\textbf{Uppsala University, \ThesisPlace}\par}
-  % \vspace{0.14cm}
+  \vspace{0.3cm}
   {\sffamily\footnotesize\color{gray}Supervisor: \ThesisSupervisor\quad Subject reader: \ThesisReviewer\par}
-  % \vspace{0.04cm}
+  \vspace{0.10cm}
   {\sffamily\footnotesize\color{gray}Examiner: \ThesisExaminer\par}
 \end{center}
 
+\clearpage
+\setcounter{page}{1}
 \tableofcontents
 \listoffigures
 \listoftables
