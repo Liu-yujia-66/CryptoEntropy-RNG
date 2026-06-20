@@ -104,7 +104,10 @@
 \newcommand{\ThesisDepartment}{Department of Information Technology}
 \newcommand{\ThesisSupervisor}{Andrey Shternshis}
 \newcommand{\ThesisReviewer}{Parosh Abdulla}
-\newcommand{\ThesisSerial}{}
+\newcommand{\ThesisExaminer}{Lars-Henrik Eriksson}
+\newcommand{\ThesisFaculty}{Faculty of Science and Technology}
+\newcommand{\ThesisPlace}{Uppsala}
+\newcommand{\ThesisSerial}{IT mDV 26 013}
 \newcommand{\ThesisDate}{June 2026}
 
 \newcommand{\makeuutitlepage}{%
@@ -123,7 +126,7 @@
         \put(\LenToUnit{28mm},\LenToUnit{-62mm}){%
           \includesvg[inkscapelatex=false,width=4.8cm]{figures/uppsala_logo}%
         }%
-        \put(\LenToUnit{\dimexpr\paperwidth-70mm\relax},\LenToUnit{-30mm}){%
+        \put(\LenToUnit{\dimexpr\paperwidth-70mm\relax},\LenToUnit{-23mm}){%
           \parbox[t]{50mm}{%
             \raggedleft\sffamily
             \if\relax\detokenize\expandafter{\ThesisSerial}\relax\else
@@ -144,9 +147,6 @@
       {\Large\color{gray}\ThesisSubtitle\par}
       \vspace{0.65cm}
       {\Large\ThesisAuthor\par}
-      \vspace{0.45cm}
-      {\large\color{gray}Supervisor: \ThesisSupervisor\par}
-      {\large\color{gray}Reviewer: \ThesisReviewer\par}
     \end{minipage}
 
     \vfill
@@ -154,7 +154,6 @@
     \begin{minipage}[b]{0.82\textwidth}
       \raggedright
       {\large\color{gray}\ThesisProgramme\par}
-      {\large\color{gray}\ThesisDepartment\par}
     \end{minipage}
   \end{titlepage}
   \restoregeometry
@@ -165,7 +164,7 @@
 \frontmatter
 \makeuutitlepage
 
-\vspace*{3cm}
+\vspace*{1cm}
 \section*{Abstract}
 
 Randomness is a basic requirement for many computational tasks, especially in security, but a reliable physical source of randomness is not always conveniently available on ordinary devices. This thesis studies a concrete research question: can passively observed public cryptocurrency trade data, after statistical aggregation, validation, and cryptographic conditioning, provide usable entropy for strong password generation? The cryptocurrency market trades continuously and produces high-frequency public data, which makes it a suitable test case for this question. The main difficulty is that raw price changes are not independent: market microstructure makes the signs of neighbouring price changes strongly correlated, so the data cannot be used directly as random bits.
@@ -173,6 +172,18 @@ Randomness is a basic requirement for many computational tasks, especially in se
 This thesis builds and evaluates a pipeline that runs from market prices to password output. Price changes are first encoded as bits, then aggregated on different time bases, screened by statistical tests, and combined across several assets. The bit streams that pass validation are then passed into a standard cryptographic conditioning step that produces the final passwords. The experimental data cover five high-liquidity USDT spot pairs over a span of 15 months.
 
 The experiments give a positive answer with some limitations. Raw per-trade price changes fail the statistical checks in every month. After aggregation into one-second time windows, most short-range dependence is removed, but the output of a single asset still retains some higher-order structure. Combining several assets reduces this residual further: three configurations stay stable on the held-out validation months, while one four-asset configuration fails because its bias drifts outside the calibration range. The final prototype uses the stable configurations to generate 16-character passwords; measured by search-space entropy, each password carries about 98 bits of strength, well above the roughly 30 bits typical of user-chosen passwords and above the 80-bit working benchmark for strong random passwords adopted in this thesis. The overall conclusion is limited but practical: under a passive statistical setting and prototype-level evaluation, public cryptocurrency data can serve as entropy input for password generation after aggregation, validation, and cryptographic conditioning.
+
+\vfill
+\vspace*{0.45cm}
+\begin{center}
+  {\sffamily\small\color{gray}\textbf{\ThesisFaculty}\par}
+  % \vspace{0.10cm}
+  {\sffamily\small\color{gray}\textbf{Uppsala University, \ThesisPlace}\par}
+  % \vspace{0.14cm}
+  {\sffamily\footnotesize\color{gray}Supervisor: \ThesisSupervisor\quad Subject reader: \ThesisReviewer\par}
+  % \vspace{0.04cm}
+  {\sffamily\footnotesize\color{gray}Examiner: \ThesisExaminer\par}
+\end{center}
 
 \tableofcontents
 \listoffigures
