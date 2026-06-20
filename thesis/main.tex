@@ -84,8 +84,8 @@
   paper=a4paper,
   top=31mm,
   bottom=31mm,
-  left=30mm,
-  right=30mm,
+  left=28mm,
+  right=28mm,
   marginparsep=5mm,
   marginparwidth=25mm
 ]{geometry}
@@ -123,7 +123,7 @@
     }%
     \AddToShipoutPictureFG*{%
       \AtPageUpperLeft{%
-        \put(\LenToUnit{28mm},\LenToUnit{-62mm}){%
+        \put(\LenToUnit{28mm},\LenToUnit{-63mm}){%
           \includesvg[inkscapelatex=false,width=4.8cm]{figures/uppsala_logo}%
         }%
         \put(\LenToUnit{\dimexpr\paperwidth-70mm\relax},\LenToUnit{-23mm}){%
@@ -164,7 +164,14 @@
 \frontmatter
 \makeuutitlepage
 
-\vspace*{1cm}
+\AddToShipoutPictureFG*{%
+  \AtPageUpperLeft{%
+    \put(\LenToUnit{28mm},\LenToUnit{-40mm}){%
+      \includegraphics[width=24mm]{figures/uppsala_logo_bw.png}%
+    }%
+  }%
+}
+\vspace*{1.5cm}
 \section*{Abstract}
 
 Randomness is a basic requirement for many computational tasks, especially in security, but a reliable physical source of randomness is not always conveniently available on ordinary devices. This thesis studies a concrete research question: can passively observed public cryptocurrency trade data, after statistical aggregation, validation, and cryptographic conditioning, provide usable entropy for strong password generation? The cryptocurrency market trades continuously and produces high-frequency public data, which makes it a suitable test case for this question. The main difficulty is that raw price changes are not independent: market microstructure makes the signs of neighbouring price changes strongly correlated, so the data cannot be used directly as random bits.
